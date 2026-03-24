@@ -1,17 +1,24 @@
 package com.chaddy50.concerttracker.navigation
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.chaddy50.concerttracker.ui.common.TopBarState
+import com.chaddy50.concerttracker.R
 import com.chaddy50.concerttracker.ui.performances.PerformancesScreen
 import com.chaddy50.concerttracker.ui.settings.SettingsScreen
 import kotlinx.serialization.Serializable
@@ -26,13 +33,36 @@ object Settings
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
-    val topBarState = remember { TopBarState() }
+    val currentBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentDestination = currentBackStackEntry?.destination
+    val canNavigateBack = currentBackStackEntry != null && navController.previousBackStackEntry != null
+
+    val title = when {
+        currentDestination?.hasRoute<Performances>() == true -> stringResource(R.string.performances_title)
+        currentDestination?.hasRoute<Settings>() == true -> stringResource(R.string.settings_title)
+        else -> ""
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(topBarState.title) },
-                actions = { topBarState.actions(this) }
+                title = { Text(title) },
+                navigationIcon = {
+                    if (canNavigateBack) {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.navigate_back_content_description)
+                            )
+                        }
+                    }
+                },
+                actions = {
+                    TopBarActionsRouter(
+                        currentDestination = currentDestination,
+                        navController = navController
+                    )
+                }
             )
         }
     ) { innerPadding ->
@@ -42,15 +72,10 @@ fun AppNavigation() {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable<Performances> {
-                PerformancesScreen(
-                    onUpdateTopBar = topBarState::update,
-                    onNavigateToSettings = { navController.navigate(Settings) }
-                )
+                PerformancesScreen()
             }
             composable<Settings> {
-                SettingsScreen(
-                    onUpdateTopBar = topBarState::update
-                )
+                SettingsScreen()
             }
         }
     }
