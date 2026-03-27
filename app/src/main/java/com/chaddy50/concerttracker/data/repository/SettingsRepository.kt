@@ -1,4 +1,4 @@
-package com.chaddy50.concerttracker.data
+package com.chaddy50.concerttracker.data.repository
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences

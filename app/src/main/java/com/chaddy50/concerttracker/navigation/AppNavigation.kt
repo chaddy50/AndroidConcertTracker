@@ -19,6 +19,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.chaddy50.concerttracker.R
+import com.chaddy50.concerttracker.ui.performanceDetail.PerformanceDetailScreen
 import com.chaddy50.concerttracker.ui.performances.PerformancesScreen
 import com.chaddy50.concerttracker.ui.settings.SettingsScreen
 import kotlinx.serialization.Serializable
@@ -28,6 +29,9 @@ object Performances
 
 @Serializable
 object Settings
+
+@Serializable
+data class PerformanceDetail(val id: String)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,6 +44,7 @@ fun AppNavigation() {
     val title = when {
         currentDestination?.hasRoute<Performances>() == true -> stringResource(R.string.performances_title)
         currentDestination?.hasRoute<Settings>() == true -> stringResource(R.string.settings_title)
+        currentDestination?.hasRoute<PerformanceDetail>() == true -> stringResource(R.string.performance_detail_title)
         else -> ""
     }
 
@@ -72,10 +77,17 @@ fun AppNavigation() {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable<Performances> {
-                PerformancesScreen()
+                PerformancesScreen(
+                    onPerformanceClick = { id ->
+                        navController.navigate(PerformanceDetail(id))
+                    }
+                )
             }
             composable<Settings> {
                 SettingsScreen()
+            }
+            composable<PerformanceDetail> {
+                PerformanceDetailScreen()
             }
         }
     }

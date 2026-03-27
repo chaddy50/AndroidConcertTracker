@@ -1,11 +1,9 @@
-package com.chaddy50.concerttracker.ui.performances
+package com.chaddy50.concerttracker.ui.performanceDetail
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -24,30 +22,25 @@ import com.chaddy50.concerttracker.data.enum.PerformerType
 import com.chaddy50.concerttracker.ui.theme.ConcertTrackerTheme
 
 @Composable
-fun PerformancesScreen(
-    onPerformanceClick: (String) -> Unit,
-    viewModel: PerformancesViewModel = hiltViewModel()
-) {
-    PerformancesContent(
+fun PerformanceDetailScreen(viewModel: PerformanceDetailViewModel = hiltViewModel()) {
+    PerformanceDetailContent(
         uiState = viewModel.uiState,
-        onPerformanceClick = onPerformanceClick,
-        onRetry = viewModel::loadPerformances
+        onRetry = viewModel::loadPerformance
     )
 }
 
 @Composable
-fun PerformancesContent(
-    uiState: PerformancesUiState,
-    onPerformanceClick: (String) -> Unit,
+fun PerformanceDetailContent(
+    uiState: PerformanceDetailUiState,
     onRetry: () -> Unit
 ) {
     when (val state = uiState) {
-        is PerformancesUiState.Loading -> {
+        is PerformanceDetailUiState.Loading -> {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         }
-        is PerformancesUiState.Error -> {
+        is PerformanceDetailUiState.Error -> {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(text = state.message, color = MaterialTheme.colorScheme.error)
@@ -60,15 +53,8 @@ fun PerformancesContent(
                 }
             }
         }
-        is PerformancesUiState.Success -> {
-            LazyColumn(modifier = Modifier.padding(16.dp)) {
-                items(state.performances, key = { it.id }) { performance ->
-                    PerformanceCard(
-                        performance = performance,
-                        onClick = { onPerformanceClick(performance.id) }
-                    )
-                }
-            }
+        is PerformanceDetailUiState.Success -> {
+            PerformanceDetail(performance = state.performance)
         }
     }
 }
@@ -79,16 +65,16 @@ private val previewPerformance = Performance(
     date = "2024-11-15T19:30:00.000Z",
     venue = Venue(id = "1", name = "Royal Albert Hall", osmId = 123456L),
     conductor = Performer(id = "1", name = "Simon Rattle", type = PerformerType.CONDUCTOR),
-    status = PerformanceStatus.ATTENDED
+    status = PerformanceStatus.ATTENDED,
+    notes = "Wonderful concert"
 )
 
 @Preview(showBackground = true)
 @Composable
-fun PerformancesContentLoadingPreview() {
+fun PerformanceDetailContentLoadingPreview() {
     ConcertTrackerTheme {
-        PerformancesContent(
-            uiState = PerformancesUiState.Loading,
-            onPerformanceClick = {},
+        PerformanceDetailContent(
+            uiState = PerformanceDetailUiState.Loading,
             onRetry = {}
         )
     }
@@ -96,11 +82,10 @@ fun PerformancesContentLoadingPreview() {
 
 @Preview(showBackground = true)
 @Composable
-fun PerformancesContentErrorPreview() {
+fun PerformanceDetailContentErrorPreview() {
     ConcertTrackerTheme {
-        PerformancesContent(
-            uiState = PerformancesUiState.Error("Could not connect to server"),
-            onPerformanceClick = {},
+        PerformanceDetailContent(
+            uiState = PerformanceDetailUiState.Error("Could not load performance"),
             onRetry = {}
         )
     }
@@ -108,11 +93,10 @@ fun PerformancesContentErrorPreview() {
 
 @Preview(showBackground = true)
 @Composable
-fun PerformancesContentSuccessPreview() {
+fun PerformanceDetailContentSuccessPreview() {
     ConcertTrackerTheme {
-        PerformancesContent(
-            uiState = PerformancesUiState.Success(listOf(previewPerformance)),
-            onPerformanceClick = {},
+        PerformanceDetailContent(
+            uiState = PerformanceDetailUiState.Success(previewPerformance),
             onRetry = {}
         )
     }

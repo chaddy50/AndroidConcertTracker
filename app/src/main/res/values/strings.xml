@@ -4,6 +4,9 @@
     <!-- Performances screen -->
     <string name="performances_title">Performances</string>
 
+    <!-- Performance detail screen -->
+    <string name="performance_detail_title">Performance</string>
+
     <!-- Settings screen -->
     <string name="settings_title">Settings</string>
 

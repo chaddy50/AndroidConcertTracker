@@ -1,4 +1,4 @@
-package com.chaddy50.concerttracker.data
+package com.chaddy50.concerttracker.dependencyInjection
 
 import android.content.Context
 import androidx.datastore.core.DataStore
