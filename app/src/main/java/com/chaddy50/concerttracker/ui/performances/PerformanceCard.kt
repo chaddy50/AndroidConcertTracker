@@ -62,7 +62,7 @@ fun PerformanceCard(performance: Performance, onClick: () -> Unit) {
 }
 
 // region Previews
-private val previewVenue = Venue(id = "1", name = "Royal Albert Hall", osmId = 123456L)
+private val previewVenue = Venue(id = "1", name = "Royal Albert Hall", osmId = "123456")
 private val previewConductor = Performer(id = "1", name = "Simon Rattle", type = PerformerType.CONDUCTOR)
 private val previewPerformance = Performance(
     id = "1",

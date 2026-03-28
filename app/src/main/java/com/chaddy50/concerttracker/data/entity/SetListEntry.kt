@@ -8,7 +8,8 @@ data class SetListEntry(
     val work: Work,
     val order: Int,
     val conductor: Performer? = null,
-    val featuredPerformers: List<SetListEntryPerformer> = emptyList()
+    val featuredPerformers: List<SetListEntryPerformer> = emptyList(),
+    val notes: String? = null
 )
 
 @Serializable

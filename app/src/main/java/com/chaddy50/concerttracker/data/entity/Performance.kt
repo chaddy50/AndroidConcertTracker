@@ -11,6 +11,5 @@ data class Performance(
     val performers: List<Performer> = emptyList(),
     val conductor: Performer? = null,
     val status: PerformanceStatus,
-    val notes: String? = null,
     val setList: List<SetListEntry> = emptyList()
 )

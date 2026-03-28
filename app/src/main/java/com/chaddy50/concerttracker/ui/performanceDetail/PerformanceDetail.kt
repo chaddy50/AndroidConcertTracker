@@ -42,13 +42,6 @@ fun PerformanceDetail(performance: Performance) {
                 color = MaterialTheme.colorScheme.secondary,
                 modifier = Modifier.padding(top = 4.dp)
             )
-            if (performance.notes != null) {
-                Text(
-                    text = performance.notes,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-            }
         }
 
         if (performance.performers.isNotEmpty()) {
@@ -86,11 +79,10 @@ private val previewOrchestra = Performer(id = "orchestra-1", name = "London Symp
 private val previewPerformance = Performance(
     id = "perf-1",
     date = "2024-11-15T19:30:00.000Z",
-    venue = Venue(id = "venue-1", name = "Royal Albert Hall", osmId = 123456L),
+    venue = Venue(id = "venue-1", name = "Royal Albert Hall", osmId = "123456"),
     performers = listOf(previewOrchestra),
     conductor = previewConductor,
     status = PerformanceStatus.ATTENDED,
-    notes = "Exceptional performance of the second piano concerto.",
     setList = listOf(
         SetListEntry(
             id = "entry-1",
@@ -101,7 +93,8 @@ private val previewPerformance = Performance(
             ),
             order = 1,
             conductor = null,
-            featuredPerformers = listOf(SetListEntryPerformer(performer = previewSoloist, role = "Piano"))
+            featuredPerformers = listOf(SetListEntryPerformer(performer = previewSoloist, role = "Piano")),
+            notes = "Exceptional performance of the second piano concerto."
         )
     )
 )

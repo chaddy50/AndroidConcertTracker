@@ -38,6 +38,14 @@ fun SetListEntryRow(entry: SetListEntry, performanceConductorId: String?) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+        if (entry.notes != null) {
+            Text(
+                text = entry.notes,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
         entry.featuredPerformers.forEach { featuredPerformer ->
             val label = if (featuredPerformer.role != null) {
                 "${featuredPerformer.performer.name}, ${featuredPerformer.role}"
@@ -66,7 +74,11 @@ private val previewEntry = SetListEntry(
     work = previewWork,
     order = 1,
     conductor = previewConductor,
-    featuredPerformers = listOf(SetListEntryPerformer(performer = previewSoloist, role = "Piano"))
+    featuredPerformers = listOf(SetListEntryPerformer(performer = previewSoloist, role = "Piano")),
+    notes = null
+)
+private val previewEntryWithNotes = previewEntry.copy(
+    notes = "Argerich's tempo in the first movement was breathtaking."
 )
 
 @Preview(showBackground = true)
@@ -82,6 +94,14 @@ fun SetListEntryRowWithDifferentConductorPreview() {
 fun SetListEntryRowWithSameConductorPreview() {
     ConcertTrackerTheme {
         SetListEntryRow(entry = previewEntry, performanceConductorId = "conductor-1")
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun SetListEntryRowWithNotesPreview() {
+    ConcertTrackerTheme {
+        SetListEntryRow(entry = previewEntryWithNotes, performanceConductorId = "conductor-1")
     }
 }
 // endregion

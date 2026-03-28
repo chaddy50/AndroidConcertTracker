@@ -77,7 +77,7 @@ fun PerformancesContent(
 private val previewPerformance = Performance(
     id = "1",
     date = "2024-11-15T19:30:00.000Z",
-    venue = Venue(id = "1", name = "Royal Albert Hall", osmId = 123456L),
+    venue = Venue(id = "1", name = "Royal Albert Hall", osmId = "123456"),
     conductor = Performer(id = "1", name = "Simon Rattle", type = PerformerType.CONDUCTOR),
     status = PerformanceStatus.ATTENDED
 )

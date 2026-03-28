@@ -14,7 +14,7 @@ object TestData {
     val conductor = Performer(id = "conductor-1", name = "Simon Rattle", type = PerformerType.CONDUCTOR)
     val orchestra = Performer(id = "orchestra-1", name = "London Symphony Orchestra", type = PerformerType.ORCHESTRA)
     val soloist = Performer(id = "soloist-1", name = "Martha Argerich", type = PerformerType.SOLO)
-    val venue = Venue(id = "venue-1", name = "Royal Albert Hall", osmId = 123456L)
+    val venue = Venue(id = "venue-1", name = "Royal Albert Hall", osmId = "123456")
     val composer = Composer(id = "composer-1", name = "Ludwig van Beethoven")
     val work = Work(id = "work-1", title = "Symphony No. 5 in C minor", composers = listOf(composer))
 
@@ -23,7 +23,8 @@ object TestData {
         work = work,
         order = 1,
         conductor = null,
-        featuredPerformers = listOf(SetListEntryPerformer(performer = soloist, role = "Piano"))
+        featuredPerformers = listOf(SetListEntryPerformer(performer = soloist, role = "Piano")),
+        notes = "Beautifully played."
     )
 
     val performance = Performance(
@@ -33,7 +34,6 @@ object TestData {
         performers = listOf(orchestra),
         conductor = conductor,
         status = PerformanceStatus.ATTENDED,
-        notes = null,
         setList = listOf(setListEntry)
     )
 

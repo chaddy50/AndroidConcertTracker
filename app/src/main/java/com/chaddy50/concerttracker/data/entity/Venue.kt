@@ -6,5 +6,5 @@ import kotlinx.serialization.Serializable
 data class Venue(
     val id: String,
     val name: String,
-    val osmId: Long
+    val osmId: String
 )
