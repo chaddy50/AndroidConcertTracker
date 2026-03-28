@@ -15,3 +15,12 @@ fun formatDate(isoDate: String): String {
         isoDate
     }
 }
+
+fun isoToEpochMillis(isoDate: String): Long? = try {
+    Instant.parse(isoDate).toEpochMilli()
+} catch (_: Exception) {
+    null
+}
+
+fun epochMillisToIso(millis: Long): String =
+    Instant.ofEpochMilli(millis).toString()

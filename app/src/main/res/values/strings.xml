@@ -7,11 +7,29 @@
     <!-- Performance detail screen -->
     <string name="performance_detail_title">Performance</string>
 
+    <!-- Performance form screen -->
+    <string name="performance_form_new_title">New Performance</string>
+    <string name="performance_form_edit_title">Edit Performance</string>
+
     <!-- Settings screen -->
     <string name="settings_title">Settings</string>
 
     <!-- Settings screen -->
     <string name="settings_server_url_label">Server URL</string>
+
+    <!-- Performance form field labels -->
+    <string name="performance_form_date_label">Date</string>
+    <string name="performance_form_venue_label">Venue</string>
+    <string name="performance_form_status_label">Status</string>
+    <string name="performance_form_notes_label">Notes</string>
+
+    <!-- Performance detail top bar actions -->
+    <string name="performance_detail_edit_content_description">Edit performance</string>
+    <string name="performance_detail_save_content_description">Save performance</string>
+    <string name="performance_detail_cancel_content_description">Cancel editing</string>
+
+    <!-- Performances screen -->
+    <string name="performances_add_content_description">Add performance</string>
 
     <!-- Navigation -->
     <string name="navigate_back_content_description">Navigate back</string>

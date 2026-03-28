@@ -3,7 +3,9 @@ package com.chaddy50.concerttracker.navigation
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
@@ -18,8 +20,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.chaddy50.concerttracker.R
 import com.chaddy50.concerttracker.ui.performanceDetail.PerformanceDetailScreen
+import com.chaddy50.concerttracker.ui.performanceEdit.PerformanceEditScreen
 import com.chaddy50.concerttracker.ui.performances.PerformancesScreen
 import com.chaddy50.concerttracker.ui.settings.SettingsScreen
 import kotlinx.serialization.Serializable
@@ -33,6 +37,9 @@ object Settings
 @Serializable
 data class PerformanceDetail(val id: String)
 
+@Serializable
+data class PerformanceEdit(val id: String?)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppNavigation() {
@@ -45,6 +52,11 @@ fun AppNavigation() {
         currentDestination?.hasRoute<Performances>() == true -> stringResource(R.string.performances_title)
         currentDestination?.hasRoute<Settings>() == true -> stringResource(R.string.settings_title)
         currentDestination?.hasRoute<PerformanceDetail>() == true -> stringResource(R.string.performance_detail_title)
+        currentDestination?.hasRoute<PerformanceEdit>() == true -> {
+            val isNew = currentBackStackEntry?.toRoute<PerformanceEdit>()?.id == null
+            if (isNew) stringResource(R.string.performance_form_new_title)
+            else stringResource(R.string.performance_form_edit_title)
+        }
         else -> ""
     }
 
@@ -65,10 +77,23 @@ fun AppNavigation() {
                 actions = {
                     TopBarActionsRouter(
                         currentDestination = currentDestination,
+                        currentBackStackEntry = currentBackStackEntry,
                         navController = navController
                     )
                 }
             )
+        },
+        floatingActionButton = {
+            if (currentDestination?.hasRoute<Performances>() == true) {
+                FloatingActionButton(
+                    onClick = { navController.navigate(PerformanceEdit(id = null)) }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = stringResource(R.string.performances_add_content_description)
+                    )
+                }
+            }
         }
     ) { innerPadding ->
         NavHost(
@@ -88,6 +113,12 @@ fun AppNavigation() {
             }
             composable<PerformanceDetail> {
                 PerformanceDetailScreen()
+            }
+            composable<PerformanceEdit> {
+                PerformanceEditScreen(
+                    onSaved = { navController.popBackStack() },
+                    onCancel = { navController.popBackStack() }
+                )
             }
         }
     }

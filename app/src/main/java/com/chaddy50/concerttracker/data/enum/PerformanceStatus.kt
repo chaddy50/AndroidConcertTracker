@@ -4,5 +4,5 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 enum class PerformanceStatus {
-    ATTENDED, UPCOMING, CANCELLED
+    UPCOMING, ATTENDED, CANCELLED, MISSED, SKIPPED
 }

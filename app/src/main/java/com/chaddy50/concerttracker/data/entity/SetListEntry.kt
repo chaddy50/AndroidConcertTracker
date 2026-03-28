@@ -17,3 +17,8 @@ data class SetListEntryPerformer(
     val performer: Performer,
     val role: String? = null
 )
+
+@Serializable
+data class SetListEntryRequest(
+    val notes: String? = null
+)

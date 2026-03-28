@@ -24,7 +24,11 @@ import com.chaddy50.concerttracker.ui.theme.ConcertTrackerTheme
 import com.chaddy50.concerttracker.util.formatDate
 
 @Composable
-fun PerformanceDetail(performance: Performance) {
+fun PerformanceDetail(
+    performance: Performance,
+    draftNotes: Map<String, String>,
+    onDraftNoteChange: (entryId: String, notes: String) -> Unit
+) {
     LazyColumn(modifier = Modifier.padding(16.dp)) {
         item {
             Text(
@@ -65,7 +69,9 @@ fun PerformanceDetail(performance: Performance) {
             items(performance.setList.sortedBy { it.order }) { entry ->
                 SetListEntryRow(
                     entry = entry,
-                    performanceConductorId = performance.conductor?.id
+                    performanceConductorId = performance.conductor?.id,
+                    draftNotes = draftNotes[entry.id] ?: "",
+                    onNotesChange = { onDraftNoteChange(entry.id, it) }
                 )
             }
         }
@@ -103,7 +109,11 @@ private val previewPerformance = Performance(
 @Composable
 fun PerformanceDetailPreview() {
     ConcertTrackerTheme {
-        PerformanceDetail(performance = previewPerformance)
+        PerformanceDetail(
+            performance = previewPerformance,
+            draftNotes = mapOf("entry-1" to "Exceptional performance of the second piano concerto."),
+            onDraftNoteChange = { _, _ -> }
+        )
     }
 }
 // endregion

@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.chaddy50.concerttracker.data.entity.Performance
 import com.chaddy50.concerttracker.data.repository.PerformancesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -20,16 +21,23 @@ class PerformancesViewModel @Inject constructor(
         private set
 
     init {
+        viewModelScope.launch {
+            repository.performances
+                .drop(1)
+                .collect { performances ->
+                    uiState = PerformancesUiState.Success(performances)
+                }
+        }
         loadPerformances()
     }
 
     fun loadPerformances() {
         viewModelScope.launch {
             uiState = PerformancesUiState.Loading
-            uiState = try {
-                PerformancesUiState.Success(repository.getPerformances())
+            try {
+                repository.getPerformances()
             } catch (e: Exception) {
-                PerformancesUiState.Error(e.message ?: "Unknown error")
+                uiState = PerformancesUiState.Error(e.message ?: "Unknown error")
             }
         }
     }
