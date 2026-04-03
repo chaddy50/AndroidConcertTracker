@@ -33,9 +33,11 @@ import com.chaddy50.concerttracker.util.formatDate
 @Composable
 fun PerformanceEditForm(
     draftDate: Long?,
+    draftVenueName: String?,
     draftStatus: PerformanceStatus?,
     onDraftDateChange: (Long) -> Unit,
     onDraftStatusChange: (PerformanceStatus) -> Unit,
+    onVenueClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showDatePicker by remember { mutableStateOf(false) }
@@ -57,12 +59,16 @@ fun PerformanceEditForm(
             interactionSource = dateInteractionSource,
             modifier = Modifier.fillMaxWidth()
         )
+        val venueInteractionSource = remember { MutableInteractionSource() }
+        val isVenuePressed by venueInteractionSource.collectIsPressedAsState()
+        if (isVenuePressed) onVenueClick()
+
         OutlinedTextField(
-            value = "",
+            value = draftVenueName ?: "",
             onValueChange = {},
             readOnly = true,
-            enabled = false,
             label = { Text(stringResource(R.string.performance_form_venue_label)) },
+            interactionSource = venueInteractionSource,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 8.dp)
@@ -104,9 +110,11 @@ fun PerformanceEditFormPreview() {
     ConcertTrackerTheme {
         PerformanceEditForm(
             draftDate = 1731700200000L,
+            draftVenueName = "Symphony Hall",
             draftStatus = PerformanceStatus.ATTENDED,
             onDraftDateChange = {},
-            onDraftStatusChange = {}
+            onDraftStatusChange = {},
+            onVenueClick = {}
         )
     }
 }
@@ -117,9 +125,11 @@ fun PerformanceEditFormEmptyPreview() {
     ConcertTrackerTheme {
         PerformanceEditForm(
             draftDate = null,
+            draftVenueName = null,
             draftStatus = PerformanceStatus.UPCOMING,
             onDraftDateChange = {},
-            onDraftStatusChange = {}
+            onDraftStatusChange = {},
+            onVenueClick = {}
         )
     }
 }

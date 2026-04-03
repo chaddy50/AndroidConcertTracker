@@ -37,4 +37,10 @@
     <!-- Top bar -->
     <string name="top_bar_menu_content_description">Menu</string>
     <string name="top_bar_menu_item_settings">Settings</string>
+
+    <!-- Create venue screen -->
+    <string name="create_venue_title">Choose Venue</string>
+    <string name="create_venue_search_label">Search</string>
+    <string name="create_venue_search_button">Search</string>
+    <string name="create_venue_empty_results">No venues found</string>
 </resources>

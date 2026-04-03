@@ -41,11 +41,17 @@ class PerformanceEditViewModel @Inject constructor(
     )
         private set
 
+    var draftVenueId: String? by mutableStateOf(null)
+        private set
+
+    var draftVenueName: String? by mutableStateOf(null)
+        private set
+
     var isSaving: Boolean by mutableStateOf(false)
         private set
 
     val canSave: Boolean
-        get() = draftDate != null
+        get() = draftDate != null && draftVenueId != null
 
     private var loadedPerformance: Performance? = null
 
@@ -61,6 +67,8 @@ class PerformanceEditViewModel @Inject constructor(
                 loadedPerformance = performance
                 draftDate = isoToEpochMillis(performance.date)
                 draftStatus = performance.status
+                draftVenueId = performance.venue.id
+                draftVenueName = performance.venue.name
                 uiState = PerformanceEditUiState.Ready
             } catch (e: Exception) {
                 uiState = PerformanceEditUiState.Error(e.message ?: "Unknown error")
@@ -76,9 +84,15 @@ class PerformanceEditViewModel @Inject constructor(
         draftStatus = status
     }
 
+    fun updateDraftVenue(venueId: String, venueName: String) {
+        draftVenueId = venueId
+        draftVenueName = venueName
+    }
+
     fun savePerformance(onSaved: () -> Unit) {
         val date = draftDate?.let { epochMillisToIso(it) } ?: return
         val status = draftStatus ?: return
+        val venueId = draftVenueId ?: return
 
         viewModelScope.launch {
             isSaving = true
@@ -87,7 +101,7 @@ class PerformanceEditViewModel @Inject constructor(
                     performancesRepository.createPerformance(
                         PerformanceRequest(
                             date = date,
-                            venueId = "",  // stub until venue picker is built (Step 8)
+                            venueId = venueId,
                             performerIds = emptyList(),
                             conductorId = null,
                             status = status
@@ -99,7 +113,7 @@ class PerformanceEditViewModel @Inject constructor(
                         performanceId!!,
                         PerformanceRequest(
                             date = date,
-                            venueId = performance.venue.id,
+                            venueId = venueId,
                             performerIds = performance.performers.map { it.id },
                             conductorId = performance.conductor?.id,
                             status = status

@@ -4,6 +4,8 @@ import com.chaddy50.concerttracker.data.entity.Performance
 import com.chaddy50.concerttracker.data.entity.PerformanceRequest
 import com.chaddy50.concerttracker.data.entity.SetListEntry
 import com.chaddy50.concerttracker.data.entity.SetListEntryRequest
+import com.chaddy50.concerttracker.data.entity.Venue
+import com.chaddy50.concerttracker.data.entity.VenueRequest
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
@@ -25,4 +27,7 @@ interface ConcertTrackerApiService {
 
     @PUT("set-list-entries/{id}")
     suspend fun updateSetListEntry(@Path("id") id: String, @Body request: SetListEntryRequest): SetListEntry
+
+    @POST("venues")
+    suspend fun createVenue(@Body request: VenueRequest): Venue
 }

@@ -13,6 +13,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -22,8 +23,17 @@ import androidx.hilt.navigation.compose.hiltViewModel
 fun PerformanceEditScreen(
     onSaved: () -> Unit,
     onCancel: () -> Unit,
+    onNavigateToCreateVenue: () -> Unit,
+    pendingVenueId: String?,
+    pendingVenueName: String?,
     viewModel: PerformanceEditViewModel = hiltViewModel()
 ) {
+    LaunchedEffect(pendingVenueId, pendingVenueName) {
+        if (pendingVenueId != null && pendingVenueName != null) {
+            viewModel.updateDraftVenue(pendingVenueId, pendingVenueName)
+        }
+    }
+
     when (val state = viewModel.uiState) {
         is PerformanceEditUiState.Loading -> {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -47,9 +57,11 @@ fun PerformanceEditScreen(
             Column(modifier = Modifier.fillMaxSize()) {
                 PerformanceEditForm(
                     draftDate = viewModel.draftDate,
+                    draftVenueName = viewModel.draftVenueName,
                     draftStatus = viewModel.draftStatus,
                     onDraftDateChange = viewModel::updateDraftDate,
                     onDraftStatusChange = viewModel::updateDraftStatus,
+                    onVenueClick = onNavigateToCreateVenue,
                     modifier = Modifier.weight(1f)
                 )
                 Row(

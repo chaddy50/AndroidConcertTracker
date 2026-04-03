@@ -21,7 +21,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chaddy50.concerttracker.R
+import com.chaddy50.concerttracker.ui.createVenue.CreateVenueScreen
 import com.chaddy50.concerttracker.ui.performanceDetail.PerformanceDetailScreen
 import com.chaddy50.concerttracker.ui.performanceEdit.PerformanceEditScreen
 import com.chaddy50.concerttracker.ui.performances.PerformancesScreen
@@ -40,6 +42,9 @@ data class PerformanceDetail(val id: String)
 @Serializable
 data class PerformanceEdit(val id: String?)
 
+@Serializable
+object CreateVenue
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppNavigation() {
@@ -57,6 +62,7 @@ fun AppNavigation() {
             if (isNew) stringResource(R.string.performance_form_new_title)
             else stringResource(R.string.performance_form_edit_title)
         }
+        currentDestination?.hasRoute<CreateVenue>() == true -> stringResource(R.string.create_venue_title)
         else -> ""
     }
 
@@ -114,10 +120,33 @@ fun AppNavigation() {
             composable<PerformanceDetail> {
                 PerformanceDetailScreen()
             }
-            composable<PerformanceEdit> {
+            composable<PerformanceEdit> { backStackEntry ->
+                // NavBackStackEntry.savedStateHandle is the correct place to observe results
+                // returned by child destinations — it is separate from the ViewModel's SavedStateHandle.
+                val pendingVenueId by backStackEntry.savedStateHandle
+                    .getStateFlow<String?>("selectedVenueId", null)
+                    .collectAsStateWithLifecycle()
+                val pendingVenueName by backStackEntry.savedStateHandle
+                    .getStateFlow<String?>("selectedVenueName", null)
+                    .collectAsStateWithLifecycle()
+
                 PerformanceEditScreen(
                     onSaved = { navController.popBackStack() },
-                    onCancel = { navController.popBackStack() }
+                    onCancel = { navController.popBackStack() },
+                    onNavigateToCreateVenue = { navController.navigate(CreateVenue) },
+                    pendingVenueId = pendingVenueId,
+                    pendingVenueName = pendingVenueName
+                )
+            }
+            composable<CreateVenue> {
+                CreateVenueScreen(
+                    onVenueCreated = { venue ->
+                        navController.previousBackStackEntry?.savedStateHandle?.apply {
+                            set("selectedVenueId", venue.id)
+                            set("selectedVenueName", venue.name)
+                        }
+                        navController.popBackStack()
+                    }
                 )
             }
         }

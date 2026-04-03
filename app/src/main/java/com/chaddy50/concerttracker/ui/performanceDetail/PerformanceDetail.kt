@@ -85,7 +85,7 @@ private val previewOrchestra = Performer(id = "orchestra-1", name = "London Symp
 private val previewPerformance = Performance(
     id = "perf-1",
     date = "2024-11-15T19:30:00.000Z",
-    venue = Venue(id = "venue-1", name = "Royal Albert Hall", osmId = "123456"),
+    venue = Venue(id = "venue-1", name = "Royal Albert Hall", osmId = "123456", osmType = "way"),
     performers = listOf(previewOrchestra),
     conductor = previewConductor,
     status = PerformanceStatus.ATTENDED,
