@@ -9,3 +9,10 @@ data class Performer(
     val name: String,
     val type: PerformerType
 )
+
+@Serializable
+data class PerformerRequest(
+    val id: String,
+    val name: String,
+    val type: PerformerType
+)

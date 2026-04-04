@@ -24,13 +24,32 @@ fun PerformanceEditScreen(
     onSaved: () -> Unit,
     onCancel: () -> Unit,
     onNavigateToCreateVenue: () -> Unit,
+    onNavigateToSearchPerformer: () -> Unit,
+    onNavigateToSearchConductor: () -> Unit,
     pendingVenueId: String?,
     pendingVenueName: String?,
+    pendingConductorId: String?,
+    pendingConductorName: String?,
+    pendingPerformerId: String?,
+    pendingPerformerName: String?,
+    pendingPerformerType: String?,
     viewModel: PerformanceEditViewModel = hiltViewModel()
 ) {
     LaunchedEffect(pendingVenueId, pendingVenueName) {
         if (pendingVenueId != null && pendingVenueName != null) {
             viewModel.updateDraftVenue(pendingVenueId, pendingVenueName)
+        }
+    }
+
+    LaunchedEffect(pendingConductorId, pendingConductorName) {
+        if (pendingConductorId != null && pendingConductorName != null) {
+            viewModel.updateDraftConductor(pendingConductorId, pendingConductorName)
+        }
+    }
+
+    LaunchedEffect(pendingPerformerId, pendingPerformerName) {
+        if (pendingPerformerId != null && pendingPerformerName != null) {
+            viewModel.addDraftPerformer(pendingPerformerId, pendingPerformerName, pendingPerformerType)
         }
     }
 
@@ -58,10 +77,15 @@ fun PerformanceEditScreen(
                 PerformanceEditForm(
                     draftDate = viewModel.draftDate,
                     draftVenueName = viewModel.draftVenueName,
+                    draftConductorName = viewModel.draftConductorName,
+                    draftPerformers = viewModel.draftPerformers,
                     draftStatus = viewModel.draftStatus,
                     onDraftDateChange = viewModel::updateDraftDate,
                     onDraftStatusChange = viewModel::updateDraftStatus,
                     onVenueClick = onNavigateToCreateVenue,
+                    onConductorClick = onNavigateToSearchConductor,
+                    onAddPerformerClick = onNavigateToSearchPerformer,
+                    onRemovePerformer = viewModel::removeDraftPerformer,
                     modifier = Modifier.weight(1f)
                 )
                 Row(
@@ -84,6 +108,13 @@ fun PerformanceEditScreen(
                     ) {
                         Text("Save")
                     }
+                }
+                if (viewModel.saveError != null) {
+                    Text(
+                        text = viewModel.saveError!!,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                    )
                 }
             }
         }

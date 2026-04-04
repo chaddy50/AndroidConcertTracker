@@ -23,7 +23,9 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chaddy50.concerttracker.R
+import com.chaddy50.concerttracker.data.enum.MusicBrainzEntityType
 import com.chaddy50.concerttracker.ui.createVenue.CreateVenueScreen
+import com.chaddy50.concerttracker.ui.musicBrainzSearch.MusicBrainzSearchScreen
 import com.chaddy50.concerttracker.ui.performanceDetail.PerformanceDetailScreen
 import com.chaddy50.concerttracker.ui.performanceEdit.PerformanceEditScreen
 import com.chaddy50.concerttracker.ui.performances.PerformancesScreen
@@ -45,6 +47,9 @@ data class PerformanceEdit(val id: String?)
 @Serializable
 object CreateVenue
 
+@Serializable
+data class MusicBrainzSearch(val entityType: MusicBrainzEntityType)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppNavigation() {
@@ -63,6 +68,7 @@ fun AppNavigation() {
             else stringResource(R.string.performance_form_edit_title)
         }
         currentDestination?.hasRoute<CreateVenue>() == true -> stringResource(R.string.create_venue_title)
+        currentDestination?.hasRoute<MusicBrainzSearch>() == true -> stringResource(R.string.musicbrainz_search_title)
         else -> ""
     }
 
@@ -129,13 +135,35 @@ fun AppNavigation() {
                 val pendingVenueName by backStackEntry.savedStateHandle
                     .getStateFlow<String?>("selectedVenueName", null)
                     .collectAsStateWithLifecycle()
+                val pendingConductorId by backStackEntry.savedStateHandle
+                    .getStateFlow<String?>("selectedConductorId", null)
+                    .collectAsStateWithLifecycle()
+                val pendingConductorName by backStackEntry.savedStateHandle
+                    .getStateFlow<String?>("selectedConductorName", null)
+                    .collectAsStateWithLifecycle()
+                val pendingPerformerId by backStackEntry.savedStateHandle
+                    .getStateFlow<String?>("selectedPerformerId", null)
+                    .collectAsStateWithLifecycle()
+                val pendingPerformerName by backStackEntry.savedStateHandle
+                    .getStateFlow<String?>("selectedPerformerName", null)
+                    .collectAsStateWithLifecycle()
+                val pendingPerformerType by backStackEntry.savedStateHandle
+                    .getStateFlow<String?>("selectedPerformerType", null)
+                    .collectAsStateWithLifecycle()
 
                 PerformanceEditScreen(
                     onSaved = { navController.popBackStack() },
                     onCancel = { navController.popBackStack() },
                     onNavigateToCreateVenue = { navController.navigate(CreateVenue) },
+                    onNavigateToSearchPerformer = { navController.navigate(MusicBrainzSearch(MusicBrainzEntityType.PERFORMER)) },
+                    onNavigateToSearchConductor = { navController.navigate(MusicBrainzSearch(MusicBrainzEntityType.CONDUCTOR)) },
                     pendingVenueId = pendingVenueId,
-                    pendingVenueName = pendingVenueName
+                    pendingVenueName = pendingVenueName,
+                    pendingConductorId = pendingConductorId,
+                    pendingConductorName = pendingConductorName,
+                    pendingPerformerId = pendingPerformerId,
+                    pendingPerformerName = pendingPerformerName,
+                    pendingPerformerType = pendingPerformerType
                 )
             }
             composable<CreateVenue> {
@@ -144,6 +172,27 @@ fun AppNavigation() {
                         navController.previousBackStackEntry?.savedStateHandle?.apply {
                             set("selectedVenueId", venue.id)
                             set("selectedVenueName", venue.name)
+                        }
+                        navController.popBackStack()
+                    }
+                )
+            }
+            composable<MusicBrainzSearch> { backStackEntry ->
+                val entityType = backStackEntry.toRoute<MusicBrainzSearch>().entityType
+                MusicBrainzSearchScreen(
+                    onResultSelected = { result ->
+                        val (idKey, nameKey) = when (entityType) {
+                            MusicBrainzEntityType.PERFORMER -> "selectedPerformerId" to "selectedPerformerName"
+                            MusicBrainzEntityType.CONDUCTOR -> "selectedConductorId" to "selectedConductorName"
+                            MusicBrainzEntityType.COMPOSER -> "selectedComposerId" to "selectedComposerName"
+                            MusicBrainzEntityType.WORK -> "selectedWorkId" to "selectedWorkName"
+                        }
+                        navController.previousBackStackEntry?.savedStateHandle?.apply {
+                            set(idKey, result.id)
+                            set(nameKey, result.name)
+                            if (entityType == MusicBrainzEntityType.PERFORMER) {
+                                set("selectedPerformerType", result.performerType?.name)
+                            }
                         }
                         navController.popBackStack()
                     }

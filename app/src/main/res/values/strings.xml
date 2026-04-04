@@ -43,4 +43,14 @@
     <string name="create_venue_search_label">Search</string>
     <string name="create_venue_search_button">Search</string>
     <string name="create_venue_empty_results">No venues found</string>
+
+    <!-- MusicBrainz search screen -->
+    <string name="musicbrainz_search_title">Search</string>
+    <string name="musicbrainz_search_label">Search</string>
+    <string name="musicbrainz_search_empty_results">No results found</string>
+
+    <!-- Performance form field labels -->
+    <string name="performance_form_conductor_label">Conductor</string>
+    <string name="performance_form_performers_label">Performers</string>
+    <string name="performance_form_add_performer">Add Performer</string>
 </resources>

@@ -1,5 +1,6 @@
 package com.chaddy50.concerttracker.dependencyInjection
 
+import com.chaddy50.concerttracker.data.api.MusicBrainzApiService
 import com.chaddy50.concerttracker.data.api.NominatimApiService
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import dagger.Module
@@ -60,5 +61,31 @@ object NetworkModule {
             .addConverterFactory(json.asConverterFactory(contentType))
             .build()
             .create(NominatimApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    @MusicBrainzClient
+    fun provideMusicBrainzOkHttpClient(): OkHttpClient {
+        return OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                val request = chain.request().newBuilder()
+                    .header("User-Agent", "ConcertTracker Android App")
+                    .build()
+                chain.proceed(request)
+            }
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideMusicBrainzApiService(@MusicBrainzClient client: OkHttpClient, json: Json): MusicBrainzApiService {
+        val contentType = "application/json".toMediaType()
+        return Retrofit.Builder()
+            .baseUrl("https://musicbrainz.org/ws/2/")
+            .client(client)
+            .addConverterFactory(json.asConverterFactory(contentType))
+            .build()
+            .create(MusicBrainzApiService::class.java)
     }
 }

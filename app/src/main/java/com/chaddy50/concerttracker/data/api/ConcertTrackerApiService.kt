@@ -2,6 +2,8 @@ package com.chaddy50.concerttracker.data.api
 
 import com.chaddy50.concerttracker.data.entity.Performance
 import com.chaddy50.concerttracker.data.entity.PerformanceRequest
+import com.chaddy50.concerttracker.data.entity.Performer
+import com.chaddy50.concerttracker.data.entity.PerformerRequest
 import com.chaddy50.concerttracker.data.entity.SetListEntry
 import com.chaddy50.concerttracker.data.entity.SetListEntryRequest
 import com.chaddy50.concerttracker.data.entity.Venue
@@ -30,4 +32,10 @@ interface ConcertTrackerApiService {
 
     @POST("venues")
     suspend fun createVenue(@Body request: VenueRequest): Venue
+
+    @POST("performers")
+    suspend fun createPerformer(@Body request: PerformerRequest): Performer
+
+    @GET("performers/{id}")
+    suspend fun getPerformer(@Path("id") id: String): Performer
 }
