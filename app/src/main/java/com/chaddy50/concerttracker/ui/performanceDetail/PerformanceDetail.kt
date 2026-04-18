@@ -23,6 +23,8 @@ import com.chaddy50.concerttracker.ui.common.SectionHeader
 import com.chaddy50.concerttracker.ui.theme.ConcertTrackerTheme
 import com.chaddy50.concerttracker.util.formatDate
 
+private val GROUP_TYPES = setOf(PerformerType.ORCHESTRA, PerformerType.ENSEMBLE, PerformerType.CHORUS)
+
 @Composable
 fun PerformanceDetail(
     performance: Performance,
@@ -48,17 +50,26 @@ fun PerformanceDetail(
             )
         }
 
-        if (performance.performers.isNotEmpty()) {
-            item {
-                SectionHeader(title = "Performers")
-            }
-            items(performance.performers) { performer ->
+        val hasPerformers = performance.performers.isNotEmpty() || performance.conductor != null
+        if (hasPerformers) {
+            item { SectionHeader(title = "Performers") }
+            val groups = performance.performers.filter { it.type in GROUP_TYPES }
+            val soloists = performance.performers.filter { it.type !in GROUP_TYPES }
+            items(groups) { performer ->
                 PerformerRow(performer.name)
             }
             if (performance.conductor != null) {
                 item {
                     PerformerRow("${performance.conductor.name}, conductor")
                 }
+            }
+            items(soloists) { performer ->
+                val label = if (performer.specialty != null) {
+                    "${performer.name}, ${performer.specialty}"
+                } else {
+                    performer.name
+                }
+                PerformerRow(label)
             }
         }
 
@@ -80,7 +91,7 @@ fun PerformanceDetail(
 
 // region Previews
 private val previewConductor = Performer(id = "conductor-1", name = "Simon Rattle", type = PerformerType.CONDUCTOR)
-private val previewSoloist = Performer(id = "soloist-1", name = "Martha Argerich", type = PerformerType.SOLO)
+private val previewSoloist = Performer(id = "soloist-1", name = "Martha Argerich", type = PerformerType.SOLO, specialty = "pianist")
 private val previewOrchestra = Performer(id = "orchestra-1", name = "London Symphony Orchestra", type = PerformerType.ORCHESTRA)
 private val previewPerformance = Performance(
     id = "perf-1",

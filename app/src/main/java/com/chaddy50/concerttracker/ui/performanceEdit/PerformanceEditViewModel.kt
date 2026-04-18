@@ -109,14 +109,14 @@ class PerformanceEditViewModel @Inject constructor(
         draftVenueName = venueName
     }
 
-    fun addDraftPerformer(performerId: String, performerName: String, performerTypeName: String?) {
+    fun addDraftPerformer(performerId: String, performerName: String, performerTypeName: String?, specialty: String?) {
         if (draftPerformers.any { it.first == performerId }) return
         val type = performerTypeName?.let { runCatching { PerformerType.valueOf(it) }.getOrNull() }
             ?: PerformerType.OTHER
         viewModelScope.launch {
             try {
                 val performer = performersRepository.createPerformer(
-                    PerformerRequest(performerId, performerName, type)
+                    PerformerRequest(performerId, performerName, type, specialty)
                 )
                 draftPerformers.add(performer.id to performer.name)
             } catch (e: Exception) {

@@ -150,6 +150,9 @@ fun AppNavigation() {
                 val pendingPerformerType by backStackEntry.savedStateHandle
                     .getStateFlow<String?>("selectedPerformerType", null)
                     .collectAsStateWithLifecycle()
+                val pendingPerformerSpecialty by backStackEntry.savedStateHandle
+                    .getStateFlow<String?>("selectedPerformerSpecialty", null)
+                    .collectAsStateWithLifecycle()
 
                 PerformanceEditScreen(
                     onSaved = { navController.popBackStack() },
@@ -163,7 +166,8 @@ fun AppNavigation() {
                     pendingConductorName = pendingConductorName,
                     pendingPerformerId = pendingPerformerId,
                     pendingPerformerName = pendingPerformerName,
-                    pendingPerformerType = pendingPerformerType
+                    pendingPerformerType = pendingPerformerType,
+                    pendingPerformerSpecialty = pendingPerformerSpecialty
                 )
             }
             composable<CreateVenue> {
@@ -192,6 +196,7 @@ fun AppNavigation() {
                             set(nameKey, result.name)
                             if (entityType == MusicBrainzEntityType.PERFORMER) {
                                 set("selectedPerformerType", result.performerType?.name)
+                                set("selectedPerformerSpecialty", result.description)
                             }
                         }
                         navController.popBackStack()

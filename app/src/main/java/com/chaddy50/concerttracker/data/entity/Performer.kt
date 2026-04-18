@@ -7,12 +7,14 @@ import kotlinx.serialization.Serializable
 data class Performer(
     val id: String,
     val name: String,
-    val type: PerformerType
+    val type: PerformerType,
+    val specialty: String? = null
 )
 
 @Serializable
 data class PerformerRequest(
     val id: String,
     val name: String,
-    val type: PerformerType
+    val type: PerformerType,
+    val specialty: String? = null
 )

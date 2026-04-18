@@ -33,6 +33,7 @@ fun PerformanceEditScreen(
     pendingPerformerId: String?,
     pendingPerformerName: String?,
     pendingPerformerType: String?,
+    pendingPerformerSpecialty: String?,
     viewModel: PerformanceEditViewModel = hiltViewModel()
 ) {
     LaunchedEffect(pendingVenueId, pendingVenueName) {
@@ -49,7 +50,7 @@ fun PerformanceEditScreen(
 
     LaunchedEffect(pendingPerformerId, pendingPerformerName) {
         if (pendingPerformerId != null && pendingPerformerName != null) {
-            viewModel.addDraftPerformer(pendingPerformerId, pendingPerformerName, pendingPerformerType)
+            viewModel.addDraftPerformer(pendingPerformerId, pendingPerformerName, pendingPerformerType, pendingPerformerSpecialty)
         }
     }
 

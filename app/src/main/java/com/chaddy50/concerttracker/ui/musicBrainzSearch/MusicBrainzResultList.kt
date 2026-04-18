@@ -22,7 +22,15 @@ fun MusicBrainzResultList(
         items(results) { result ->
             ListItem(
                 headlineContent = { Text(result.name) },
-                supportingContent = result.description?.let { { Text(it) } },
+                supportingContent = {
+                    val description = result.description
+                    val type = result.performerType?.name
+                    if (description != null && type != null) {
+                        Text("$description")
+                    } else {
+                        Text(description ?: type?.let { "($it)" } ?: "")
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { onResultClick(result) }
