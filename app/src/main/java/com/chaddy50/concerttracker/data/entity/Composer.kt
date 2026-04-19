@@ -8,3 +8,9 @@ data class Composer(
     val name: String,
     val shortName: String? = null
 )
+
+@Serializable
+data class ComposerRequest(
+    val openOpusId: String,
+    val name: String
+)

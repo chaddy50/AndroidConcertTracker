@@ -8,3 +8,10 @@ data class Work(
     val title: String,
     val composers: List<Composer> = emptyList()
 )
+
+@Serializable
+data class WorkRequest(
+    val openOpusId: String,
+    val title: String,
+    val composerIds: List<String>
+)

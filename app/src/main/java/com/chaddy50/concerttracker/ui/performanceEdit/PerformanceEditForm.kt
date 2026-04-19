@@ -10,11 +10,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -30,6 +32,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.chaddy50.concerttracker.R
+import com.chaddy50.concerttracker.data.entity.SetListEntry
 import com.chaddy50.concerttracker.data.enum.PerformanceStatus
 import com.chaddy50.concerttracker.ui.theme.ConcertTrackerTheme
 import com.chaddy50.concerttracker.util.epochMillisToIso
@@ -43,12 +46,16 @@ fun PerformanceEditForm(
     draftConductorName: String?,
     draftPerformers: List<Pair<String, String>>,
     draftStatus: PerformanceStatus?,
+    isCreateMode: Boolean,
+    currentSetList: List<SetListEntry>,
     onDraftDateChange: (Long) -> Unit,
     onDraftStatusChange: (PerformanceStatus) -> Unit,
     onVenueClick: () -> Unit,
     onConductorClick: () -> Unit,
     onAddPerformerClick: () -> Unit,
     onRemovePerformer: (String) -> Unit,
+    onAddSetListEntryClick: () -> Unit,
+    onEditSetListEntryClick: (entryId: String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showDatePicker by remember { mutableStateOf(false) }
@@ -70,6 +77,7 @@ fun PerformanceEditForm(
             interactionSource = dateInteractionSource,
             modifier = Modifier.fillMaxWidth()
         )
+
         val venueInteractionSource = remember { MutableInteractionSource() }
         val isVenuePressed by venueInteractionSource.collectIsPressedAsState()
         if (isVenuePressed) onVenueClick()
@@ -84,6 +92,13 @@ fun PerformanceEditForm(
                 .fillMaxWidth()
                 .padding(top = 8.dp)
         )
+
+        StatusDropdown(
+            selectedStatus = draftStatus ?: PerformanceStatus.UPCOMING,
+            onStatusSelected = onDraftStatusChange,
+            modifier = Modifier.padding(top = 8.dp)
+        )
+
         val conductorInteractionSource = remember { MutableInteractionSource() }
         val isConductorPressed by conductorInteractionSource.collectIsPressedAsState()
         if (isConductorPressed) onConductorClick()
@@ -124,11 +139,41 @@ fun PerformanceEditForm(
             Text(stringResource(R.string.performance_form_add_performer))
         }
 
-        StatusDropdown(
-            selectedStatus = draftStatus ?: PerformanceStatus.UPCOMING,
-            onStatusSelected = onDraftStatusChange,
-            modifier = Modifier.padding(top = 8.dp)
+        Text(
+            text = "Set List",
+            modifier = Modifier.padding(top = 16.dp, bottom = 4.dp)
         )
+        if (isCreateMode) {
+            Text(
+                text = "Save performance first to manage set list entries",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.secondary
+            )
+        } else {
+            currentSetList.forEach { entry ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "${entry.order}. ${entry.work.title}",
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(onClick = { onEditSetListEntryClick(entry.id) }) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit set list entry"
+                        )
+                    }
+                }
+            }
+            TextButton(
+                onClick = onAddSetListEntryClick,
+                modifier = Modifier.padding(top = 4.dp)
+            ) {
+                Text("Add Entry")
+            }
+        }
     }
 
     if (showDatePicker) {
@@ -165,12 +210,16 @@ fun PerformanceEditFormPreview() {
             draftConductorName = "Andris Nelsons",
             draftPerformers = listOf("id1" to "Boston Symphony Orchestra"),
             draftStatus = PerformanceStatus.ATTENDED,
+            isCreateMode = false,
+            currentSetList = emptyList(),
             onDraftDateChange = {},
             onDraftStatusChange = {},
             onVenueClick = {},
             onConductorClick = {},
             onAddPerformerClick = {},
-            onRemovePerformer = {}
+            onRemovePerformer = {},
+            onAddSetListEntryClick = {},
+            onEditSetListEntryClick = {}
         )
     }
 }
@@ -185,12 +234,16 @@ fun PerformanceEditFormEmptyPreview() {
             draftConductorName = null,
             draftPerformers = emptyList(),
             draftStatus = PerformanceStatus.UPCOMING,
+            isCreateMode = true,
+            currentSetList = emptyList(),
             onDraftDateChange = {},
             onDraftStatusChange = {},
             onVenueClick = {},
             onConductorClick = {},
             onAddPerformerClick = {},
-            onRemovePerformer = {}
+            onRemovePerformer = {},
+            onAddSetListEntryClick = {},
+            onEditSetListEntryClick = {}
         )
     }
 }

@@ -11,6 +11,7 @@ import androidx.navigation.toRoute
 import com.chaddy50.concerttracker.data.entity.Performance
 import com.chaddy50.concerttracker.data.entity.PerformanceRequest
 import com.chaddy50.concerttracker.data.entity.PerformerRequest
+import com.chaddy50.concerttracker.data.entity.SetListEntry
 import com.chaddy50.concerttracker.data.enum.PerformanceStatus
 import com.chaddy50.concerttracker.data.enum.PerformerType
 import com.chaddy50.concerttracker.data.repository.PerformancesRepository
@@ -60,6 +61,8 @@ class PerformanceEditViewModel @Inject constructor(
 
     val draftPerformers = mutableStateListOf<Pair<String, String>>()
 
+    val currentSetList = mutableStateListOf<SetListEntry>()
+
     var isSaving: Boolean by mutableStateOf(false)
         private set
 
@@ -89,6 +92,8 @@ class PerformanceEditViewModel @Inject constructor(
                 draftConductorName = performance.conductor?.name
                 draftPerformers.clear()
                 draftPerformers.addAll(performance.performers.map { it.id to it.name })
+                currentSetList.clear()
+                currentSetList.addAll(performance.setList.sortedBy { it.order })
                 uiState = PerformanceEditUiState.Ready
             } catch (e: Exception) {
                 uiState = PerformanceEditUiState.Error(e.message ?: "Unknown error")
@@ -141,6 +146,19 @@ class PerformanceEditViewModel @Inject constructor(
 
     fun removeDraftPerformer(performerId: String) {
         draftPerformers.removeAll { it.first == performerId }
+    }
+
+    fun refreshSetList() {
+        val id = performanceId ?: return
+        viewModelScope.launch {
+            try {
+                val performance = performancesRepository.getPerformance(id)
+                currentSetList.clear()
+                currentSetList.addAll(performance.setList.sortedBy { it.order })
+            } catch (exception: Exception) {
+                // Silently ignore — the set list display may be stale but draft fields are unaffected
+            }
+        }
     }
 
     fun savePerformance(onSaved: () -> Unit) {

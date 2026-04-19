@@ -29,26 +29,9 @@ import com.chaddy50.concerttracker.ui.musicBrainzSearch.MusicBrainzSearchScreen
 import com.chaddy50.concerttracker.ui.performanceDetail.PerformanceDetailScreen
 import com.chaddy50.concerttracker.ui.performanceEdit.PerformanceEditScreen
 import com.chaddy50.concerttracker.ui.performances.PerformancesScreen
+import com.chaddy50.concerttracker.ui.openOpusWorkSearch.OpenOpusWorkSearchScreen
+import com.chaddy50.concerttracker.ui.setListEntryEdit.SetListEntryEditScreen
 import com.chaddy50.concerttracker.ui.settings.SettingsScreen
-import kotlinx.serialization.Serializable
-
-@Serializable
-object Performances
-
-@Serializable
-object Settings
-
-@Serializable
-data class PerformanceDetail(val id: String)
-
-@Serializable
-data class PerformanceEdit(val id: String?)
-
-@Serializable
-object CreateVenue
-
-@Serializable
-data class MusicBrainzSearch(val entityType: MusicBrainzEntityType)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,6 +52,12 @@ fun AppNavigation() {
         }
         currentDestination?.hasRoute<CreateVenue>() == true -> stringResource(R.string.create_venue_title)
         currentDestination?.hasRoute<MusicBrainzSearch>() == true -> stringResource(R.string.musicbrainz_search_title)
+        currentDestination?.hasRoute<OpenOpusWorkSearch>() == true -> stringResource(R.string.open_opus_work_search_title)
+        currentDestination?.hasRoute<SetListEntryEdit>() == true -> {
+            val isNew = currentBackStackEntry?.toRoute<SetListEntryEdit>()?.entryId == null
+            if (isNew) stringResource(R.string.set_list_entry_form_add_title)
+            else stringResource(R.string.set_list_entry_form_edit_title)
+        }
         else -> ""
     }
 
@@ -129,6 +118,9 @@ fun AppNavigation() {
             composable<PerformanceEdit> { backStackEntry ->
                 // NavBackStackEntry.savedStateHandle is the correct place to observe results
                 // returned by child destinations — it is separate from the ViewModel's SavedStateHandle.
+                val shouldReload by backStackEntry.savedStateHandle
+                    .getStateFlow<Boolean>("shouldReload", false)
+                    .collectAsStateWithLifecycle()
                 val pendingVenueId by backStackEntry.savedStateHandle
                     .getStateFlow<String?>("selectedVenueId", null)
                     .collectAsStateWithLifecycle()
@@ -153,6 +145,7 @@ fun AppNavigation() {
                 val pendingPerformerSpecialty by backStackEntry.savedStateHandle
                     .getStateFlow<String?>("selectedPerformerSpecialty", null)
                     .collectAsStateWithLifecycle()
+                val performanceId = backStackEntry.toRoute<PerformanceEdit>().id
 
                 PerformanceEditScreen(
                     onSaved = { navController.popBackStack() },
@@ -160,6 +153,14 @@ fun AppNavigation() {
                     onNavigateToCreateVenue = { navController.navigate(CreateVenue) },
                     onNavigateToSearchPerformer = { navController.navigate(MusicBrainzSearch(MusicBrainzEntityType.PERFORMER)) },
                     onNavigateToSearchConductor = { navController.navigate(MusicBrainzSearch(MusicBrainzEntityType.CONDUCTOR)) },
+                    shouldReload = shouldReload,
+                    onReloaded = { backStackEntry.savedStateHandle["shouldReload"] = false },
+                    onNavigateToAddSetListEntry = {
+                        navController.navigate(SetListEntryEdit(performanceId = performanceId!!, entryId = null))
+                    },
+                    onNavigateToEditSetListEntry = { entryId ->
+                        navController.navigate(SetListEntryEdit(performanceId = performanceId!!, entryId = entryId))
+                    },
                     pendingVenueId = pendingVenueId,
                     pendingVenueName = pendingVenueName,
                     pendingConductorId = pendingConductorId,
@@ -189,7 +190,6 @@ fun AppNavigation() {
                             MusicBrainzEntityType.PERFORMER -> "selectedPerformerId" to "selectedPerformerName"
                             MusicBrainzEntityType.CONDUCTOR -> "selectedConductorId" to "selectedConductorName"
                             MusicBrainzEntityType.COMPOSER -> "selectedComposerId" to "selectedComposerName"
-                            MusicBrainzEntityType.WORK -> "selectedWorkId" to "selectedWorkName"
                         }
                         navController.previousBackStackEntry?.savedStateHandle?.apply {
                             set(idKey, result.id)
@@ -201,6 +201,76 @@ fun AppNavigation() {
                         }
                         navController.popBackStack()
                     }
+                )
+            }
+            composable<OpenOpusWorkSearch> {
+                OpenOpusWorkSearchScreen(
+                    onWorkSelected = { openOpusWorkId, workTitle, openOpusComposerId, composerName ->
+                        navController.previousBackStackEntry?.savedStateHandle?.apply {
+                            set("selectedWorkId", openOpusWorkId)
+                            set("selectedWorkName", workTitle)
+                            set("selectedWorkComposerId", openOpusComposerId)
+                            set("selectedWorkComposerName", composerName)
+                        }
+                        navController.popBackStack()
+                    }
+                )
+            }
+            composable<SetListEntryEdit> { backStackEntry ->
+                val pendingWorkId by backStackEntry.savedStateHandle
+                    .getStateFlow<String?>("selectedWorkId", null)
+                    .collectAsStateWithLifecycle()
+                val pendingWorkName by backStackEntry.savedStateHandle
+                    .getStateFlow<String?>("selectedWorkName", null)
+                    .collectAsStateWithLifecycle()
+                val pendingWorkComposerId by backStackEntry.savedStateHandle
+                    .getStateFlow<String?>("selectedWorkComposerId", null)
+                    .collectAsStateWithLifecycle()
+                val pendingWorkComposerName by backStackEntry.savedStateHandle
+                    .getStateFlow<String?>("selectedWorkComposerName", null)
+                    .collectAsStateWithLifecycle()
+                val pendingConductorId by backStackEntry.savedStateHandle
+                    .getStateFlow<String?>("selectedConductorId", null)
+                    .collectAsStateWithLifecycle()
+                val pendingConductorName by backStackEntry.savedStateHandle
+                    .getStateFlow<String?>("selectedConductorName", null)
+                    .collectAsStateWithLifecycle()
+                val pendingPerformerId by backStackEntry.savedStateHandle
+                    .getStateFlow<String?>("selectedPerformerId", null)
+                    .collectAsStateWithLifecycle()
+                val pendingPerformerName by backStackEntry.savedStateHandle
+                    .getStateFlow<String?>("selectedPerformerName", null)
+                    .collectAsStateWithLifecycle()
+                val pendingPerformerType by backStackEntry.savedStateHandle
+                    .getStateFlow<String?>("selectedPerformerType", null)
+                    .collectAsStateWithLifecycle()
+                val pendingPerformerSpecialty by backStackEntry.savedStateHandle
+                    .getStateFlow<String?>("selectedPerformerSpecialty", null)
+                    .collectAsStateWithLifecycle()
+
+                SetListEntryEditScreen(
+                    onSaved = {
+                        navController.previousBackStackEntry?.savedStateHandle?.set("shouldReload", true)
+                        navController.popBackStack()
+                    },
+                    onDeleted = {
+                        navController.previousBackStackEntry?.savedStateHandle?.set("shouldReload", true)
+                        navController.popBackStack()
+                    },
+                    onCancel = { navController.popBackStack() },
+                    onNavigateToSearchWork = { navController.navigate(OpenOpusWorkSearch) },
+                    onNavigateToSearchConductor = { navController.navigate(MusicBrainzSearch(MusicBrainzEntityType.CONDUCTOR)) },
+                    onNavigateToSearchPerformer = { navController.navigate(MusicBrainzSearch(MusicBrainzEntityType.PERFORMER)) },
+                    pendingWorkId = pendingWorkId,
+                    pendingWorkName = pendingWorkName,
+                    pendingWorkComposerId = pendingWorkComposerId,
+                    pendingWorkComposerName = pendingWorkComposerName,
+                    pendingConductorId = pendingConductorId,
+                    pendingConductorName = pendingConductorName,
+                    pendingPerformerId = pendingPerformerId,
+                    pendingPerformerName = pendingPerformerName,
+                    pendingPerformerType = pendingPerformerType,
+                    pendingPerformerSpecialty = pendingPerformerSpecialty
                 )
             }
         }

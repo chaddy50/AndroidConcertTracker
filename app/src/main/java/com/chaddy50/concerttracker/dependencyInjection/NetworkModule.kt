@@ -2,6 +2,7 @@ package com.chaddy50.concerttracker.dependencyInjection
 
 import com.chaddy50.concerttracker.data.api.MusicBrainzApiService
 import com.chaddy50.concerttracker.data.api.NominatimApiService
+import com.chaddy50.concerttracker.data.api.OpenOpusApiService
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import dagger.Module
 import dagger.Provides
@@ -87,5 +88,31 @@ object NetworkModule {
             .addConverterFactory(json.asConverterFactory(contentType))
             .build()
             .create(MusicBrainzApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    @OpenOpusClient
+    fun provideOpenOpusOkHttpClient(): OkHttpClient {
+        return OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                val request = chain.request().newBuilder()
+                    .header("User-Agent", "ConcertTracker Android App")
+                    .build()
+                chain.proceed(request)
+            }
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideOpenOpusApiService(@OpenOpusClient client: OkHttpClient, json: Json): OpenOpusApiService {
+        val contentType = "application/json".toMediaType()
+        return Retrofit.Builder()
+            .baseUrl("https://api.openopus.org/")
+            .client(client)
+            .addConverterFactory(json.asConverterFactory(contentType))
+            .build()
+            .create(OpenOpusApiService::class.java)
     }
 }

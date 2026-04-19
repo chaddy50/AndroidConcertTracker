@@ -26,6 +26,10 @@ fun PerformanceEditScreen(
     onNavigateToCreateVenue: () -> Unit,
     onNavigateToSearchPerformer: () -> Unit,
     onNavigateToSearchConductor: () -> Unit,
+    shouldReload: Boolean,
+    onReloaded: () -> Unit,
+    onNavigateToAddSetListEntry: () -> Unit,
+    onNavigateToEditSetListEntry: (entryId: String) -> Unit,
     pendingVenueId: String?,
     pendingVenueName: String?,
     pendingConductorId: String?,
@@ -36,6 +40,13 @@ fun PerformanceEditScreen(
     pendingPerformerSpecialty: String?,
     viewModel: PerformanceEditViewModel = hiltViewModel()
 ) {
+    LaunchedEffect(shouldReload) {
+        if (shouldReload) {
+            viewModel.refreshSetList()
+            onReloaded()
+        }
+    }
+
     LaunchedEffect(pendingVenueId, pendingVenueName) {
         if (pendingVenueId != null && pendingVenueName != null) {
             viewModel.updateDraftVenue(pendingVenueId, pendingVenueName)
@@ -81,12 +92,16 @@ fun PerformanceEditScreen(
                     draftConductorName = viewModel.draftConductorName,
                     draftPerformers = viewModel.draftPerformers,
                     draftStatus = viewModel.draftStatus,
+                    isCreateMode = viewModel.isCreateMode,
+                    currentSetList = viewModel.currentSetList,
                     onDraftDateChange = viewModel::updateDraftDate,
                     onDraftStatusChange = viewModel::updateDraftStatus,
                     onVenueClick = onNavigateToCreateVenue,
                     onConductorClick = onNavigateToSearchConductor,
                     onAddPerformerClick = onNavigateToSearchPerformer,
                     onRemovePerformer = viewModel::removeDraftPerformer,
+                    onAddSetListEntryClick = onNavigateToAddSetListEntry,
+                    onEditSetListEntryClick = onNavigateToEditSetListEntry,
                     modifier = Modifier.weight(1f)
                 )
                 Row(

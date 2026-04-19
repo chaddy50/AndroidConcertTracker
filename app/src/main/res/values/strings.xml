@@ -53,4 +53,11 @@
     <string name="performance_form_conductor_label">Conductor</string>
     <string name="performance_form_performers_label">Performers</string>
     <string name="performance_form_add_performer">Add Performer</string>
+
+    <!-- Open Opus work search screen -->
+    <string name="open_opus_work_search_title">Find Work</string>
+
+    <!-- Set list entry form screen -->
+    <string name="set_list_entry_form_add_title">Add Entry</string>
+    <string name="set_list_entry_form_edit_title">Edit Entry</string>
 </resources>
