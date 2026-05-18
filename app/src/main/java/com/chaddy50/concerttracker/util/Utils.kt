@@ -1,16 +1,27 @@
 package com.chaddy50.concerttracker.util
 
+import android.content.Context
+import android.text.format.DateFormat
 import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.util.Locale
+import java.util.Date
 
-fun formatDate(isoDate: String): String {
+fun formatDate(isoDate: String, context: Context): String {
     return try {
         val instant = Instant.parse(isoDate)
-        val localDate = instant.atZone(ZoneId.systemDefault()).toLocalDate()
-        val formatter = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.getDefault())
-        formatter.format(localDate)
+        val formatter = DateFormat.getMediumDateFormat(context)
+        formatter.format(Date.from(instant))
+    } catch (_: Exception) {
+        isoDate
+    }
+}
+
+fun formatDateTime(isoDate: String, context: Context): String {
+    return try {
+        val instant = Instant.parse(isoDate)
+        val date = Date.from(instant)
+        val dateFormatter = DateFormat.getMediumDateFormat(context)
+        val timeFormatter = DateFormat.getTimeFormat(context)
+        "${dateFormatter.format(date)}, ${timeFormatter.format(date)}"
     } catch (_: Exception) {
         isoDate
     }
