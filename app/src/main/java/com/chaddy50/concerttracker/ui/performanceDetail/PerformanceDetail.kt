@@ -1,11 +1,18 @@
 package com.chaddy50.concerttracker.ui.performanceDetail
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
@@ -20,9 +27,9 @@ import com.chaddy50.concerttracker.data.entity.Work
 import com.chaddy50.concerttracker.data.enum.PerformanceStatus
 import com.chaddy50.concerttracker.data.enum.PerformerType
 import com.chaddy50.concerttracker.ui.common.PerformerRow
-import com.chaddy50.concerttracker.ui.common.SectionHeader
 import com.chaddy50.concerttracker.ui.theme.ConcertTrackerTheme
 import com.chaddy50.concerttracker.util.formatDate
+import com.chaddy50.concerttracker.util.formatTime
 
 private val GROUP_TYPES = setOf(PerformerType.ORCHESTRA, PerformerType.ENSEMBLE, PerformerType.CHORUS)
 
@@ -34,52 +41,66 @@ fun PerformanceDetail(
 ) {
     LazyColumn(modifier = Modifier.padding(16.dp)) {
         item {
-            Text(
-                text = formatDate(performance.date, LocalContext.current),
-                style = MaterialTheme.typography.headlineMedium
-            )
-            Text(
-                text = performance.venue.name,
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(top = 4.dp)
-            )
-            Text(
-                text = performance.status.name,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.secondary,
-                modifier = Modifier.padding(top = 4.dp)
-            )
+            Row(modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = formatDate(performance.date, LocalContext.current),
+                    style = MaterialTheme.typography.headlineMedium
+                )
+                Text(
+                    text = performance.status.name,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+            Row(modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = formatTime(performance.date, LocalContext.current),
+                    style = MaterialTheme.typography.titleMedium
+                )
+
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "-",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+
+                Text(
+                    text = performance.venue.name,
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
         }
 
         val hasPerformers = performance.performers.isNotEmpty() || performance.conductor != null
         if (hasPerformers) {
-            item { SectionHeader(title = "Performers") }
             val groups = performance.performers.filter { it.type in GROUP_TYPES }
             val soloists = performance.performers.filter { it.type !in GROUP_TYPES }
             items(groups) { performer ->
-                PerformerRow(performer.name)
+                PerformerRow(performer)
+            }
+            items(soloists) { soloist ->
+                PerformerRow(soloist)
             }
             if (performance.conductor != null) {
                 item {
-                    PerformerRow("${performance.conductor.name}, conductor")
+                    PerformerRow(performance.conductor)
                 }
-            }
-            items(soloists) { performer ->
-                val label = if (performer.specialty != null) {
-                    "${performer.name}, ${performer.specialty}"
-                } else {
-                    performer.name
-                }
-                PerformerRow(label)
             }
         }
 
         if (performance.setList.isNotEmpty()) {
             item {
-                SectionHeader(title = "Set List")
+                HorizontalDivider(modifier = Modifier.padding(top= 8.dp, bottom=8.dp))
             }
             items(performance.setList.sortedBy { it.order }) { entry ->
-                SetListEntryRow(
+                SetListEntryCard(
                     entry = entry,
                     performanceConductorId = performance.conductor?.id,
                     draftNotes = draftNotes[entry.id] ?: "",
@@ -91,14 +112,14 @@ fun PerformanceDetail(
 }
 
 // region Previews
-private val previewConductor = Performer(id = "conductor-1", name = "Simon Rattle", type = PerformerType.CONDUCTOR)
+private val previewConductor = Performer(id = "conductor-1", name = "Simon Rattle", type = PerformerType.CONDUCTOR, specialty = "conductor")
 private val previewSoloist = Performer(id = "soloist-1", name = "Martha Argerich", type = PerformerType.SOLO, specialty = "pianist")
 private val previewOrchestra = Performer(id = "orchestra-1", name = "London Symphony Orchestra", type = PerformerType.ORCHESTRA)
 private val previewPerformance = Performance(
     id = "perf-1",
     date = "2024-11-15T19:30:00.000Z",
     venue = Venue(id = "venue-1", name = "Royal Albert Hall", osmId = "123456", osmType = "way"),
-    performers = listOf(previewOrchestra),
+    performers = listOf(previewOrchestra, previewSoloist),
     conductor = previewConductor,
     status = PerformanceStatus.ATTENDED,
     setList = listOf(

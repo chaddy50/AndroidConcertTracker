@@ -60,4 +60,8 @@
     <!-- Set list entry form screen -->
     <string name="set_list_entry_form_add_title">Add Entry</string>
     <string name="set_list_entry_form_edit_title">Edit Entry</string>
+
+    <!-- Set list entry card -->
+    <string name="set_list_entry_your_notes">Notes</string>
+    <string name="set_list_entry_tap_to_add_notes">Tap to add notes…</string>
 </resources>

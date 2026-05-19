@@ -3,9 +3,7 @@ package com.chaddy50.concerttracker.ui.performances
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
@@ -21,6 +19,7 @@ import com.chaddy50.concerttracker.data.entity.Performer
 import com.chaddy50.concerttracker.data.entity.Venue
 import com.chaddy50.concerttracker.data.enum.PerformanceStatus
 import com.chaddy50.concerttracker.data.enum.PerformerType
+import com.chaddy50.concerttracker.ui.common.PerformerRow
 import com.chaddy50.concerttracker.ui.theme.ConcertTrackerTheme
 import com.chaddy50.concerttracker.util.formatDateTime
 
@@ -57,11 +56,7 @@ fun PerformanceCard(performance: Performance, onClick: () -> Unit) {
                             )
                         }
                         if (performance.conductor != null) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "${performance.conductor.name}, conductor",
-                                style = MaterialTheme.typography.bodySmall
-                            )
+                            PerformerRow(performer = performance.conductor, style = MaterialTheme.typography.bodySmall)
                         }
                     }
                     Column {
