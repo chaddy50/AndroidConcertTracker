@@ -28,13 +28,13 @@ interface ConcertTrackerApiService {
     @GET("performances/{id}")
     suspend fun getPerformance(@Path("id") id: String): Performance
 
-    @POST("performances")
+    @POST("performances/")
     suspend fun createPerformance(@Body request: PerformanceRequest): Performance
 
     @PUT("performances/{id}")
     suspend fun updatePerformance(@Path("id") id: String, @Body request: PerformanceRequest): Performance
 
-    @POST("set-list-entries")
+    @POST("set-list-entries/")
     suspend fun createSetListEntry(@Body request: SetListEntryCreateRequest): SetListEntry
 
     @PUT("set-list-entries/{id}")
@@ -46,22 +46,22 @@ interface ConcertTrackerApiService {
     @DELETE("set-list-entries/{id}")
     suspend fun deleteSetListEntry(@Path("id") id: String)
 
-    @POST("venues")
+    @POST("venues/")
     suspend fun createVenue(@Body request: VenueRequest): Venue
 
-    @POST("performers")
+    @POST("performers/")
     suspend fun createPerformer(@Body request: PerformerRequest): Performer
 
     @GET("performers/{id}")
     suspend fun getPerformer(@Path("id") id: String): Performer
 
-    @POST("composers")
+    @POST("composers/")
     suspend fun createComposer(@Body request: ComposerRequest): Composer
 
     @GET("composers/{id}")
     suspend fun getComposer(@Path("id") id: String): Composer
 
-    @POST("works")
+    @POST("works/")
     suspend fun createWork(@Body request: WorkRequest): Work
 
     @GET("works/{id}")

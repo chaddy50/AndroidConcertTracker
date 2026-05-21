@@ -127,7 +127,7 @@ class SetListEntryEditViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val conductor = performersRepository.createPerformer(
-                    PerformerRequest(musicbrainzId, conductorName, PerformerType.CONDUCTOR)
+                    PerformerRequest(conductorName, PerformerType.CONDUCTOR, musicbrainzId = musicbrainzId)
                 )
                 draftConductorId = conductor.id
                 draftConductorName = conductor.name
@@ -154,7 +154,7 @@ class SetListEntryEditViewModel @Inject constructor(
                     ?.let { runCatching { PerformerType.valueOf(it) }.getOrNull() }
                     ?: PerformerType.OTHER
                 val performer = performersRepository.createPerformer(
-                    PerformerRequest(musicbrainzId, performerName, type, specialty)
+                    PerformerRequest(performerName, type, specialty, musicbrainzId)
                 )
                 if (draftFeaturedPerformers.none { it.performerId == performer.id }) {
                     draftFeaturedPerformers.add(DraftFeaturedPerformer(performer.id, performer.name))

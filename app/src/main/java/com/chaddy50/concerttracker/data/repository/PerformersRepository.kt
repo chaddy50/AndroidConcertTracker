@@ -41,7 +41,12 @@ class PerformersRepository @Inject constructor(
             apiService().createPerformer(request)
         } catch (e: HttpException) {
             if (e.code() == 409) {
-                apiService().getPerformer(request.id)
+                val body = e.response()?.errorBody()?.string()
+                if (body != null) {
+                    json.decodeFromString<Performer>(body)
+                } else {
+                    throw e
+                }
             } else {
                 throw e
             }
