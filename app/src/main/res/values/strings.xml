@@ -19,6 +19,7 @@
 
     <!-- Performance form field labels -->
     <string name="performance_form_date_label">Date</string>
+    <string name="performance_form_time_label">Time</string>
     <string name="performance_form_venue_label">Venue</string>
     <string name="performance_form_status_label">Status</string>
     <string name="performance_form_notes_label">Notes</string>

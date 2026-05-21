@@ -1,4 +1,4 @@
-package com.chaddy50.concerttracker.ui.performanceEdit.performerList
+package com.chaddy50.concerttracker.ui.performanceEdit.fields.performerList
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.HorizontalDivider

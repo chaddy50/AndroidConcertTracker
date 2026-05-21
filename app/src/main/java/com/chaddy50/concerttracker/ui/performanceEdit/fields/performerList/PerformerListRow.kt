@@ -1,4 +1,4 @@
-package com.chaddy50.concerttracker.ui.performanceEdit.performerList
+package com.chaddy50.concerttracker.ui.performanceEdit.fields.performerList
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

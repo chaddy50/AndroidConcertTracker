@@ -1,4 +1,4 @@
-package com.chaddy50.concerttracker.ui.performanceEdit.setList
+package com.chaddy50.concerttracker.ui.performanceEdit.fields.setList
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,7 +23,7 @@ fun SetListEntryRow(entry: SetListEntry, onEditClick: () -> Unit) {
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().padding(bottom=16.dp)
+        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(

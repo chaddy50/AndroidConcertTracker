@@ -1,4 +1,4 @@
-package com.chaddy50.concerttracker.ui.performanceEdit
+package com.chaddy50.concerttracker.ui.performanceEdit.fields
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.DropdownMenuItem
@@ -22,7 +22,7 @@ import com.chaddy50.concerttracker.ui.theme.ConcertTrackerTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StatusDropdown(
+fun StatusField(
     selectedStatus: PerformanceStatus,
     onStatusSelected: (PerformanceStatus) -> Unit,
     modifier: Modifier = Modifier
@@ -63,9 +63,9 @@ fun StatusDropdown(
 // region Previews
 @Preview(showBackground = true)
 @Composable
-fun StatusDropdownPreview() {
+fun StatusFieldPreview() {
     ConcertTrackerTheme {
-        StatusDropdown(
+        StatusField(
             selectedStatus = PerformanceStatus.ATTENDED,
             onStatusSelected = {}
         )
