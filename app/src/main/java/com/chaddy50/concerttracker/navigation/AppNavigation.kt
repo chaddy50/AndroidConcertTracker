@@ -220,12 +220,6 @@ fun AppNavigation() {
                 val pendingWorkComposerName by backStackEntry.savedStateHandle
                     .getStateFlow<String?>("selectedWorkComposerName", null)
                     .collectAsStateWithLifecycle()
-                val pendingConductorId by backStackEntry.savedStateHandle
-                    .getStateFlow<String?>("selectedConductorId", null)
-                    .collectAsStateWithLifecycle()
-                val pendingConductorName by backStackEntry.savedStateHandle
-                    .getStateFlow<String?>("selectedConductorName", null)
-                    .collectAsStateWithLifecycle()
                 val pendingPerformerId by backStackEntry.savedStateHandle
                     .getStateFlow<String?>("selectedPerformerId", null)
                     .collectAsStateWithLifecycle()
@@ -250,14 +244,11 @@ fun AppNavigation() {
                     },
                     onCancel = { navController.popBackStack() },
                     onNavigateToSearchWork = { navController.navigate(OpenOpusWorkSearch) },
-                    onNavigateToSearchConductor = { navController.navigate(MusicBrainzSearch(MusicBrainzEntityType.CONDUCTOR)) },
                     onNavigateToSearchPerformer = { navController.navigate(MusicBrainzSearch(MusicBrainzEntityType.PERFORMER)) },
                     pendingWorkId = pendingWorkId,
                     pendingWorkName = pendingWorkName,
                     pendingWorkComposerId = pendingWorkComposerId,
                     pendingWorkComposerName = pendingWorkComposerName,
-                    pendingConductorId = pendingConductorId,
-                    pendingConductorName = pendingConductorName,
                     pendingPerformerId = pendingPerformerId,
                     pendingPerformerName = pendingPerformerName,
                     pendingPerformerType = pendingPerformerType,

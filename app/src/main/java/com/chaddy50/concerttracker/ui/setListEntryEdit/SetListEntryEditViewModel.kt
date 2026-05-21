@@ -54,12 +54,6 @@ class SetListEntryEditViewModel @Inject constructor(
     var draftOrder: String by mutableStateOf("1")
         private set
 
-    var draftConductorId: String? by mutableStateOf(null)
-        private set
-
-    var draftConductorName: String? by mutableStateOf(null)
-        private set
-
     val draftFeaturedPerformers = mutableStateListOf<DraftFeaturedPerformer>()
 
     var isSaving: Boolean by mutableStateOf(false)
@@ -91,8 +85,6 @@ class SetListEntryEditViewModel @Inject constructor(
                     draftWorkId = entry.work.id
                     draftWorkTitle = entry.work.title
                     draftOrder = entry.order.toString()
-                    draftConductorId = entry.conductor?.id
-                    draftConductorName = entry.conductor?.name
                     draftFeaturedPerformers.clear()
                     draftFeaturedPerformers.addAll(
                         entry.featuredPerformers.map { featuredPerformer ->
@@ -121,25 +113,6 @@ class SetListEntryEditViewModel @Inject constructor(
                 saveError = "Failed to add work: ${exception.message}"
             }
         }
-    }
-
-    fun updateDraftConductor(musicbrainzId: String, conductorName: String) {
-        viewModelScope.launch {
-            try {
-                val conductor = performersRepository.createPerformer(
-                    PerformerRequest(conductorName, PerformerType.CONDUCTOR, musicbrainzId = musicbrainzId)
-                )
-                draftConductorId = conductor.id
-                draftConductorName = conductor.name
-            } catch (exception: Exception) {
-                saveError = "Failed to add conductor: ${exception.message}"
-            }
-        }
-    }
-
-    fun clearDraftConductor() {
-        draftConductorId = null
-        draftConductorName = null
     }
 
     fun addDraftFeaturedPerformer(
@@ -203,8 +176,7 @@ class SetListEntryEditViewModel @Inject constructor(
                             performanceId = performanceId,
                             workId = workId,
                             order = order,
-                            featuredPerformers = featuredPerformerRequests,
-                            conductorId = draftConductorId
+                            featuredPerformers = featuredPerformerRequests
                         )
                     )
                 } else {
@@ -213,8 +185,7 @@ class SetListEntryEditViewModel @Inject constructor(
                         SetListEntryUpdateRequest(
                             workId = workId,
                             order = order,
-                            featuredPerformers = featuredPerformerRequests,
-                            conductorId = draftConductorId
+                            featuredPerformers = featuredPerformerRequests
                         )
                     )
                 }

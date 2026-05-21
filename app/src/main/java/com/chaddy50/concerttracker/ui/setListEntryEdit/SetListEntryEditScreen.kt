@@ -21,14 +21,11 @@ fun SetListEntryEditScreen(
     onDeleted: () -> Unit,
     onCancel: () -> Unit,
     onNavigateToSearchWork: () -> Unit,
-    onNavigateToSearchConductor: () -> Unit,
     onNavigateToSearchPerformer: () -> Unit,
     pendingWorkId: String?,
     pendingWorkName: String?,
     pendingWorkComposerId: String?,
     pendingWorkComposerName: String?,
-    pendingConductorId: String?,
-    pendingConductorName: String?,
     pendingPerformerId: String?,
     pendingPerformerName: String?,
     pendingPerformerType: String?,
@@ -39,12 +36,6 @@ fun SetListEntryEditScreen(
         if (pendingWorkId != null && pendingWorkName != null &&
             pendingWorkComposerId != null && pendingWorkComposerName != null) {
             viewModel.selectWork(pendingWorkId, pendingWorkName, pendingWorkComposerId, pendingWorkComposerName)
-        }
-    }
-
-    LaunchedEffect(pendingConductorId, pendingConductorName) {
-        if (pendingConductorId != null && pendingConductorName != null) {
-            viewModel.updateDraftConductor(pendingConductorId, pendingConductorName)
         }
     }
 
@@ -83,7 +74,6 @@ fun SetListEntryEditScreen(
                 isCreateMode = viewModel.isCreateMode,
                 draftWorkTitle = viewModel.draftWorkTitle,
                 draftOrder = viewModel.draftOrder,
-                draftConductorName = viewModel.draftConductorName,
                 draftFeaturedPerformers = viewModel.draftFeaturedPerformers,
                 canSave = viewModel.canSave,
                 isSaving = viewModel.isSaving,
@@ -91,8 +81,6 @@ fun SetListEntryEditScreen(
                 saveError = viewModel.saveError,
                 onWorkClick = onNavigateToSearchWork,
                 onDraftOrderChange = viewModel::updateDraftOrder,
-                onConductorClick = onNavigateToSearchConductor,
-                onClearConductor = viewModel::clearDraftConductor,
                 onAddPerformerClick = onNavigateToSearchPerformer,
                 onUpdateFeaturedPerformerRole = viewModel::updateDraftFeaturedPerformerRole,
                 onRemoveFeaturedPerformer = viewModel::removeDraftFeaturedPerformer,

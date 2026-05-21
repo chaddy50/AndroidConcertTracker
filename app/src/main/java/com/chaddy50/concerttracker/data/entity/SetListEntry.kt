@@ -34,14 +34,12 @@ data class SetListEntryCreateRequest(
     val performanceId: String,
     val workId: String,
     val order: Int,
-    val featuredPerformers: List<FeaturedPerformerRequest>,
-    val conductorId: String? = null
+    val featuredPerformers: List<FeaturedPerformerRequest>
 )
 
 @Serializable
 data class SetListEntryUpdateRequest(
     val workId: String? = null,
     val order: Int? = null,
-    val featuredPerformers: List<FeaturedPerformerRequest>? = null,
-    val conductorId: String? = null
+    val featuredPerformers: List<FeaturedPerformerRequest>? = null
 )

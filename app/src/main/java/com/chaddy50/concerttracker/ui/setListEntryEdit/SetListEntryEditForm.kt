@@ -38,7 +38,6 @@ fun SetListEntryEditForm(
     isCreateMode: Boolean,
     draftWorkTitle: String?,
     draftOrder: String,
-    draftConductorName: String?,
     draftFeaturedPerformers: List<DraftFeaturedPerformer>,
     canSave: Boolean,
     isSaving: Boolean,
@@ -46,8 +45,6 @@ fun SetListEntryEditForm(
     saveError: String?,
     onWorkClick: () -> Unit,
     onDraftOrderChange: (String) -> Unit,
-    onConductorClick: () -> Unit,
-    onClearConductor: () -> Unit,
     onAddPerformerClick: () -> Unit,
     onUpdateFeaturedPerformerRole: (performerId: String, role: String) -> Unit,
     onRemoveFeaturedPerformer: (performerId: String) -> Unit,
@@ -83,31 +80,6 @@ fun SetListEntryEditForm(
                 onValueChange = onDraftOrderChange,
                 label = { Text("Order") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp)
-            )
-
-            val conductorInteractionSource = remember { MutableInteractionSource() }
-            val isConductorPressed by conductorInteractionSource.collectIsPressedAsState()
-            if (isConductorPressed) onConductorClick()
-
-            OutlinedTextField(
-                value = draftConductorName ?: "",
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("Conductor (optional)") },
-                trailingIcon = {
-                    if (draftConductorName != null) {
-                        IconButton(onClick = onClearConductor) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Clear conductor"
-                            )
-                        }
-                    }
-                },
-                interactionSource = conductorInteractionSource,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 8.dp)
