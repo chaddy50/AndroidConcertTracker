@@ -30,7 +30,7 @@ import com.chaddy50.concerttracker.data.entity.SetListEntry
 import com.chaddy50.concerttracker.data.entity.SetListEntryPerformer
 import com.chaddy50.concerttracker.data.entity.Work
 import com.chaddy50.concerttracker.data.enum.PerformerType
-import com.chaddy50.concerttracker.ui.common.NotesSheet
+import com.chaddy50.concerttracker.ui.common.NotesDialog
 import com.chaddy50.concerttracker.ui.theme.ConcertTrackerTheme
 
 @Composable
@@ -84,7 +84,7 @@ fun SetListEntryCard(
     }
 
     if (isSheetOpen) {
-        NotesSheet(
+        NotesDialog(
             header = {
                 SetListEntryHeader(entry = entry, performanceConductorId = performanceConductorId)
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
