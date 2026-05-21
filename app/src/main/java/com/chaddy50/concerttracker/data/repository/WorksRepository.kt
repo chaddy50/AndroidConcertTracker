@@ -14,12 +14,12 @@ import retrofit2.Retrofit
 import javax.inject.Inject
 import javax.inject.Singleton
 
+
 @Singleton
 class WorksRepository @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val okHttpClient: OkHttpClient,
-    private val json: Json,
-    private val composersRepository: ComposersRepository
+    private val json: Json
 ) {
     private var cachedBaseUrl: String? = null
     private var cachedApiService: ConcertTrackerApiService? = null
@@ -44,14 +44,22 @@ class WorksRepository @Inject constructor(
         openOpusComposerId: String,
         composerName: String
     ): Work {
-        val composer = composersRepository.createComposer(
-            ComposerRequest(openOpusId = openOpusComposerId, name = composerName)
-        )
         return try {
-            apiService().createWork(WorkRequest(openOpusId = openOpusWorkId, title = title, composerIds = listOf(composer.id)))
+            apiService().createWork(
+                WorkRequest(
+                    title = title,
+                    openOpusId = openOpusWorkId,
+                    composers = listOf(ComposerRequest(name = composerName, openOpusId = openOpusComposerId))
+                )
+            )
         } catch (exception: HttpException) {
             if (exception.code() == 409) {
-                apiService().getWork(openOpusWorkId)
+                val body = exception.response()?.errorBody()?.string()
+                if (body != null) {
+                    json.decodeFromString<Work>(body)
+                } else {
+                    throw exception
+                }
             } else {
                 throw exception
             }
