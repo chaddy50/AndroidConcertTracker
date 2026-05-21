@@ -25,15 +25,12 @@ fun PerformanceEditScreen(
     onCancel: () -> Unit,
     onNavigateToCreateVenue: () -> Unit,
     onNavigateToSearchPerformer: () -> Unit,
-    onNavigateToSearchConductor: () -> Unit,
     shouldReload: Boolean,
     onReloaded: () -> Unit,
     onNavigateToAddSetListEntry: () -> Unit,
     onNavigateToEditSetListEntry: (entryId: String) -> Unit,
     pendingVenueId: String?,
     pendingVenueName: String?,
-    pendingConductorId: String?,
-    pendingConductorName: String?,
     pendingPerformerId: String?,
     pendingPerformerName: String?,
     pendingPerformerType: String?,
@@ -50,12 +47,6 @@ fun PerformanceEditScreen(
     LaunchedEffect(pendingVenueId, pendingVenueName) {
         if (pendingVenueId != null && pendingVenueName != null) {
             viewModel.updateDraftVenue(pendingVenueId, pendingVenueName)
-        }
-    }
-
-    LaunchedEffect(pendingConductorId, pendingConductorName) {
-        if (pendingConductorId != null && pendingConductorName != null) {
-            viewModel.updateDraftConductor(pendingConductorId, pendingConductorName)
         }
     }
 
@@ -89,7 +80,6 @@ fun PerformanceEditScreen(
                 PerformanceEditForm(
                     draftDate = viewModel.draftDate,
                     draftVenueName = viewModel.draftVenueName,
-                    draftConductorName = viewModel.draftConductorName,
                     draftPerformers = viewModel.draftPerformers,
                     draftStatus = viewModel.draftStatus,
                     isCreateMode = viewModel.isCreateMode,
@@ -97,7 +87,6 @@ fun PerformanceEditScreen(
                     onDraftDateChange = viewModel::updateDraftDate,
                     onDraftStatusChange = viewModel::updateDraftStatus,
                     onVenueClick = onNavigateToCreateVenue,
-                    onConductorClick = onNavigateToSearchConductor,
                     onAddPerformerClick = onNavigateToSearchPerformer,
                     onRemovePerformer = viewModel::removeDraftPerformer,
                     onAddSetListEntryClick = onNavigateToAddSetListEntry,

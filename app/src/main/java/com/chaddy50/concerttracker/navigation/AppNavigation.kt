@@ -127,12 +127,6 @@ fun AppNavigation() {
                 val pendingVenueName by backStackEntry.savedStateHandle
                     .getStateFlow<String?>("selectedVenueName", null)
                     .collectAsStateWithLifecycle()
-                val pendingConductorId by backStackEntry.savedStateHandle
-                    .getStateFlow<String?>("selectedConductorId", null)
-                    .collectAsStateWithLifecycle()
-                val pendingConductorName by backStackEntry.savedStateHandle
-                    .getStateFlow<String?>("selectedConductorName", null)
-                    .collectAsStateWithLifecycle()
                 val pendingPerformerId by backStackEntry.savedStateHandle
                     .getStateFlow<String?>("selectedPerformerId", null)
                     .collectAsStateWithLifecycle()
@@ -152,7 +146,6 @@ fun AppNavigation() {
                     onCancel = { navController.popBackStack() },
                     onNavigateToCreateVenue = { navController.navigate(CreateVenue) },
                     onNavigateToSearchPerformer = { navController.navigate(MusicBrainzSearch(MusicBrainzEntityType.PERFORMER)) },
-                    onNavigateToSearchConductor = { navController.navigate(MusicBrainzSearch(MusicBrainzEntityType.CONDUCTOR)) },
                     shouldReload = shouldReload,
                     onReloaded = { backStackEntry.savedStateHandle["shouldReload"] = false },
                     onNavigateToAddSetListEntry = {
@@ -163,8 +156,6 @@ fun AppNavigation() {
                     },
                     pendingVenueId = pendingVenueId,
                     pendingVenueName = pendingVenueName,
-                    pendingConductorId = pendingConductorId,
-                    pendingConductorName = pendingConductorName,
                     pendingPerformerId = pendingPerformerId,
                     pendingPerformerName = pendingPerformerName,
                     pendingPerformerType = pendingPerformerType,

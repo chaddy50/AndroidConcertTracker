@@ -50,13 +50,7 @@ fun PerformanceCard(performance: Performance, onClick: () -> Unit) {
                             style = MaterialTheme.typography.titleMedium
                         )
                         for (performer in performance.performers) {
-                            Text(
-                                text = performer.name,
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-                        if (performance.conductor != null) {
-                            PerformerRow(performer = performance.conductor, style = MaterialTheme.typography.bodySmall)
+                            PerformerRow(performer)
                         }
                     }
                     Column {
@@ -74,7 +68,7 @@ fun PerformanceCard(performance: Performance, onClick: () -> Unit) {
 
 // region Previews
 private val previewVenue = Venue(id = "1", name = "Overture Hall", osmId = "123456", osmType = "way")
-private val previewConductor = Performer(id = "1", name = "John Demain", type = PerformerType.CONDUCTOR)
+private val previewConductor = Performer(id = "1", name = "John Demain", type = PerformerType.CONDUCTOR, specialty = "conductor")
 
 private val previewPerformer1 = Performer(id = "2", name = "Madison Symphony Orchestra", type = PerformerType.ORCHESTRA)
 private val previewPerformer2 = Performer(id = "3", name = "Time for Three", type = PerformerType.ENSEMBLE)
@@ -84,7 +78,7 @@ private val previewPerformance = Performance(
     venue = previewVenue,
     conductor = previewConductor,
     status = PerformanceStatus.ATTENDED,
-    performers = listOf(previewPerformer1, previewPerformer2)
+    performers = listOf(previewPerformer1, previewPerformer2, previewConductor)
 )
 
 @Preview(showBackground = true)

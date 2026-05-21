@@ -19,6 +19,5 @@ data class PerformanceRequest(
     val date: String,
     val venueId: String,
     val performerIds: List<String>,
-    val conductorId: String?,
     val status: PerformanceStatus
 )

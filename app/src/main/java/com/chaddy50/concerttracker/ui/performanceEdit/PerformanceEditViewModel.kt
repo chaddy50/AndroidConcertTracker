@@ -10,6 +10,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import com.chaddy50.concerttracker.data.entity.Performance
 import com.chaddy50.concerttracker.data.entity.PerformanceRequest
+import com.chaddy50.concerttracker.data.entity.Performer
 import com.chaddy50.concerttracker.data.entity.PerformerRequest
 import com.chaddy50.concerttracker.data.entity.SetListEntry
 import com.chaddy50.concerttracker.data.enum.PerformanceStatus
@@ -53,13 +54,7 @@ class PerformanceEditViewModel @Inject constructor(
     var draftVenueName: String? by mutableStateOf(null)
         private set
 
-    var draftConductorId: String? by mutableStateOf(null)
-        private set
-
-    var draftConductorName: String? by mutableStateOf(null)
-        private set
-
-    val draftPerformers = mutableStateListOf<Pair<String, String>>()
+    val draftPerformers = mutableStateListOf<Performer>()
 
     val currentSetList = mutableStateListOf<SetListEntry>()
 
@@ -88,10 +83,8 @@ class PerformanceEditViewModel @Inject constructor(
                 draftStatus = performance.status
                 draftVenueId = performance.venue.id
                 draftVenueName = performance.venue.name
-                draftConductorId = performance.conductor?.id
-                draftConductorName = performance.conductor?.name
                 draftPerformers.clear()
-                draftPerformers.addAll(performance.performers.map { it.id to it.name })
+                draftPerformers.addAll(performance.performers)
                 currentSetList.clear()
                 currentSetList.addAll(performance.setList.sortedBy { it.order })
                 uiState = PerformanceEditUiState.Ready
@@ -115,7 +108,7 @@ class PerformanceEditViewModel @Inject constructor(
     }
 
     fun addDraftPerformer(performerId: String, performerName: String, performerTypeName: String?, specialty: String?) {
-        if (draftPerformers.any { it.first == performerId }) return
+        if (draftPerformers.any { it.id == performerId }) return
         val type = performerTypeName?.let { runCatching { PerformerType.valueOf(it) }.getOrNull() }
             ?: PerformerType.OTHER
         viewModelScope.launch {
@@ -123,29 +116,15 @@ class PerformanceEditViewModel @Inject constructor(
                 val performer = performersRepository.createPerformer(
                     PerformerRequest(performerId, performerName, type, specialty)
                 )
-                draftPerformers.add(performer.id to performer.name)
+                draftPerformers.add(performer)
             } catch (e: Exception) {
                 saveError = "Failed to add performer: ${e.message}"
             }
         }
     }
 
-    fun updateDraftConductor(conductorId: String, conductorName: String) {
-        viewModelScope.launch {
-            try {
-                val conductor = performersRepository.createPerformer(
-                    PerformerRequest(conductorId, conductorName, PerformerType.CONDUCTOR)
-                )
-                draftConductorId = conductor.id
-                draftConductorName = conductor.name
-            } catch (e: Exception) {
-                saveError = "Failed to add conductor: ${e.message}"
-            }
-        }
-    }
-
     fun removeDraftPerformer(performerId: String) {
-        draftPerformers.removeAll { it.first == performerId }
+        draftPerformers.removeAll { it.id == performerId }
     }
 
     fun refreshSetList() {
@@ -169,14 +148,13 @@ class PerformanceEditViewModel @Inject constructor(
         viewModelScope.launch {
             isSaving = true
             try {
-                val performerIds = draftPerformers.map { it.first }
+                val performerIds = draftPerformers.map { it.id }
                 if (isCreateMode) {
                     performancesRepository.createPerformance(
                         PerformanceRequest(
                             date = date,
                             venueId = venueId,
                             performerIds = performerIds,
-                            conductorId = draftConductorId,
                             status = status
                         )
                     )
@@ -187,7 +165,6 @@ class PerformanceEditViewModel @Inject constructor(
                             date = date,
                             venueId = venueId,
                             performerIds = performerIds,
-                            conductorId = draftConductorId,
                             status = status
                         )
                     )
