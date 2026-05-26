@@ -18,6 +18,10 @@ import retrofit2.http.PUT
 import retrofit2.http.Path
 
 interface ConcertTrackerApiService {
+    companion object {
+        const val API_VERSION = "v1"
+    }
+
     @GET("performances")
     suspend fun getPerformances(): List<Performance>
 

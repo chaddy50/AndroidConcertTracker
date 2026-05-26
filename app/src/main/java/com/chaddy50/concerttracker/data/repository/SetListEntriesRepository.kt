@@ -24,7 +24,7 @@ class SetListEntriesRepository @Inject constructor(
     private var cachedApiService: ConcertTrackerApiService? = null
 
     private suspend fun apiService(): ConcertTrackerApiService {
-        val baseUrl = "${settingsRepository.serverUrl.first().trimEnd('/')}/v1/"
+        val baseUrl = "${settingsRepository.serverUrl.first().trimEnd('/')}/${ConcertTrackerApiService.API_VERSION}/"
         if (baseUrl != cachedBaseUrl || cachedApiService == null) {
             cachedBaseUrl = baseUrl
             cachedApiService = Retrofit.Builder()

@@ -28,7 +28,7 @@ class PerformancesRepository @Inject constructor(
     val performances: StateFlow<List<Performance>> = _performances.asStateFlow()
 
     private suspend fun apiService(): ConcertTrackerApiService {
-        val baseUrl = "${settingsRepository.serverUrl.first().trimEnd('/')}/v1/"
+        val baseUrl = "${settingsRepository.serverUrl.first().trimEnd('/')}/${ConcertTrackerApiService.API_VERSION}/"
         if (baseUrl != cachedBaseUrl || cachedApiService == null) {
             cachedBaseUrl = baseUrl
             cachedApiService = Retrofit.Builder()
