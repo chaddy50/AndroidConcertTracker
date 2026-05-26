@@ -1,9 +1,9 @@
 package com.chaddy50.concerttracker.data.repository
 
+import com.chaddy50.concerttracker.data.api.ComposerRequest
 import com.chaddy50.concerttracker.data.api.ConcertTrackerApiService
-import com.chaddy50.concerttracker.data.entity.ComposerRequest
+import com.chaddy50.concerttracker.data.api.WorkRequest
 import com.chaddy50.concerttracker.data.entity.Work
-import com.chaddy50.concerttracker.data.entity.WorkRequest
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.Json
@@ -49,7 +49,12 @@ class WorksRepository @Inject constructor(
                 WorkRequest(
                     title = title,
                     openOpusId = openOpusWorkId,
-                    composers = listOf(ComposerRequest(name = composerName, openOpusId = openOpusComposerId))
+                    composers = listOf(
+                        ComposerRequest(
+                            name = composerName,
+                            openOpusId = openOpusComposerId
+                        )
+                    )
                 )
             )
         } catch (exception: HttpException) {

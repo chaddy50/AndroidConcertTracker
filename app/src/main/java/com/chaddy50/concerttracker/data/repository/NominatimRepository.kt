@@ -1,7 +1,7 @@
 package com.chaddy50.concerttracker.data.repository
 
 import com.chaddy50.concerttracker.data.api.NominatimApiService
-import com.chaddy50.concerttracker.data.entity.NominatimResult
+import com.chaddy50.concerttracker.data.api.NominatimResult
 import javax.inject.Inject
 import javax.inject.Singleton
 

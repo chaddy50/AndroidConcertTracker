@@ -5,6 +5,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.chaddy50.concerttracker.TestData
+import com.chaddy50.concerttracker.ui.screens.performancesScreen.PerformanceCard
 import com.chaddy50.concerttracker.ui.theme.ConcertTrackerTheme
 import org.junit.Assert.assertTrue
 import org.junit.Rule

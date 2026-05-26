@@ -13,11 +13,3 @@ data class Performance(
     val status: PerformanceStatus,
     val setList: List<SetListEntry> = emptyList()
 )
-
-@Serializable
-data class PerformanceRequest(
-    val date: String,
-    val venueId: String,
-    val performerIds: List<String>,
-    val status: PerformanceStatus
-)

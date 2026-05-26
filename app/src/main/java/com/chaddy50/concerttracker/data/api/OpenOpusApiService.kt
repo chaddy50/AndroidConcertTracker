@@ -6,6 +6,10 @@ import retrofit2.http.GET
 import retrofit2.http.Path
 
 interface OpenOpusApiService {
+    companion object {
+        const val BASE_URL = "https://api.openopus.org/"
+    }
+
     @GET("composer/list/search/{query}.json")
     suspend fun searchComposers(
         @Path("query") query: String

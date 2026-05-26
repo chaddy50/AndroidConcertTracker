@@ -13,6 +13,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
+import javax.inject.Qualifier
 import javax.inject.Singleton
 
 @Module
@@ -36,6 +37,7 @@ object NetworkModule {
             .build()
     }
 
+    //#region Nominatim
     // Nominatim requires a User-Agent header identifying the app — their usage policy
     // rejects requests without one. This is a separate client from the app API client.
     @Provides
@@ -57,13 +59,19 @@ object NetworkModule {
     fun provideNominatimApiService(@NominatimClient client: OkHttpClient, json: Json): NominatimApiService {
         val contentType = "application/json".toMediaType()
         return Retrofit.Builder()
-            .baseUrl("https://nominatim.openstreetmap.org/")
+            .baseUrl(NominatimApiService.BASE_URL)
             .client(client)
             .addConverterFactory(json.asConverterFactory(contentType))
             .build()
             .create(NominatimApiService::class.java)
     }
 
+    @Qualifier
+    @Retention(AnnotationRetention.BINARY)
+    annotation class NominatimClient
+    //#endregion
+
+    //#region MusicBrainz
     @Provides
     @Singleton
     @MusicBrainzClient
@@ -83,13 +91,19 @@ object NetworkModule {
     fun provideMusicBrainzApiService(@MusicBrainzClient client: OkHttpClient, json: Json): MusicBrainzApiService {
         val contentType = "application/json".toMediaType()
         return Retrofit.Builder()
-            .baseUrl("https://musicbrainz.org/ws/2/")
+            .baseUrl(MusicBrainzApiService.BASE_URL)
             .client(client)
             .addConverterFactory(json.asConverterFactory(contentType))
             .build()
             .create(MusicBrainzApiService::class.java)
     }
 
+    @Qualifier
+    @Retention(AnnotationRetention.BINARY)
+    annotation class MusicBrainzClient
+    //#endregion
+
+    //#region OpenOpus
     @Provides
     @Singleton
     @OpenOpusClient
@@ -109,10 +123,15 @@ object NetworkModule {
     fun provideOpenOpusApiService(@OpenOpusClient client: OkHttpClient, json: Json): OpenOpusApiService {
         val contentType = "application/json".toMediaType()
         return Retrofit.Builder()
-            .baseUrl("https://api.openopus.org/")
+            .baseUrl(OpenOpusApiService.BASE_URL)
             .client(client)
             .addConverterFactory(json.asConverterFactory(contentType))
             .build()
             .create(OpenOpusApiService::class.java)
     }
+
+    @Qualifier
+    @Retention(AnnotationRetention.BINARY)
+    annotation class OpenOpusClient
+    //#endregion
 }

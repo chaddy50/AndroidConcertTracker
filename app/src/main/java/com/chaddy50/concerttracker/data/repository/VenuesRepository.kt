@@ -1,8 +1,8 @@
 package com.chaddy50.concerttracker.data.repository
 
 import com.chaddy50.concerttracker.data.api.ConcertTrackerApiService
+import com.chaddy50.concerttracker.data.api.VenueRequest
 import com.chaddy50.concerttracker.data.entity.Venue
-import com.chaddy50.concerttracker.data.entity.VenueRequest
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.Json

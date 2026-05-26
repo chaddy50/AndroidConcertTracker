@@ -4,6 +4,8 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import com.chaddy50.concerttracker.TestData
+import com.chaddy50.concerttracker.ui.screens.performancesScreen.PerformancesContent
+import com.chaddy50.concerttracker.ui.screens.performancesScreen.PerformancesUiState
 import com.chaddy50.concerttracker.ui.theme.ConcertTrackerTheme
 import org.junit.Rule
 import org.junit.Test

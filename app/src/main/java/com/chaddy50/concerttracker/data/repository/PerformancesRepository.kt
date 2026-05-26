@@ -1,8 +1,8 @@
 package com.chaddy50.concerttracker.data.repository
 
 import com.chaddy50.concerttracker.data.api.ConcertTrackerApiService
+import com.chaddy50.concerttracker.data.api.PerformanceRequest
 import com.chaddy50.concerttracker.data.entity.Performance
-import com.chaddy50.concerttracker.data.entity.PerformanceRequest
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

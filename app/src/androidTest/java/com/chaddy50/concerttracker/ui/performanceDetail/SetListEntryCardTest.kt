@@ -4,6 +4,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import com.chaddy50.concerttracker.TestData
+import com.chaddy50.concerttracker.ui.screens.performanceDetailScreen.composables.SetListEntryCard
 import com.chaddy50.concerttracker.ui.theme.ConcertTrackerTheme
 import org.junit.Rule
 import org.junit.Test
@@ -18,7 +19,11 @@ class SetListEntryCardTest {
         val entryWithConductor = TestData.setListEntry.copy(conductor = TestData.conductor)
         composeTestRule.setContent {
             ConcertTrackerTheme {
-                SetListEntryCard(entry = entryWithConductor, performanceConductorId = "different-id", draftNotes = "", onNotesChange = {})
+                SetListEntryCard(
+                    entry = entryWithConductor,
+                    performanceConductorId = "different-id",
+                    draftNotes = "",
+                    onNotesChange = {})
             }
         }
         composeTestRule.onNodeWithText("Simon Rattle, conductor").assertIsDisplayed()
@@ -29,7 +34,11 @@ class SetListEntryCardTest {
         val entryWithConductor = TestData.setListEntry.copy(conductor = TestData.conductor)
         composeTestRule.setContent {
             ConcertTrackerTheme {
-                SetListEntryCard(entry = entryWithConductor, performanceConductorId = TestData.conductor.id, draftNotes = "", onNotesChange = {})
+                SetListEntryCard(
+                    entry = entryWithConductor,
+                    performanceConductorId = TestData.conductor.id,
+                    draftNotes = "",
+                    onNotesChange = {})
             }
         }
         composeTestRule.onNodeWithText("Simon Rattle, conductor").assertDoesNotExist()
@@ -40,7 +49,11 @@ class SetListEntryCardTest {
         val entryWithConductor = TestData.setListEntry.copy(conductor = TestData.conductor)
         composeTestRule.setContent {
             ConcertTrackerTheme {
-                SetListEntryCard(entry = entryWithConductor, performanceConductorId = null, draftNotes = "", onNotesChange = {})
+                SetListEntryCard(
+                    entry = entryWithConductor,
+                    performanceConductorId = null,
+                    draftNotes = "",
+                    onNotesChange = {})
             }
         }
         composeTestRule.onNodeWithText("Simon Rattle, conductor").assertIsDisplayed()

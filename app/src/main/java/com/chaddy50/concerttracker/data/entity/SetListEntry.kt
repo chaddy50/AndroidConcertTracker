@@ -8,38 +8,6 @@ data class SetListEntry(
     val work: Work,
     val order: Int,
     val conductor: Performer? = null,
-    val featuredPerformers: List<SetListEntryPerformer> = emptyList(),
+    val featuredPerformers: List<FeaturedPerformer> = emptyList(),
     val notes: String? = null
-)
-
-@Serializable
-data class SetListEntryPerformer(
-    val performer: Performer,
-    val role: String? = null
-)
-
-@Serializable
-data class SetListEntryRequest(
-    val notes: String? = null
-)
-
-@Serializable
-data class FeaturedPerformerRequest(
-    val performerId: String,
-    val role: String? = null
-)
-
-@Serializable
-data class SetListEntryCreateRequest(
-    val performanceId: String,
-    val workId: String,
-    val order: Int,
-    val featuredPerformers: List<FeaturedPerformerRequest>
-)
-
-@Serializable
-data class SetListEntryUpdateRequest(
-    val workId: String? = null,
-    val order: Int? = null,
-    val featuredPerformers: List<FeaturedPerformerRequest>? = null
 )

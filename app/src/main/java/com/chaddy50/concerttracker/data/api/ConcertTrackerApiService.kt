@@ -1,19 +1,15 @@
 package com.chaddy50.concerttracker.data.api
 
 import com.chaddy50.concerttracker.data.entity.Composer
-import com.chaddy50.concerttracker.data.entity.ComposerRequest
 import com.chaddy50.concerttracker.data.entity.Performance
-import com.chaddy50.concerttracker.data.entity.PerformanceRequest
 import com.chaddy50.concerttracker.data.entity.Performer
-import com.chaddy50.concerttracker.data.entity.PerformerRequest
 import com.chaddy50.concerttracker.data.entity.SetListEntry
-import com.chaddy50.concerttracker.data.entity.SetListEntryCreateRequest
-import com.chaddy50.concerttracker.data.entity.SetListEntryRequest
-import com.chaddy50.concerttracker.data.entity.SetListEntryUpdateRequest
 import com.chaddy50.concerttracker.data.entity.Venue
-import com.chaddy50.concerttracker.data.entity.VenueRequest
 import com.chaddy50.concerttracker.data.entity.Work
-import com.chaddy50.concerttracker.data.entity.WorkRequest
+import com.chaddy50.concerttracker.data.enum.PerformanceStatus
+import com.chaddy50.concerttracker.data.enum.PerformerType
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -67,3 +63,58 @@ interface ConcertTrackerApiService {
     @GET("works/{id}")
     suspend fun getWork(@Path("id") id: String): Work
 }
+
+@Serializable
+data class WorkRequest(
+    val title: String,
+    @SerialName("open_opus_id") val openOpusId: String? = null,
+    val composers: List<ComposerRequest>
+)
+
+@Serializable
+data class ComposerRequest(
+    val name: String,
+    @SerialName("open_opus_id") val openOpusId: String? = null
+)
+
+@Serializable
+data class PerformanceRequest(
+    val date: String,
+    val venueId: String,
+    val performerIds: List<String>,
+    val status: PerformanceStatus
+)
+
+@Serializable
+data class PerformerRequest(
+    val name: String,
+    val type: PerformerType,
+    val specialty: String? = null,
+    @SerialName("musicbrainz_id") val musicbrainzId: String? = null
+)
+
+@Serializable
+data class SetListEntryRequest(
+    val notes: String? = null
+)
+
+@Serializable
+data class FeaturedPerformerRequest(
+    val performerId: String,
+    val role: String? = null
+)
+
+@Serializable
+data class SetListEntryCreateRequest(
+    val performanceId: String,
+    val workId: String,
+    val order: Int,
+    val featuredPerformers: List<FeaturedPerformerRequest>
+)
+
+@Serializable
+data class SetListEntryUpdateRequest(
+    val workId: String? = null,
+    val order: Int? = null,
+    val featuredPerformers: List<FeaturedPerformerRequest>? = null
+)

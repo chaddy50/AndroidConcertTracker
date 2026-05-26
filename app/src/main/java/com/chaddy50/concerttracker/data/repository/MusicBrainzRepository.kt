@@ -1,7 +1,7 @@
 package com.chaddy50.concerttracker.data.repository
 
 import com.chaddy50.concerttracker.data.api.MusicBrainzApiService
-import com.chaddy50.concerttracker.data.entity.MusicBrainzResult
+import com.chaddy50.concerttracker.data.api.MusicBrainzResult
 import com.chaddy50.concerttracker.data.enum.MusicBrainzEntityType
 import com.chaddy50.concerttracker.data.enum.PerformerType
 import javax.inject.Inject

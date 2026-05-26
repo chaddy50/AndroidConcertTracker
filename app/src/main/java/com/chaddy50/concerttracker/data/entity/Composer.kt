@@ -9,9 +9,3 @@ data class Composer(
     val name: String,
     @SerialName("short_name") val shortName: String? = null
 )
-
-@Serializable
-data class ComposerRequest(
-    val name: String,
-    @SerialName("open_opus_id") val openOpusId: String? = null
-)

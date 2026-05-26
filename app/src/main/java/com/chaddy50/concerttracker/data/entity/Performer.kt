@@ -13,10 +13,3 @@ data class Performer(
     @SerialName("musicbrainz_id") val musicbrainzId: String? = null
 )
 
-@Serializable
-data class PerformerRequest(
-    val name: String,
-    val type: PerformerType,
-    val specialty: String? = null,
-    @SerialName("musicbrainz_id") val musicbrainzId: String? = null
-)

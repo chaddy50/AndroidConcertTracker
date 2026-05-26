@@ -1,11 +1,16 @@
 package com.chaddy50.concerttracker.data.api
 
+import com.chaddy50.concerttracker.data.enum.PerformerType
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import retrofit2.http.GET
 import retrofit2.http.Query
 
 interface MusicBrainzApiService {
+    companion object {
+        const val BASE_URL = "https://musicbrainz.org/ws/2/"
+    }
+
     @GET("artist")
     suspend fun searchArtists(
         @Query("query") query: String,
@@ -44,4 +49,11 @@ data class MusicBrainzWork(
     val id: String,
     val title: String,
     @SerialName("disambiguation") val disambiguation: String? = null
+)
+
+data class MusicBrainzResult(
+    val id: String,
+    val name: String,
+    val description: String? = null,
+    val performerType: PerformerType? = null
 )
