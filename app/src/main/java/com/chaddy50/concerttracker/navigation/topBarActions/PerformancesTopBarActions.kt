@@ -1,4 +1,4 @@
-package com.chaddy50.concerttracker.navigation.topbaractions
+package com.chaddy50.concerttracker.navigation.topBarActions
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert

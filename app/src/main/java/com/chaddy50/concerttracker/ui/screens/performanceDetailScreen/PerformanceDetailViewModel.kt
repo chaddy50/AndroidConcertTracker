@@ -12,7 +12,7 @@ import com.chaddy50.concerttracker.data.entity.Performance
 import com.chaddy50.concerttracker.data.api.SetListEntryRequest
 import com.chaddy50.concerttracker.data.repository.PerformancesRepository
 import com.chaddy50.concerttracker.data.repository.SetListEntriesRepository
-import com.chaddy50.concerttracker.navigation.PerformanceDetail
+import com.chaddy50.concerttracker.navigation.routes.PerformanceDetail
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce

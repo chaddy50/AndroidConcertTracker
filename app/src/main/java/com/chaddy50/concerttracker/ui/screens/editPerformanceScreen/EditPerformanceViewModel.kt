@@ -17,7 +17,7 @@ import com.chaddy50.concerttracker.data.enum.PerformanceStatus
 import com.chaddy50.concerttracker.data.enum.PerformerType
 import com.chaddy50.concerttracker.data.repository.PerformancesRepository
 import com.chaddy50.concerttracker.data.repository.PerformersRepository
-import com.chaddy50.concerttracker.navigation.PerformanceEdit
+import com.chaddy50.concerttracker.navigation.routes.PerformanceEdit
 import com.chaddy50.concerttracker.util.epochMillisToIso
 import com.chaddy50.concerttracker.util.isoToEpochMillis
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class PerformanceEditViewModel @Inject constructor(
+class EditPerformanceViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val performancesRepository: PerformancesRepository,
     private val performersRepository: PerformersRepository

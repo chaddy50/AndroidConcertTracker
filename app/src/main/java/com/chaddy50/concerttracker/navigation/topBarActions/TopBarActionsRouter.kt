@@ -1,4 +1,4 @@
-package com.chaddy50.concerttracker.navigation
+package com.chaddy50.concerttracker.navigation.topBarActions
 
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavBackStackEntry
@@ -6,8 +6,10 @@ import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.toRoute
-import com.chaddy50.concerttracker.navigation.topbaractions.PerformanceDetailTopBarActions
-import com.chaddy50.concerttracker.navigation.topbaractions.PerformancesTopBarActions
+import com.chaddy50.concerttracker.navigation.routes.PerformanceDetail
+import com.chaddy50.concerttracker.navigation.routes.PerformanceEdit
+import com.chaddy50.concerttracker.navigation.routes.Performances
+import com.chaddy50.concerttracker.navigation.routes.Settings
 
 @Composable
 fun TopBarActionsRouter(

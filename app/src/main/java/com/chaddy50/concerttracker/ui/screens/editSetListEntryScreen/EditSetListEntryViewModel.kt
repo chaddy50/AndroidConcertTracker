@@ -17,7 +17,7 @@ import com.chaddy50.concerttracker.data.repository.PerformancesRepository
 import com.chaddy50.concerttracker.data.repository.PerformersRepository
 import com.chaddy50.concerttracker.data.repository.SetListEntriesRepository
 import com.chaddy50.concerttracker.data.repository.WorksRepository
-import com.chaddy50.concerttracker.navigation.SetListEntryEdit
+import com.chaddy50.concerttracker.navigation.routes.SetListEntryEdit
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject

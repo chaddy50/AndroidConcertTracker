@@ -9,7 +9,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -22,34 +21,8 @@ fun EditSetListEntryScreen(
     onCancel: () -> Unit,
     onNavigateToSearchWork: () -> Unit,
     onNavigateToSearchPerformer: () -> Unit,
-    pendingWorkId: String?,
-    pendingWorkName: String?,
-    pendingWorkComposerId: String?,
-    pendingWorkComposerName: String?,
-    pendingPerformerId: String?,
-    pendingPerformerName: String?,
-    pendingPerformerType: String?,
-    pendingPerformerSpecialty: String?,
     viewModel: EditSetListEntryViewModel = hiltViewModel()
 ) {
-    LaunchedEffect(pendingWorkId, pendingWorkName, pendingWorkComposerId, pendingWorkComposerName) {
-        if (pendingWorkId != null && pendingWorkName != null &&
-            pendingWorkComposerId != null && pendingWorkComposerName != null) {
-            viewModel.selectWork(pendingWorkId, pendingWorkName, pendingWorkComposerId, pendingWorkComposerName)
-        }
-    }
-
-    LaunchedEffect(pendingPerformerId, pendingPerformerName) {
-        if (pendingPerformerId != null && pendingPerformerName != null) {
-            viewModel.addDraftFeaturedPerformer(
-                pendingPerformerId,
-                pendingPerformerName,
-                pendingPerformerType,
-                pendingPerformerSpecialty
-            )
-        }
-    }
-
     when (val state = viewModel.uiState) {
         is SetListEntryEditUiState.Loading -> {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

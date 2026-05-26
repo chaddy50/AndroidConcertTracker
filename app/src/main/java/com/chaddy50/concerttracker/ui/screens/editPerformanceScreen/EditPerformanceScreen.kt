@@ -13,7 +13,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -25,37 +24,10 @@ fun EditPerformanceScreen(
     onCancel: () -> Unit,
     onNavigateToCreateVenue: () -> Unit,
     onNavigateToSearchPerformer: () -> Unit,
-    shouldReload: Boolean,
-    onReloaded: () -> Unit,
     onNavigateToAddSetListEntry: () -> Unit,
     onNavigateToEditSetListEntry: (entryId: String) -> Unit,
-    pendingVenueId: String?,
-    pendingVenueName: String?,
-    pendingPerformerId: String?,
-    pendingPerformerName: String?,
-    pendingPerformerType: String?,
-    pendingPerformerSpecialty: String?,
-    viewModel: PerformanceEditViewModel = hiltViewModel()
+    viewModel: EditPerformanceViewModel = hiltViewModel()
 ) {
-    LaunchedEffect(shouldReload) {
-        if (shouldReload) {
-            viewModel.refreshSetList()
-            onReloaded()
-        }
-    }
-
-    LaunchedEffect(pendingVenueId, pendingVenueName) {
-        if (pendingVenueId != null && pendingVenueName != null) {
-            viewModel.updateDraftVenue(pendingVenueId, pendingVenueName)
-        }
-    }
-
-    LaunchedEffect(pendingPerformerId, pendingPerformerName) {
-        if (pendingPerformerId != null && pendingPerformerName != null) {
-            viewModel.addDraftPerformer(pendingPerformerId, pendingPerformerName, pendingPerformerType, pendingPerformerSpecialty)
-        }
-    }
-
     when (val state = viewModel.uiState) {
         is PerformanceEditUiState.Loading -> {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

@@ -10,7 +10,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import com.chaddy50.concerttracker.data.api.MusicBrainzResult
 import com.chaddy50.concerttracker.data.repository.MusicBrainzRepository
-import com.chaddy50.concerttracker.navigation.MusicBrainzSearch
+import com.chaddy50.concerttracker.navigation.routes.MusicBrainzSearch
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
