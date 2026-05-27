@@ -86,7 +86,8 @@ data class PerformanceRequest(
     val date: String,
     val venueId: String,
     val performerIds: List<String>,
-    val status: PerformanceStatus
+    val status: PerformanceStatus,
+    val setList: List<SetListEntryInlineRequest> = emptyList()
 )
 
 @Serializable
@@ -106,6 +107,13 @@ data class SetListEntryRequest(
 data class FeaturedPerformerRequest(
     val performerId: String,
     val role: String? = null
+)
+
+@Serializable
+data class SetListEntryInlineRequest(
+    val workId: String,
+    val order: Int,
+    val featuredPerformers: List<FeaturedPerformerRequest> = emptyList()
 )
 
 @Serializable

@@ -26,6 +26,7 @@ fun EditPerformanceScreen(
     onNavigateToSearchPerformer: () -> Unit,
     onNavigateToAddSetListEntry: () -> Unit,
     onNavigateToEditSetListEntry: (entryId: String) -> Unit,
+    onNavigateToEditPendingSetListEntry: (localId: String) -> Unit,
     viewModel: EditPerformanceViewModel = hiltViewModel()
 ) {
     when (val state = viewModel.uiState) {
@@ -54,8 +55,8 @@ fun EditPerformanceScreen(
                     draftVenueName = viewModel.draftVenueName,
                     draftPerformers = viewModel.draftPerformers,
                     draftStatus = viewModel.draftStatus,
-                    isCreateMode = viewModel.isCreateMode,
                     currentSetList = viewModel.currentSetList,
+                    pendingSetListEntries = viewModel.pendingSetListEntries,
                     onDraftDateChange = viewModel::updateDraftDate,
                     onDraftStatusChange = viewModel::updateDraftStatus,
                     onVenueClick = onNavigateToCreateVenue,
@@ -63,6 +64,7 @@ fun EditPerformanceScreen(
                     onRemovePerformer = viewModel::removeDraftPerformer,
                     onAddSetListEntryClick = onNavigateToAddSetListEntry,
                     onEditSetListEntryClick = onNavigateToEditSetListEntry,
+                    onEditPendingSetListEntryClick = onNavigateToEditPendingSetListEntry,
                     modifier = Modifier.weight(1f)
                 )
                 Row(

@@ -11,7 +11,10 @@ import androidx.navigation.toRoute
 import com.chaddy50.concerttracker.data.enum.MusicBrainzEntityType
 import com.chaddy50.concerttracker.ui.screens.editPerformanceScreen.EditPerformanceScreen
 import com.chaddy50.concerttracker.ui.screens.editPerformanceScreen.EditPerformanceViewModel
+import com.chaddy50.concerttracker.ui.screens.editPerformanceScreen.PendingFeaturedPerformer
+import com.chaddy50.concerttracker.ui.screens.editSetListEntryScreen.DraftFeaturedPerformer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 
 @Serializable
 data class PerformanceEdit(val id: String?)
@@ -24,6 +27,7 @@ fun NavGraphBuilder.performanceEdit(navController: NavController) {
 
         val pendingVenue by handle.pendingVenueFlow().collectAsStateWithLifecycle(null)
         val pendingPerformer by handle.pendingPerformerFlow().collectAsStateWithLifecycle(null)
+        val pendingSetListEntry by handle.pendingSetListEntryFlow().collectAsStateWithLifecycle(null)
         val shouldReload by handle.getStateFlow<Boolean>("shouldReload", false).collectAsStateWithLifecycle()
 
         LaunchedEffect(pendingVenue) {
@@ -40,6 +44,20 @@ fun NavGraphBuilder.performanceEdit(navController: NavController) {
             }
         }
 
+        LaunchedEffect(pendingSetListEntry) {
+            pendingSetListEntry?.let { result ->
+                val performers = result.featuredPerformers.map { p ->
+                    PendingFeaturedPerformer(p.performerId, p.name, p.role)
+                }
+                if (result.pendingLocalId != null) {
+                    viewModel.replacePendingSetListEntry(result.pendingLocalId, result.workId, result.workTitle, result.order, performers)
+                } else {
+                    viewModel.addPendingSetListEntry(result.workId, result.workTitle, result.order, performers)
+                }
+                handle.clearPendingSetListEntry()
+            }
+        }
+
         LaunchedEffect(shouldReload) {
             if (shouldReload) {
                 viewModel.refreshSetList()
@@ -53,10 +71,26 @@ fun NavGraphBuilder.performanceEdit(navController: NavController) {
             onNavigateToCreateVenue = { navController.navigate(VenueSearch) },
             onNavigateToSearchPerformer = { navController.navigate(MusicBrainzSearch(MusicBrainzEntityType.PERFORMER)) },
             onNavigateToAddSetListEntry = {
-                navController.navigate(SetListEntryEdit(performanceId = performanceId!!, entryId = null))
+                navController.navigate(SetListEntryEdit(performanceId = performanceId, entryId = null))
             },
             onNavigateToEditSetListEntry = { entryId ->
-                navController.navigate(SetListEntryEdit(performanceId = performanceId!!, entryId = entryId))
+                navController.navigate(SetListEntryEdit(performanceId = performanceId, entryId = entryId))
+            },
+            onNavigateToEditPendingSetListEntry = { localId ->
+                val entry = viewModel.pendingSetListEntries.find { it.localId == localId } ?: return@EditPerformanceScreen
+                navController.navigate(
+                    SetListEntryEdit(
+                        performanceId = null,
+                        entryId = null,
+                        pendingLocalId = entry.localId,
+                        pendingWorkId = entry.workId,
+                        pendingWorkTitle = entry.workTitle,
+                        pendingOrder = entry.order,
+                        pendingFeaturedPerformersJson = Json.encodeToString(
+                            entry.featuredPerformers.map { DraftFeaturedPerformer(it.performerId, it.name, it.role) }
+                        )
+                    )
+                )
             }
         )
     }

@@ -8,8 +8,10 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
+import com.chaddy50.concerttracker.data.api.FeaturedPerformerRequest
 import com.chaddy50.concerttracker.data.api.PerformanceRequest
 import com.chaddy50.concerttracker.data.api.PerformerRequest
+import com.chaddy50.concerttracker.data.api.SetListEntryInlineRequest
 import com.chaddy50.concerttracker.data.entity.Performance
 import com.chaddy50.concerttracker.data.entity.Performer
 import com.chaddy50.concerttracker.data.entity.SetListEntry
@@ -57,6 +59,8 @@ class EditPerformanceViewModel @Inject constructor(
     val draftPerformers = mutableStateListOf<Performer>()
 
     val currentSetList = mutableStateListOf<SetListEntry>()
+
+    val pendingSetListEntries = mutableStateListOf<PendingSetListEntry>()
 
     var isSaving: Boolean by mutableStateOf(false)
         private set
@@ -127,6 +131,30 @@ class EditPerformanceViewModel @Inject constructor(
         draftPerformers.removeAll { it.id == performerId }
     }
 
+    fun addPendingSetListEntry(
+        workId: String,
+        workTitle: String,
+        order: Int,
+        featuredPerformers: List<PendingFeaturedPerformer>
+    ) {
+        pendingSetListEntries.add(
+            PendingSetListEntry(java.util.UUID.randomUUID().toString(), workId, workTitle, order, featuredPerformers)
+        )
+    }
+
+    fun replacePendingSetListEntry(
+        localId: String,
+        workId: String,
+        workTitle: String,
+        order: Int,
+        featuredPerformers: List<PendingFeaturedPerformer>
+    ) {
+        val index = pendingSetListEntries.indexOfFirst { it.localId == localId }
+        if (index != -1) {
+            pendingSetListEntries[index] = PendingSetListEntry(localId, workId, workTitle, order, featuredPerformers)
+        }
+    }
+
     fun refreshSetList() {
         val id = performanceId ?: return
         viewModelScope.launch {
@@ -155,7 +183,16 @@ class EditPerformanceViewModel @Inject constructor(
                             date = date,
                             venueId = venueId,
                             performerIds = performerIds,
-                            status = status
+                            status = status,
+                            setList = pendingSetListEntries.map { entry ->
+                                SetListEntryInlineRequest(
+                                    workId = entry.workId,
+                                    order = entry.order,
+                                    featuredPerformers = entry.featuredPerformers.map { p ->
+                                        FeaturedPerformerRequest(p.performerId, p.role.ifBlank { null })
+                                    }
+                                )
+                            }
                         )
                     )
                 } else {
@@ -178,6 +215,20 @@ class EditPerformanceViewModel @Inject constructor(
         }
     }
 }
+
+data class PendingSetListEntry(
+    val localId: String,
+    val workId: String,
+    val workTitle: String,
+    val order: Int,
+    val featuredPerformers: List<PendingFeaturedPerformer>
+)
+
+data class PendingFeaturedPerformer(
+    val performerId: String,
+    val name: String,
+    val role: String
+)
 
 sealed interface PerformanceEditUiState {
     data object Loading : PerformanceEditUiState

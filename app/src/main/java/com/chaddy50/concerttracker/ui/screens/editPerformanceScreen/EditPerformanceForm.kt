@@ -31,8 +31,8 @@ fun PerformanceEditForm(
     draftVenueName: String?,
     draftPerformers: List<Performer>,
     draftStatus: PerformanceStatus?,
-    isCreateMode: Boolean,
     currentSetList: List<SetListEntry>,
+    pendingSetListEntries: List<PendingSetListEntry>,
     onDraftDateChange: (Long) -> Unit,
     onDraftStatusChange: (PerformanceStatus) -> Unit,
     onVenueClick: () -> Unit,
@@ -40,6 +40,7 @@ fun PerformanceEditForm(
     onRemovePerformer: (String) -> Unit,
     onAddSetListEntryClick: () -> Unit,
     onEditSetListEntryClick: (entryId: String) -> Unit,
+    onEditPendingSetListEntryClick: (localId: String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -88,9 +89,10 @@ fun PerformanceEditForm(
 
         SetListEditList(
             setList = currentSetList,
-            isCreateMode = isCreateMode,
+            pendingSetListEntries = pendingSetListEntries,
             onAddSetListEntryClick = onAddSetListEntryClick,
             onEditSetListEntryClick = onEditSetListEntryClick,
+            onEditPendingSetListEntryClick = onEditPendingSetListEntryClick,
             modifier = Modifier.padding(top = 16.dp)
         )
     }
@@ -110,15 +112,16 @@ fun PerformanceEditFormPreview() {
                 Performer(id = "id3", name = "Andris Nelsons", type = PerformerType.CONDUCTOR, specialty = null)
             ),
             draftStatus = PerformanceStatus.ATTENDED,
-            isCreateMode = false,
             currentSetList = emptyList(),
+            pendingSetListEntries = emptyList(),
             onDraftDateChange = {},
             onDraftStatusChange = {},
             onVenueClick = {},
             onAddPerformerClick = {},
             onRemovePerformer = {},
             onAddSetListEntryClick = {},
-            onEditSetListEntryClick = {}
+            onEditSetListEntryClick = {},
+            onEditPendingSetListEntryClick = {}
         )
     }
 }
@@ -132,15 +135,16 @@ fun PerformanceEditFormEmptyPreview() {
             draftVenueName = null,
             draftPerformers = emptyList(),
             draftStatus = PerformanceStatus.UPCOMING,
-            isCreateMode = true,
             currentSetList = emptyList(),
+            pendingSetListEntries = emptyList(),
             onDraftDateChange = {},
             onDraftStatusChange = {},
             onVenueClick = {},
             onAddPerformerClick = {},
             onRemovePerformer = {},
             onAddSetListEntryClick = {},
-            onEditSetListEntryClick = {}
+            onEditSetListEntryClick = {},
+            onEditPendingSetListEntryClick = {}
         )
     }
 }

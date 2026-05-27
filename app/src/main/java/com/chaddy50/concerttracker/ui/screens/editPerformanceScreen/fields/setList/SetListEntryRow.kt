@@ -17,17 +17,19 @@ import androidx.compose.ui.unit.dp
 import com.chaddy50.concerttracker.data.entity.SetListEntry
 
 @Composable
-fun SetListEntryRow(entry: SetListEntry, onEditClick: () -> Unit) {
-    val composerNames = entry.work.composers
-        .joinToString(", ") { it.shortName ?: it.name }
-
+fun SetListEntryRow(
+    workTitle: String,
+    composerNames: String,
+    featuredPerformerLabels: List<String>,
+    onEditClick: () -> Unit
+) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = entry.work.title,
+                text = workTitle,
                 style = MaterialTheme.typography.bodyMedium
             )
             if (composerNames.isNotEmpty()) {
@@ -37,12 +39,7 @@ fun SetListEntryRow(entry: SetListEntry, onEditClick: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            entry.featuredPerformers.forEach { featuredPerformer ->
-                val label = if (featuredPerformer.role != null) {
-                    "${featuredPerformer.performer.name}, ${featuredPerformer.role}"
-                } else {
-                    featuredPerformer.performer.name
-                }
+            featuredPerformerLabels.forEach { label ->
                 Text(
                     text = label,
                     style = MaterialTheme.typography.bodySmall,

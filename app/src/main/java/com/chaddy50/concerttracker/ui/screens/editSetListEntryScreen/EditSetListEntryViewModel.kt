@@ -22,6 +22,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+@kotlinx.serialization.Serializable
 data class DraftFeaturedPerformer(
     val performerId: String,
     val name: String,
@@ -37,8 +38,10 @@ class EditSetListEntryViewModel @Inject constructor(
     private val setListEntriesRepository: SetListEntriesRepository
 ) : ViewModel() {
 
-    private val performanceId: String = savedStateHandle.toRoute<SetListEntryEdit>().performanceId
-    private val entryId: String? = savedStateHandle.toRoute<SetListEntryEdit>().entryId
+    private val route: SetListEntryEdit = savedStateHandle.toRoute()
+    private val performanceId: String? = route.performanceId
+    private val entryId: String? = route.entryId
+    private val pendingLocalId: String? = route.pendingLocalId
 
     val isCreateMode: Boolean = entryId == null
 
@@ -76,25 +79,37 @@ class EditSetListEntryViewModel @Inject constructor(
         viewModelScope.launch {
             uiState = SetListEntryEditUiState.Loading
             try {
-                val performance = performancesRepository.getPerformance(performanceId)
-                if (isCreateMode) {
-                    draftOrder = (performance.setList.size + 1).toString()
-                } else {
-                    val entry = performance.setList.find { it.id == entryId }
-                        ?: error("Set list entry $entryId not found in performance $performanceId")
-                    draftWorkId = entry.work.id
-                    draftWorkTitle = entry.work.title
-                    draftOrder = entry.order.toString()
-                    draftFeaturedPerformers.clear()
-                    draftFeaturedPerformers.addAll(
-                        entry.featuredPerformers.map { featuredPerformer ->
-                            DraftFeaturedPerformer(
-                                performerId = featuredPerformer.performer.id,
-                                name = featuredPerformer.performer.name,
-                                role = featuredPerformer.role ?: ""
-                            )
-                        }
-                    )
+                if (pendingLocalId != null) {
+                    draftWorkId = route.pendingWorkId
+                    draftWorkTitle = route.pendingWorkTitle
+                    draftOrder = route.pendingOrder?.toString() ?: "1"
+                    route.pendingFeaturedPerformersJson?.let { json ->
+                        val performers: List<DraftFeaturedPerformer> =
+                            kotlinx.serialization.json.Json.decodeFromString(json)
+                        draftFeaturedPerformers.clear()
+                        draftFeaturedPerformers.addAll(performers)
+                    }
+                } else if (performanceId != null) {
+                    val performance = performancesRepository.getPerformance(performanceId)
+                    if (isCreateMode) {
+                        draftOrder = (performance.setList.size + 1).toString()
+                    } else {
+                        val entry = performance.setList.find { it.id == entryId }
+                            ?: error("Set list entry $entryId not found in performance $performanceId")
+                        draftWorkId = entry.work.id
+                        draftWorkTitle = entry.work.title
+                        draftOrder = entry.order.toString()
+                        draftFeaturedPerformers.clear()
+                        draftFeaturedPerformers.addAll(
+                            entry.featuredPerformers.map { featuredPerformer ->
+                                DraftFeaturedPerformer(
+                                    performerId = featuredPerformer.performer.id,
+                                    name = featuredPerformer.performer.name,
+                                    role = featuredPerformer.role ?: ""
+                                )
+                            }
+                        )
+                    }
                 }
                 uiState = SetListEntryEditUiState.Ready
             } catch (exception: Exception) {
@@ -156,9 +171,27 @@ class EditSetListEntryViewModel @Inject constructor(
         }
     }
 
-    fun saveSetListEntry(onSaved: () -> Unit) {
+    fun saveSetListEntry(
+        onSaved: () -> Unit,
+        onSavedAsPending: ((PendingEntryResult) -> Unit)? = null
+    ) {
         val workId = draftWorkId ?: return
+        val workTitle = draftWorkTitle ?: return
         val order = draftOrder.toIntOrNull()?.takeIf { it > 0 } ?: return
+
+        if (performanceId == null) {
+            onSavedAsPending?.invoke(
+                PendingEntryResult(
+                    pendingLocalId = pendingLocalId,
+                    workId = workId,
+                    workTitle = workTitle,
+                    order = order,
+                    featuredPerformers = draftFeaturedPerformers.toList()
+                )
+            )
+            return
+        }
+
         val featuredPerformerRequests = draftFeaturedPerformers.map { draftPerformer ->
             FeaturedPerformerRequest(
                 performerId = draftPerformer.performerId,
@@ -197,6 +230,14 @@ class EditSetListEntryViewModel @Inject constructor(
             }
         }
     }
+
+    data class PendingEntryResult(
+        val pendingLocalId: String?,
+        val workId: String,
+        val workTitle: String,
+        val order: Int,
+        val featuredPerformers: List<DraftFeaturedPerformer>
+    )
 
     fun deleteSetListEntry(onDeleted: () -> Unit) {
         val id = entryId ?: return
