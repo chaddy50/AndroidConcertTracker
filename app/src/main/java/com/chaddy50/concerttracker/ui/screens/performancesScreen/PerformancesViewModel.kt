@@ -35,7 +35,8 @@ class PerformancesViewModel @Inject constructor(
         viewModelScope.launch {
             uiState = PerformancesUiState.Loading
             try {
-                repository.getPerformances()
+                val performances = repository.getPerformances()
+                uiState = PerformancesUiState.Success(performances)
             } catch (e: Exception) {
                 uiState = PerformancesUiState.Error(e.message ?: "Unknown error")
             }

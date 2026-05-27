@@ -61,12 +61,18 @@ fun PerformancesContent(
             }
         }
         is PerformancesUiState.Success -> {
-            LazyColumn(modifier = Modifier.padding(16.dp)) {
-                items(state.performances, key = { it.id }) { performance ->
-                    PerformanceCard(
-                        performance = performance,
-                        onClick = { onPerformanceClick(performance.id) }
-                    )
+            if (state.performances.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("No performances")
+                }
+            } else {
+                LazyColumn(modifier = Modifier.padding(16.dp)) {
+                    items(state.performances, key = { it.id }) { performance ->
+                        PerformanceCard(
+                            performance = performance,
+                            onClick = { onPerformanceClick(performance.id) }
+                        )
+                    }
                 }
             }
         }
