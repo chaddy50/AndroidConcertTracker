@@ -60,4 +60,9 @@ class PerformancesRepository @Inject constructor(
         _performances.value = _performances.value.map { if (it.id == id) result else it }
         return result
     }
+
+    suspend fun deletePerformance(id: String) {
+        apiService().deletePerformance(id)
+        _performances.value = _performances.value.filter { it.id != id }
+    }
 }

@@ -34,6 +34,9 @@ interface ConcertTrackerApiService {
     @PUT("performances/{id}")
     suspend fun updatePerformance(@Path("id") id: String, @Body request: PerformanceRequest): Performance
 
+    @DELETE("performances/{id}")
+    suspend fun deletePerformance(@Path("id") id: String)
+
     @POST("set-list-entries/")
     suspend fun createSetListEntry(@Body request: SetListEntryCreateRequest): SetListEntry
 

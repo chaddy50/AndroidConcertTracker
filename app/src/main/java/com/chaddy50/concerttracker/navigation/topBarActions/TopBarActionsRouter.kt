@@ -1,6 +1,7 @@
 package com.chaddy50.concerttracker.navigation.topBarActions
 
 import androidx.compose.runtime.Composable
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
@@ -10,6 +11,7 @@ import com.chaddy50.concerttracker.navigation.routes.PerformanceDetail
 import com.chaddy50.concerttracker.navigation.routes.PerformanceEdit
 import com.chaddy50.concerttracker.navigation.routes.Performances
 import com.chaddy50.concerttracker.navigation.routes.Settings
+import com.chaddy50.concerttracker.ui.screens.editPerformanceScreen.EditPerformanceViewModel
 
 @Composable
 fun TopBarActionsRouter(
@@ -29,6 +31,21 @@ fun TopBarActionsRouter(
                 PerformanceDetailTopBarActions(
                     onNavigateToEdit = { navController.navigate(PerformanceEdit(performanceId)) }
                 )
+            }
+        }
+        currentDestination?.hasRoute<PerformanceEdit>() == true -> {
+            currentBackStackEntry?.let { entry ->
+                val performanceId = entry.toRoute<PerformanceEdit>().id
+                if (performanceId != null) {
+                    val viewModel: EditPerformanceViewModel = hiltViewModel(entry)
+                    EditPerformanceTopBarActions(
+                        onDeletePerformance = {
+                            viewModel.deletePerformance {
+                                navController.popBackStack<Performances>(inclusive = false)
+                            }
+                        }
+                    )
+                }
             }
         }
     }

@@ -214,6 +214,18 @@ class EditPerformanceViewModel @Inject constructor(
             }
         }
     }
+
+    fun deletePerformance(onDeleted: () -> Unit) {
+        val id = performanceId ?: return
+        viewModelScope.launch {
+            try {
+                performancesRepository.deletePerformance(id)
+                onDeleted()
+            } catch (e: Exception) {
+                saveError = "Failed to delete: ${e.message}"
+            }
+        }
+    }
 }
 
 data class PendingSetListEntry(
