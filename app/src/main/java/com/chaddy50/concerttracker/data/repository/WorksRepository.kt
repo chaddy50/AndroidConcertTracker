@@ -38,6 +38,10 @@ class WorksRepository @Inject constructor(
         return cachedApiService!!
     }
 
+    suspend fun searchWorks(query: String): List<Work> {
+        return apiService().getWorks(name = query.ifBlank { null })
+    }
+
     suspend fun createWorkFromOpenOpus(
         openOpusWorkId: String,
         title: String,

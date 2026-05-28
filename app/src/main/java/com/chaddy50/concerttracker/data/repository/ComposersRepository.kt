@@ -1,20 +1,18 @@
 package com.chaddy50.concerttracker.data.repository
 
 import com.chaddy50.concerttracker.data.api.ConcertTrackerApiService
-import com.chaddy50.concerttracker.data.api.PerformerRequest
-import com.chaddy50.concerttracker.data.entity.Performer
+import com.chaddy50.concerttracker.data.entity.Composer
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
-import retrofit2.HttpException
 import retrofit2.Retrofit
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class PerformersRepository @Inject constructor(
+class ComposersRepository @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val okHttpClient: OkHttpClient,
     private val json: Json
@@ -36,24 +34,7 @@ class PerformersRepository @Inject constructor(
         return cachedApiService!!
     }
 
-    suspend fun searchPerformers(query: String): List<Performer> {
-        return apiService().getPerformers(name = query.ifBlank { null })
-    }
-
-    suspend fun createPerformer(request: PerformerRequest): Performer {
-        return try {
-            apiService().createPerformer(request)
-        } catch (e: HttpException) {
-            if (e.code() == 409) {
-                val body = e.response()?.errorBody()?.string()
-                if (body != null) {
-                    json.decodeFromString<Performer>(body)
-                } else {
-                    throw e
-                }
-            } else {
-                throw e
-            }
-        }
+    suspend fun searchComposers(query: String): List<Composer> {
+        return apiService().getComposers(name = query.ifBlank { null })
     }
 }

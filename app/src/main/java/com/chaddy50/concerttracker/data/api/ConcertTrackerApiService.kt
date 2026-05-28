@@ -16,6 +16,7 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface ConcertTrackerApiService {
     companion object {
@@ -52,17 +53,26 @@ interface ConcertTrackerApiService {
     @POST("venues/")
     suspend fun createVenue(@Body request: VenueRequest): Venue
 
+    @GET("performers/")
+    suspend fun getPerformers(@Query("name") name: String? = null): List<Performer>
+
     @POST("performers/")
     suspend fun createPerformer(@Body request: PerformerRequest): Performer
 
     @GET("performers/{id}")
     suspend fun getPerformer(@Path("id") id: String): Performer
 
+    @GET("composers/")
+    suspend fun getComposers(@Query("name") name: String? = null): List<Composer>
+
     @POST("composers/")
     suspend fun createComposer(@Body request: ComposerRequest): Composer
 
     @GET("composers/{id}")
     suspend fun getComposer(@Path("id") id: String): Composer
+
+    @GET("works/")
+    suspend fun getWorks(@Query("name") name: String? = null): List<Work>
 
     @POST("works/")
     suspend fun createWork(@Body request: WorkRequest): Work

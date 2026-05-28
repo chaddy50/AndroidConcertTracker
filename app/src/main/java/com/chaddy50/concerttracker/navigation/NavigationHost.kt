@@ -43,7 +43,8 @@ fun NavigationHost() {
         }
         currentDestination?.hasRoute<VenueSearch>() == true -> stringResource(R.string.create_venue_title)
         currentDestination?.hasRoute<MusicBrainzSearch>() == true -> stringResource(R.string.musicbrainz_search_title)
-        currentDestination?.hasRoute<OpenOpusWorkSearch>() == true -> stringResource(R.string.open_opus_work_search_title)
+        currentDestination?.hasRoute<OpenOpusComposerSearch>() == true -> stringResource(R.string.open_opus_composer_search_title)
+        currentDestination?.hasRoute<OpenOpusWorkSearch>() == true -> stringResource(R.string.open_opus_work_list_title)
         currentDestination?.hasRoute<SetListEntryEdit>() == true -> {
             val isNew = currentBackStackEntry?.toRoute<SetListEntryEdit>()?.entryId == null
             if (isNew) stringResource(R.string.set_list_entry_form_add_title)
@@ -99,6 +100,7 @@ fun NavigationHost() {
             setListEntryEdit(navController)
             venueSearch(navController)
             musicBrainzSearch(navController)
+            openOpusComposerSearch(navController)
             openOpusWorkSearch(navController)
             settings()
         }

@@ -55,8 +55,9 @@
     <string name="performance_form_performers_label">Performers</string>
     <string name="performance_form_add_performer">Add Performer</string>
 
-    <!-- Open Opus work search screen -->
-    <string name="open_opus_work_search_title">Find Work</string>
+    <!-- Open Opus work search screens -->
+    <string name="open_opus_composer_search_title">Find Composer</string>
+    <string name="open_opus_work_list_title">Find Work</string>
 
     <!-- Set list entry form screen -->
     <string name="set_list_entry_form_add_title">Add Entry</string>

@@ -4,13 +4,18 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
-import com.chaddy50.concerttracker.ui.composables.searchFields.openOpusWorkSearch.OpenOpusWorkSearchScreen
+import androidx.navigation.toRoute
+import com.chaddy50.concerttracker.ui.composables.searchFields.openOpusWorkSearch.WorkSearchScreen
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.serialization.Serializable
+import java.util.UUID
 
 @Serializable
-object OpenOpusWorkSearch
+data class OpenOpusWorkSearch(
+    val composerId: String,
+    val composerCompleteName: String
+)
 
 data class PendingWorkResult(
     val id: String,
@@ -38,14 +43,25 @@ fun SavedStateHandle.clearPendingWork() {
 }
 
 fun NavGraphBuilder.openOpusWorkSearch(navController: NavController) {
-    composable<OpenOpusWorkSearch> {
-        OpenOpusWorkSearchScreen(
-            onWorkSelected = { openOpusWorkId, workTitle, openOpusComposerId, composerName ->
+    composable<OpenOpusWorkSearch> { backStackEntry ->
+        val route = backStackEntry.toRoute<OpenOpusWorkSearch>()
+
+        WorkSearchScreen(
+            onWorkSelected = { work ->
                 navController.previousBackStackEntry?.savedStateHandle?.apply {
-                    set("selectedWorkId", openOpusWorkId)
+                    set("selectedWorkId", work.id)
+                    set("selectedWorkName", work.title)
+                    set("selectedWorkComposerId", route.composerId)
+                    set("selectedWorkComposerName", route.composerCompleteName)
+                }
+                navController.popBackStack()
+            },
+            onCustomWorkSelected = { workTitle ->
+                navController.previousBackStackEntry?.savedStateHandle?.apply {
+                    set("selectedWorkId", "CUSTOM-${UUID.randomUUID()}")
                     set("selectedWorkName", workTitle)
-                    set("selectedWorkComposerId", openOpusComposerId)
-                    set("selectedWorkComposerName", composerName)
+                    set("selectedWorkComposerId", route.composerId)
+                    set("selectedWorkComposerName", route.composerCompleteName)
                 }
                 navController.popBackStack()
             }
