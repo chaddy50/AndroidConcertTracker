@@ -17,12 +17,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -38,6 +41,11 @@ fun MusicBrainzSearchScreen(
 ) {
     var showCustomDialog by remember { mutableStateOf(false) }
     val state = viewModel.uiState
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         OutlinedTextField(
@@ -50,6 +58,7 @@ fun MusicBrainzSearchScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)
+                .focusRequester(focusRequester)
         )
 
         LazyColumn(modifier = Modifier.weight(1f)) {

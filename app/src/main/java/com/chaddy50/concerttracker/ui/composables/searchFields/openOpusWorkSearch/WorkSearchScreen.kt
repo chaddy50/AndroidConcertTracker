@@ -17,12 +17,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.chaddy50.concerttracker.data.api.OpenOpusWork
@@ -35,6 +38,11 @@ fun WorkSearchScreen(
 ) {
     var showCustomDialog by remember { mutableStateOf(false) }
     val state = viewModel.uiState
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         OutlinedTextField(
@@ -45,6 +53,7 @@ fun WorkSearchScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 4.dp)
+                .focusRequester(focusRequester)
         )
         LazyRow(modifier = Modifier.padding(horizontal = 8.dp)) {
             items(OpenOpusGenre.entries) { genre ->
