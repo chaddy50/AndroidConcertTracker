@@ -20,7 +20,8 @@ fun SettingsContent(serverUrl: String, onServerUrlChanged: (String) -> Unit) {
             value = serverUrl,
             onValueChange = onServerUrlChanged,
             label = { Text(stringResource(R.string.settings_server_url_label)) },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
         )
     }
 }
