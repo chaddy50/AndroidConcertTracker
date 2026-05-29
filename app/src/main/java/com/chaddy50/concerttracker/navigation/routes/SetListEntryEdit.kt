@@ -23,6 +23,7 @@ data class SetListEntryEdit(
     val pendingLocalId: String? = null,
     val pendingWorkId: String? = null,
     val pendingWorkTitle: String? = null,
+    val pendingComposerName: String? = null,
     val pendingOrder: Int? = null,
     val pendingFeaturedPerformersJson: String? = null
 )
@@ -32,6 +33,7 @@ data class PendingSetListEntryResult(
     val pendingLocalId: String?,
     val workId: String,
     val workTitle: String,
+    val composerName: String,
     val order: Int,
     val featuredPerformers: List<PendingFeaturedPerformerResult>
 )
@@ -85,6 +87,7 @@ fun NavGraphBuilder.setListEntryEdit(navController: NavController) {
                     pendingLocalId = pendingEntryData.pendingLocalId,
                     workId = pendingEntryData.workId,
                     workTitle = pendingEntryData.workTitle,
+                    composerName = pendingEntryData.composerName,
                     order = pendingEntryData.order,
                     featuredPerformers = pendingEntryData.featuredPerformers.map { p ->
                         PendingFeaturedPerformerResult(p.performerId, p.name, p.role)

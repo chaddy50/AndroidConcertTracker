@@ -41,7 +41,7 @@ fun SetListEditList(
         pendingSetListEntries.forEachIndexed { index, pendingEntry ->
             SetListEntryRow(
                 workTitle = pendingEntry.workTitle,
-                composerNames = "",
+                composerNames = pendingEntry.composerName,
                 featuredPerformerLabels = pendingEntry.featuredPerformers.map { fp ->
                     if (fp.role.isNotBlank()) "${fp.name}, ${fp.role}" else fp.name
                 },

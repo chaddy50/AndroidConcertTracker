@@ -54,6 +54,9 @@ class EditSetListEntryViewModel @Inject constructor(
     var draftWorkTitle: String? by mutableStateOf(null)
         private set
 
+    var draftComposerName: String by mutableStateOf("")
+        private set
+
     var draftOrder: String by mutableStateOf("1")
         private set
 
@@ -82,6 +85,7 @@ class EditSetListEntryViewModel @Inject constructor(
                 if (pendingLocalId != null) {
                     draftWorkId = route.pendingWorkId
                     draftWorkTitle = route.pendingWorkTitle
+                    draftComposerName = route.pendingComposerName ?: ""
                     draftOrder = route.pendingOrder?.toString() ?: "1"
                     route.pendingFeaturedPerformersJson?.let { json ->
                         val performers: List<DraftFeaturedPerformer> =
@@ -98,6 +102,7 @@ class EditSetListEntryViewModel @Inject constructor(
                             ?: error("Set list entry $entryId not found in performance $performanceId")
                         draftWorkId = entry.work.id
                         draftWorkTitle = entry.work.title
+                        draftComposerName = entry.work.composers.joinToString(", ") { it.shortName ?: it.name }
                         draftOrder = entry.order.toString()
                         draftFeaturedPerformers.clear()
                         draftFeaturedPerformers.addAll(
@@ -124,6 +129,7 @@ class EditSetListEntryViewModel @Inject constructor(
                 val work = worksRepository.createWorkFromOpenOpus(openOpusWorkId, title, openOpusComposerId, composerName)
                 draftWorkId = work.id
                 draftWorkTitle = work.title
+                draftComposerName = composerName
             } catch (exception: Exception) {
                 saveError = "Failed to add work: ${exception.message}"
             }
@@ -185,6 +191,7 @@ class EditSetListEntryViewModel @Inject constructor(
                     pendingLocalId = pendingLocalId,
                     workId = workId,
                     workTitle = workTitle,
+                    composerName = draftComposerName,
                     order = order,
                     featuredPerformers = draftFeaturedPerformers.toList()
                 )
@@ -235,6 +242,7 @@ class EditSetListEntryViewModel @Inject constructor(
         val pendingLocalId: String?,
         val workId: String,
         val workTitle: String,
+        val composerName: String,
         val order: Int,
         val featuredPerformers: List<DraftFeaturedPerformer>
     )
