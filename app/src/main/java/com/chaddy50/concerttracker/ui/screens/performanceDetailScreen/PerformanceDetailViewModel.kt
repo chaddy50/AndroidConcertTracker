@@ -17,7 +17,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -38,15 +37,6 @@ class PerformanceDetailViewModel @Inject constructor(
         private set
 
     init {
-        viewModelScope.launch {
-            performancesRepository.performances
-                .drop(1)
-                .mapNotNull { list -> list.find { it.id == performanceId } }
-                .collect { performance ->
-                    draftNotes = performance.setList.associate { it.id to (it.notes ?: "") }
-                    uiState = PerformanceDetailUiState.Success(performance)
-                }
-        }
         viewModelScope.launch {
             snapshotFlow { draftNotes }
                 .drop(1)

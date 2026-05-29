@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
@@ -28,9 +29,11 @@ import com.chaddy50.concerttracker.navigation.topBarActions.TopBarActionsRouter
 @Composable
 fun NavigationHost() {
     val navController = rememberNavController()
+    val tabNavController = rememberNavController()
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = currentBackStackEntry?.destination
     val canNavigateBack = currentBackStackEntry != null && navController.previousBackStackEntry != null
+    val isOnHomeScreen = currentDestination?.hasRoute<Performances>() == true
 
     val title = when {
         currentDestination?.hasRoute<Performances>() == true -> stringResource(R.string.performances_title)
@@ -76,14 +79,17 @@ fun NavigationHost() {
                 }
             )
         },
+        bottomBar = {
+            if (isOnHomeScreen) {
+                BottomNavigationBar(tabNavController = tabNavController)
+            }
+        },
         floatingActionButton = {
-            if (currentDestination?.hasRoute<Performances>() == true) {
-                FloatingActionButton(
-                    onClick = { navController.navigate(PerformanceEdit(id = null)) }
-                ) {
+            if (isOnHomeScreen) {
+                FloatingActionButton(onClick = { navController.navigate(PerformanceEdit(id = null)) }) {
                     Icon(
                         imageVector = Icons.Default.Add,
-                        contentDescription = stringResource(R.string.performances_add_content_description)
+                        contentDescription = "Add performance"
                     )
                 }
             }
@@ -94,7 +100,7 @@ fun NavigationHost() {
             startDestination = Performances,
             modifier = Modifier.padding(innerPadding)
         ) {
-            performances(navController)
+            performances(navController, tabNavController)
             performanceDetail()
             performanceEdit(navController)
             setListEntryEdit(navController)

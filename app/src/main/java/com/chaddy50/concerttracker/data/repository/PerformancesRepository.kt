@@ -4,14 +4,13 @@ import com.chaddy50.concerttracker.data.api.ConcertTrackerApiService
 import com.chaddy50.concerttracker.data.api.PerformanceRequest
 import com.chaddy50.concerttracker.data.entity.Performance
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -23,9 +22,6 @@ class PerformancesRepository @Inject constructor(
 ) {
     private var cachedBaseUrl: String? = null
     private var cachedApiService: ConcertTrackerApiService? = null
-
-    private val _performances = MutableStateFlow<List<Performance>>(emptyList())
-    val performances: StateFlow<List<Performance>> = _performances.asStateFlow()
 
     private suspend fun apiService(): ConcertTrackerApiService {
         val baseUrl = "${settingsRepository.serverUrl.first().trimEnd('/')}/${ConcertTrackerApiService.API_VERSION}/"
@@ -41,28 +37,48 @@ class PerformancesRepository @Inject constructor(
         return cachedApiService!!
     }
 
-    suspend fun getPerformances(): List<Performance> {
-        val result = apiService().getPerformances()
-        _performances.value = result
-        return result
+    suspend fun getNextUpcomingPerformance(): Performance? {
+        return apiService().getPerformances(
+            status = "UPCOMING",
+            sort = "date_asc",
+            limit = 1
+        ).firstOrNull()
+    }
+
+    suspend fun getRecentlyAttendedPerformances(): List<Performance> {
+        val thirtyDaysAgo = Instant.now().minus(30, ChronoUnit.DAYS).toString()
+        return apiService().getPerformances(
+            status = "ATTENDED",
+            sort = "date_desc",
+            dateAfter = thirtyDaysAgo
+        )
+    }
+
+    suspend fun getUpcomingPerformances(): List<Performance> {
+        return apiService().getPerformances(
+            status = "UPCOMING",
+            sort = "date_asc"
+        )
+    }
+
+    suspend fun getPastPerformances(): List<Performance> {
+        return apiService().getPerformances(
+            status = "ATTENDED,CANCELLED,MISSED,SKIPPED",
+            sort = "date_desc"
+        )
     }
 
     suspend fun getPerformance(id: String): Performance = apiService().getPerformance(id)
 
     suspend fun createPerformance(request: PerformanceRequest): Performance {
-        val result = apiService().createPerformance(request)
-        _performances.value = _performances.value + result
-        return result
+        return apiService().createPerformance(request)
     }
 
     suspend fun updatePerformance(id: String, request: PerformanceRequest): Performance {
-        val result = apiService().updatePerformance(id, request)
-        _performances.value = _performances.value.map { if (it.id == id) result else it }
-        return result
+        return apiService().updatePerformance(id, request)
     }
 
     suspend fun deletePerformance(id: String) {
         apiService().deletePerformance(id)
-        _performances.value = _performances.value.filter { it.id != id }
     }
 }

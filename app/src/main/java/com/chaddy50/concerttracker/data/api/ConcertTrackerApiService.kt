@@ -24,7 +24,12 @@ interface ConcertTrackerApiService {
     }
 
     @GET("performances")
-    suspend fun getPerformances(): List<Performance>
+    suspend fun getPerformances(
+        @Query("status") status: String? = null,
+        @Query("sort") sort: String? = null,
+        @Query("limit") limit: Int? = null,
+        @Query("date_after") dateAfter: String? = null
+    ): List<Performance>
 
     @GET("performances/{id}")
     suspend fun getPerformance(@Path("id") id: String): Performance
