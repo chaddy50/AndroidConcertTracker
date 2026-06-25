@@ -5,6 +5,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.chaddy50.concerttracker.data.api.ApiErrorType
+import com.chaddy50.concerttracker.data.api.ApiResult
 import com.chaddy50.concerttracker.data.entity.Performance
 import com.chaddy50.concerttracker.data.repository.PerformancesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,11 +28,9 @@ class UpcomingTabViewModel @Inject constructor(
     fun loadData() {
         viewModelScope.launch {
             uiState = UpcomingTabUiState.Loading
-            try {
-                val performances = repository.getUpcomingPerformances()
-                uiState = UpcomingTabUiState.Success(performances)
-            } catch (e: Exception) {
-                uiState = UpcomingTabUiState.Error(e.message ?: "Unknown error")
+            when (val result = repository.getUpcomingPerformances()) {
+                is ApiResult.Success -> uiState = UpcomingTabUiState.Success(result.data)
+                is ApiResult.Error -> uiState = UpcomingTabUiState.Error(result.errorType)
             }
         }
     }
@@ -39,5 +39,5 @@ class UpcomingTabViewModel @Inject constructor(
 sealed interface UpcomingTabUiState {
     data object Loading : UpcomingTabUiState
     data class Success(val performances: List<Performance>) : UpcomingTabUiState
-    data class Error(val message: String) : UpcomingTabUiState
+    data class Error(val errorType: ApiErrorType.Type) : UpcomingTabUiState
 }

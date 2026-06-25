@@ -75,7 +75,7 @@ fun WorkSearchScreen(
                 }
                 is WorkSearchUiState.Error -> item {
                     Box(modifier = Modifier.fillParentMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(text = state.message, color = MaterialTheme.colorScheme.error)
+                        Text(text = state.errorType.toUserMessage(), color = MaterialTheme.colorScheme.error)
                     }
                 }
                 is WorkSearchUiState.Results -> {

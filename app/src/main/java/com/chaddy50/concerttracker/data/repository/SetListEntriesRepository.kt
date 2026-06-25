@@ -1,9 +1,11 @@
 package com.chaddy50.concerttracker.data.repository
 
+import com.chaddy50.concerttracker.data.api.ApiResult
 import com.chaddy50.concerttracker.data.api.ConcertTrackerApiService
 import com.chaddy50.concerttracker.data.api.SetListEntryCreateRequest
 import com.chaddy50.concerttracker.data.api.SetListEntryRequest
 import com.chaddy50.concerttracker.data.api.SetListEntryUpdateRequest
+import com.chaddy50.concerttracker.data.api.safeApiCall
 import com.chaddy50.concerttracker.data.entity.SetListEntry
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.coroutines.flow.first
@@ -37,15 +39,19 @@ class SetListEntriesRepository @Inject constructor(
         return cachedApiService!!
     }
 
-    suspend fun createSetListEntry(request: SetListEntryCreateRequest): SetListEntry =
+    suspend fun createSetListEntry(request: SetListEntryCreateRequest): ApiResult<SetListEntry> = safeApiCall {
         apiService().createSetListEntry(request)
+    }
 
-    suspend fun updateSetListEntry(id: String, request: SetListEntryRequest): SetListEntry =
+    suspend fun updateSetListEntry(id: String, request: SetListEntryRequest): ApiResult<SetListEntry> = safeApiCall {
         apiService().updateSetListEntry(id, request)
+    }
 
-    suspend fun updateSetListEntryFull(id: String, request: SetListEntryUpdateRequest): SetListEntry =
+    suspend fun updateSetListEntryFull(id: String, request: SetListEntryUpdateRequest): ApiResult<SetListEntry> = safeApiCall {
         apiService().updateSetListEntryFull(id, request)
+    }
 
-    suspend fun deleteSetListEntry(id: String) =
+    suspend fun deleteSetListEntry(id: String): ApiResult<Unit> = safeApiCall {
         apiService().deleteSetListEntry(id)
+    }
 }

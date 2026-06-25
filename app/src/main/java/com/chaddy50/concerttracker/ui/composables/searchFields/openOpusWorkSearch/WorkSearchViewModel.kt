@@ -7,8 +7,10 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
-import com.chaddy50.concerttracker.data.api.OpenOpusApiService
+import com.chaddy50.concerttracker.data.api.ApiErrorType
+import com.chaddy50.concerttracker.data.api.ApiResult
 import com.chaddy50.concerttracker.data.api.OpenOpusWork
+import com.chaddy50.concerttracker.data.repository.OpenOpusRepository
 import com.chaddy50.concerttracker.navigation.routes.OpenOpusWorkSearch
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -26,7 +28,7 @@ enum class OpenOpusGenre(val displayName: String) {
 @HiltViewModel
 class WorkSearchViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-    private val openOpusApiService: OpenOpusApiService
+    private val openOpusRepository: OpenOpusRepository
 ) : ViewModel() {
 
     private val route = savedStateHandle.toRoute<OpenOpusWorkSearch>()
@@ -63,11 +65,9 @@ class WorkSearchViewModel @Inject constructor(
     private fun fetchWorks() {
         viewModelScope.launch {
             uiState = WorkSearchUiState.Loading
-            try {
-                val works = openOpusApiService.getWorksByComposer(composerId).works.sortedBy { it.title }
-                uiState = WorkSearchUiState.Results(works)
-            } catch (exception: Exception) {
-                uiState = WorkSearchUiState.Error(exception.message ?: "Unknown error")
+            when (val result = openOpusRepository.getWorksByComposer(composerId)) {
+                is ApiResult.Success -> uiState = WorkSearchUiState.Results(result.data)
+                is ApiResult.Error -> uiState = WorkSearchUiState.Error(result.errorType)
             }
         }
     }
@@ -85,5 +85,5 @@ sealed interface WorkSearchUiState {
     data object Idle : WorkSearchUiState
     data object Loading : WorkSearchUiState
     data class Results(val works: List<OpenOpusWork>) : WorkSearchUiState
-    data class Error(val message: String) : WorkSearchUiState
+    data class Error(val errorType: ApiErrorType.Type) : WorkSearchUiState
 }

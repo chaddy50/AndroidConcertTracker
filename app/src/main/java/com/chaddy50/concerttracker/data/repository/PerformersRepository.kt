@@ -1,7 +1,9 @@
 package com.chaddy50.concerttracker.data.repository
 
+import com.chaddy50.concerttracker.data.api.ApiResult
 import com.chaddy50.concerttracker.data.api.ConcertTrackerApiService
 import com.chaddy50.concerttracker.data.api.PerformerRequest
+import com.chaddy50.concerttracker.data.api.safeApiCall
 import com.chaddy50.concerttracker.data.entity.Performer
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.coroutines.flow.first
@@ -36,12 +38,12 @@ class PerformersRepository @Inject constructor(
         return cachedApiService!!
     }
 
-    suspend fun searchPerformers(query: String): List<Performer> {
-        return apiService().getPerformers(name = query.ifBlank { null })
+    suspend fun searchPerformers(query: String): ApiResult<List<Performer>> = safeApiCall {
+        apiService().getPerformers(name = query.ifBlank { null })
     }
 
-    suspend fun createPerformer(request: PerformerRequest): Performer {
-        return try {
+    suspend fun createPerformer(request: PerformerRequest): ApiResult<Performer> = safeApiCall {
+        try {
             apiService().createPerformer(request)
         } catch (e: HttpException) {
             if (e.code() == 409) {

@@ -31,7 +31,7 @@ fun UpcomingTab(
         is UpcomingTabUiState.Error -> {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = state.message, color = MaterialTheme.colorScheme.error)
+                    Text(text = state.errorType.toUserMessage(), color = MaterialTheme.colorScheme.error)
                     Button(
                         onClick = viewModel::loadData,
                         modifier = Modifier.padding(top = 8.dp)

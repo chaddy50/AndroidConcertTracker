@@ -5,6 +5,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.chaddy50.concerttracker.data.api.ApiErrorType
+import com.chaddy50.concerttracker.data.api.ApiResult
 import com.chaddy50.concerttracker.data.api.NominatimResult
 import com.chaddy50.concerttracker.data.api.VenueRequest
 import com.chaddy50.concerttracker.data.entity.Venue
@@ -29,6 +31,9 @@ class NominatimSearchViewModel @Inject constructor(
     var isSaving: Boolean by mutableStateOf(false)
         private set
 
+    var saveError: String? by mutableStateOf(null)
+        private set
+
     fun updateSearchQuery(query: String) {
         searchQuery = query
     }
@@ -36,15 +41,13 @@ class NominatimSearchViewModel @Inject constructor(
     fun search() {
         viewModelScope.launch {
             uiState = CreateVenueUiState.Loading
-            try {
-                val results = nominatimRepository.searchVenues(searchQuery)
-                uiState = if (results.isEmpty()) {
+            uiState = when (val result = nominatimRepository.searchVenues(searchQuery)) {
+                is ApiResult.Success -> if (result.data.isEmpty()) {
                     CreateVenueUiState.Empty
                 } else {
-                    CreateVenueUiState.Results(results)
+                    CreateVenueUiState.Results(result.data)
                 }
-            } catch (e: Exception) {
-                uiState = CreateVenueUiState.Error(e.message ?: "Unknown error")
+                is ApiResult.Error -> CreateVenueUiState.Error(result.errorType)
             }
         }
     }
@@ -52,20 +55,14 @@ class NominatimSearchViewModel @Inject constructor(
     fun saveVenue(result: NominatimResult, onSaved: (Venue) -> Unit) {
         viewModelScope.launch {
             isSaving = true
-            try {
-                val venue = venuesRepository.createVenue(
-                    VenueRequest(
-                        osmType = result.osmType,
-                        osmId = result.osmId.toString(),
-                        name = result.name
-                    )
-                )
-                onSaved(venue)
-            } catch (_: Exception) {
-                // TODO: surface error to user
-            } finally {
-                isSaving = false
+            saveError = null
+            when (val apiResult = venuesRepository.createVenue(
+                VenueRequest(osmType = result.osmType, osmId = result.osmId.toString(), name = result.name)
+            )) {
+                is ApiResult.Success -> onSaved(apiResult.data)
+                is ApiResult.Error -> saveError = apiResult.errorType.toUserMessage()
             }
+            isSaving = false
         }
     }
 }
@@ -75,5 +72,5 @@ sealed interface CreateVenueUiState {
     data object Loading : CreateVenueUiState
     data object Empty : CreateVenueUiState
     data class Results(val results: List<NominatimResult>) : CreateVenueUiState
-    data class Error(val message: String) : CreateVenueUiState
+    data class Error(val errorType: ApiErrorType.Type) : CreateVenueUiState
 }

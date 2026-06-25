@@ -8,6 +8,8 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
+import com.chaddy50.concerttracker.data.api.ApiErrorType
+import com.chaddy50.concerttracker.data.api.ApiResult
 import com.chaddy50.concerttracker.data.api.FeaturedPerformerRequest
 import com.chaddy50.concerttracker.data.api.PerformerRequest
 import com.chaddy50.concerttracker.data.api.SetListEntryCreateRequest
@@ -81,57 +83,64 @@ class EditSetListEntryViewModel @Inject constructor(
     fun loadData() {
         viewModelScope.launch {
             uiState = SetListEntryEditUiState.Loading
-            try {
-                if (pendingLocalId != null) {
-                    draftWorkId = route.pendingWorkId
-                    draftWorkTitle = route.pendingWorkTitle
-                    draftComposerName = route.pendingComposerName ?: ""
-                    draftOrder = route.pendingOrder?.toString() ?: "1"
-                    route.pendingFeaturedPerformersJson?.let { json ->
-                        val performers: List<DraftFeaturedPerformer> =
-                            kotlinx.serialization.json.Json.decodeFromString(json)
-                        draftFeaturedPerformers.clear()
-                        draftFeaturedPerformers.addAll(performers)
-                    }
-                } else if (performanceId != null) {
-                    val performance = performancesRepository.getPerformance(performanceId)
-                    if (isCreateMode) {
-                        draftOrder = (performance.setList.size + 1).toString()
-                    } else {
-                        val entry = performance.setList.find { it.id == entryId }
-                            ?: error("Set list entry $entryId not found in performance $performanceId")
-                        draftWorkId = entry.work.id
-                        draftWorkTitle = entry.work.title
-                        draftComposerName = entry.work.composers.joinToString(", ") { it.shortName ?: it.name }
-                        draftOrder = entry.order.toString()
-                        draftFeaturedPerformers.clear()
-                        draftFeaturedPerformers.addAll(
-                            entry.featuredPerformers.map { featuredPerformer ->
-                                DraftFeaturedPerformer(
-                                    performerId = featuredPerformer.performer.id,
-                                    name = featuredPerformer.performer.name,
-                                    role = featuredPerformer.role ?: ""
-                                )
-                            }
-                        )
-                    }
+            if (pendingLocalId != null) {
+                draftWorkId = route.pendingWorkId
+                draftWorkTitle = route.pendingWorkTitle
+                draftComposerName = route.pendingComposerName ?: ""
+                draftOrder = route.pendingOrder?.toString() ?: "1"
+                route.pendingFeaturedPerformersJson?.let { json ->
+                    val performers: List<DraftFeaturedPerformer> =
+                        kotlinx.serialization.json.Json.decodeFromString(json)
+                    draftFeaturedPerformers.clear()
+                    draftFeaturedPerformers.addAll(performers)
                 }
                 uiState = SetListEntryEditUiState.Ready
-            } catch (exception: Exception) {
-                uiState = SetListEntryEditUiState.Error(exception.message ?: "Unknown error")
+            } else if (performanceId != null) {
+                when (val result = performancesRepository.getPerformance(performanceId)) {
+                    is ApiResult.Success -> {
+                        val performance = result.data
+                        if (isCreateMode) {
+                            draftOrder = (performance.setList.size + 1).toString()
+                        } else {
+                            val entry = performance.setList.find { it.id == entryId }
+                            if (entry == null) {
+                                uiState = SetListEntryEditUiState.Error(ApiErrorType.Type.CLIENT)
+                                return@launch
+                            }
+                            draftWorkId = entry.work.id
+                            draftWorkTitle = entry.work.title
+                            draftComposerName = entry.work.composers.joinToString(", ") { it.shortName ?: it.name }
+                            draftOrder = entry.order.toString()
+                            draftFeaturedPerformers.clear()
+                            draftFeaturedPerformers.addAll(
+                                entry.featuredPerformers.map { featuredPerformer ->
+                                    DraftFeaturedPerformer(
+                                        performerId = featuredPerformer.performer.id,
+                                        name = featuredPerformer.performer.name,
+                                        role = featuredPerformer.role ?: ""
+                                    )
+                                }
+                            )
+                        }
+                        uiState = SetListEntryEditUiState.Ready
+                    }
+                    is ApiResult.Error -> uiState = SetListEntryEditUiState.Error(result.errorType)
+                }
+            } else {
+                uiState = SetListEntryEditUiState.Ready
             }
         }
     }
 
     fun selectWork(openOpusWorkId: String, title: String, openOpusComposerId: String, composerName: String) {
         viewModelScope.launch {
-            try {
-                val work = worksRepository.createWorkFromOpenOpus(openOpusWorkId, title, openOpusComposerId, composerName)
-                draftWorkId = work.id
-                draftWorkTitle = work.title
-                draftComposerName = composerName
-            } catch (exception: Exception) {
-                saveError = "Failed to add work: ${exception.message}"
+            when (val result = worksRepository.createWorkFromOpenOpus(openOpusWorkId, title, openOpusComposerId, composerName)) {
+                is ApiResult.Success -> {
+                    draftWorkId = result.data.id
+                    draftWorkTitle = result.data.title
+                    draftComposerName = composerName
+                }
+                is ApiResult.Error -> saveError = "Failed to add work: ${result.errorType.toUserMessage()}"
             }
         }
     }
@@ -143,18 +152,16 @@ class EditSetListEntryViewModel @Inject constructor(
         specialty: String?
     ) {
         viewModelScope.launch {
-            try {
-                val type = performerTypeName
-                    ?.let { runCatching { PerformerType.valueOf(it) }.getOrNull() }
-                    ?: PerformerType.OTHER
-                val performer = performersRepository.createPerformer(
-                    PerformerRequest(performerName, type, specialty, musicbrainzId)
-                )
-                if (draftFeaturedPerformers.none { it.performerId == performer.id }) {
-                    draftFeaturedPerformers.add(DraftFeaturedPerformer(performer.id, performer.name))
+            val type = performerTypeName?.let { runCatching { PerformerType.valueOf(it) }.getOrNull() }
+                ?: PerformerType.OTHER
+            when (val result = performersRepository.createPerformer(PerformerRequest(performerName, type, specialty, musicbrainzId))) {
+                is ApiResult.Success -> {
+                    val performer = result.data
+                    if (draftFeaturedPerformers.none { it.performerId == performer.id }) {
+                        draftFeaturedPerformers.add(DraftFeaturedPerformer(performer.id, performer.name))
+                    }
                 }
-            } catch (exception: Exception) {
-                saveError = "Failed to add performer: ${exception.message}"
+                is ApiResult.Error -> saveError = "Failed to add performer: ${result.errorType.toUserMessage()}"
             }
         }
     }
@@ -209,32 +216,30 @@ class EditSetListEntryViewModel @Inject constructor(
         viewModelScope.launch {
             isSaving = true
             saveError = null
-            try {
-                if (isCreateMode) {
-                    setListEntriesRepository.createSetListEntry(
-                        SetListEntryCreateRequest(
-                            performanceId = performanceId,
-                            workId = workId,
-                            order = order,
-                            featuredPerformers = featuredPerformerRequests
-                        )
+            val result = if (isCreateMode) {
+                setListEntriesRepository.createSetListEntry(
+                    SetListEntryCreateRequest(
+                        performanceId = performanceId,
+                        workId = workId,
+                        order = order,
+                        featuredPerformers = featuredPerformerRequests
                     )
-                } else {
-                    setListEntriesRepository.updateSetListEntryFull(
-                        entryId!!,
-                        SetListEntryUpdateRequest(
-                            workId = workId,
-                            order = order,
-                            featuredPerformers = featuredPerformerRequests
-                        )
+                )
+            } else {
+                setListEntriesRepository.updateSetListEntryFull(
+                    entryId!!,
+                    SetListEntryUpdateRequest(
+                        workId = workId,
+                        order = order,
+                        featuredPerformers = featuredPerformerRequests
                     )
-                }
-                onSaved()
-            } catch (exception: Exception) {
-                saveError = "Failed to save: ${exception.message}"
-            } finally {
-                isSaving = false
+                )
             }
+            when (result) {
+                is ApiResult.Success -> onSaved()
+                is ApiResult.Error -> saveError = result.errorType.toUserMessage()
+            }
+            isSaving = false
         }
     }
 
@@ -251,14 +256,11 @@ class EditSetListEntryViewModel @Inject constructor(
         val id = entryId ?: return
         viewModelScope.launch {
             isDeleting = true
-            try {
-                setListEntriesRepository.deleteSetListEntry(id)
-                onDeleted()
-            } catch (exception: Exception) {
-                saveError = "Failed to delete: ${exception.message}"
-            } finally {
-                isDeleting = false
+            when (val result = setListEntriesRepository.deleteSetListEntry(id)) {
+                is ApiResult.Success -> onDeleted()
+                is ApiResult.Error -> saveError = result.errorType.toUserMessage()
             }
+            isDeleting = false
         }
     }
 }
@@ -266,5 +268,5 @@ class EditSetListEntryViewModel @Inject constructor(
 sealed interface SetListEntryEditUiState {
     data object Loading : SetListEntryEditUiState
     data object Ready : SetListEntryEditUiState
-    data class Error(val message: String) : SetListEntryEditUiState
+    data class Error(val errorType: ApiErrorType.Type) : SetListEntryEditUiState
 }

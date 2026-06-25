@@ -1,6 +1,5 @@
 package com.chaddy50.concerttracker.ui.composables.searchFields.musicBrainzSearch
 
-import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -8,6 +7,8 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
+import com.chaddy50.concerttracker.data.api.ApiErrorType
+import com.chaddy50.concerttracker.data.api.ApiResult
 import com.chaddy50.concerttracker.data.api.MusicBrainzResult
 import com.chaddy50.concerttracker.data.entity.Performer
 import com.chaddy50.concerttracker.data.enum.MusicBrainzEntityType
@@ -17,7 +18,6 @@ import com.chaddy50.concerttracker.data.repository.PerformersRepository
 import com.chaddy50.concerttracker.navigation.routes.MusicBrainzSearch
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -45,32 +45,23 @@ class MusicBrainzSearchViewModel @Inject constructor(
         viewModelScope.launch {
             uiState = MusicBrainzSearchUiState.Loading
 
-            try {
-                coroutineScope {
-                    val localDeferred = async {
-                        runCatching { performersRepository.searchPerformers(searchQuery) }
-                            .getOrDefault(emptyList())
-                    }
-                    val apiDeferred = async {
-                        musicBrainzRepository.search(entityType, searchQuery)
-                    }
+            val localDeferred = async { performersRepository.searchPerformers(searchQuery) }
+            val apiDeferred = async { musicBrainzRepository.search(entityType, searchQuery) }
 
-                    val apiPerformers = apiDeferred.await()
-                    val localPerformers = buildListOfLocalPerformers(localDeferred.await())
+            val localResult = localDeferred.await()
+            val apiResult = apiDeferred.await()
 
-                    val localIds = localPerformers.map { it.id }.toSet()
-                    val combined = localPerformers + apiPerformers.filter { it.id !in localIds }
+            val localPerformers = (localResult as? ApiResult.Success)?.data?.let(::buildListOfLocalPerformers)
+            val apiPerformers = (apiResult as? ApiResult.Success)?.data
 
-                    uiState = if (combined.isEmpty()) {
-                        MusicBrainzSearchUiState.Empty
-                    } else {
-                        MusicBrainzSearchUiState.Results(combined)
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e("MusicBrainzSearch", "Search failed", e)
-                uiState = MusicBrainzSearchUiState.Error(e.message ?: "Unknown error")
+            if (localPerformers == null && apiPerformers == null) {
+                uiState = MusicBrainzSearchUiState.Error((localResult as ApiResult.Error).errorType)
+                return@launch
             }
+
+            val localIds = (localPerformers ?: emptyList()).map { it.id }.toSet()
+            val combined = (localPerformers ?: emptyList()) + (apiPerformers ?: emptyList()).filter { it.id !in localIds }
+            uiState = if (combined.isEmpty()) MusicBrainzSearchUiState.Empty else MusicBrainzSearchUiState.Results(combined)
         }
     }
 
@@ -99,5 +90,5 @@ sealed interface MusicBrainzSearchUiState {
     data object Loading : MusicBrainzSearchUiState
     data object Empty : MusicBrainzSearchUiState
     data class Results(val results: List<MusicBrainzResult>) : MusicBrainzSearchUiState
-    data class Error(val message: String) : MusicBrainzSearchUiState
+    data class Error(val errorType: ApiErrorType.Type) : MusicBrainzSearchUiState
 }

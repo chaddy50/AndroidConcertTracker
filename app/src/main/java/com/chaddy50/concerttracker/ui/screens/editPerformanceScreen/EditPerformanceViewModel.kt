@@ -8,6 +8,8 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
+import com.chaddy50.concerttracker.data.api.ApiErrorType
+import com.chaddy50.concerttracker.data.api.ApiResult
 import com.chaddy50.concerttracker.data.api.FeaturedPerformerRequest
 import com.chaddy50.concerttracker.data.api.PerformanceRequest
 import com.chaddy50.concerttracker.data.api.PerformerRequest
@@ -80,20 +82,21 @@ class EditPerformanceViewModel @Inject constructor(
     fun loadPerformance() {
         viewModelScope.launch {
             uiState = PerformanceEditUiState.Loading
-            try {
-                val performance = performancesRepository.getPerformance(performanceId!!)
-                loadedPerformance = performance
-                draftDate = isoToEpochMillis(performance.date)
-                draftStatus = performance.status
-                draftVenueId = performance.venue.id
-                draftVenueName = performance.venue.name
-                draftPerformers.clear()
-                draftPerformers.addAll(performance.performers)
-                currentSetList.clear()
-                currentSetList.addAll(performance.setList.sortedBy { it.order })
-                uiState = PerformanceEditUiState.Ready
-            } catch (e: Exception) {
-                uiState = PerformanceEditUiState.Error(e.message ?: "Unknown error")
+            when (val result = performancesRepository.getPerformance(performanceId!!)) {
+                is ApiResult.Success -> {
+                    val performance = result.data
+                    loadedPerformance = performance
+                    draftDate = isoToEpochMillis(performance.date)
+                    draftStatus = performance.status
+                    draftVenueId = performance.venue.id
+                    draftVenueName = performance.venue.name
+                    draftPerformers.clear()
+                    draftPerformers.addAll(performance.performers)
+                    currentSetList.clear()
+                    currentSetList.addAll(performance.setList.sortedBy { it.order })
+                    uiState = PerformanceEditUiState.Ready
+                }
+                is ApiResult.Error -> uiState = PerformanceEditUiState.Error(result.errorType)
             }
         }
     }
@@ -116,13 +119,9 @@ class EditPerformanceViewModel @Inject constructor(
         val type = performerTypeName?.let { runCatching { PerformerType.valueOf(it) }.getOrNull() }
             ?: PerformerType.OTHER
         viewModelScope.launch {
-            try {
-                val performer = performersRepository.createPerformer(
-                    PerformerRequest(performerName, type, specialty, performerId)
-                )
-                draftPerformers.add(performer)
-            } catch (e: Exception) {
-                saveError = "Failed to add performer: ${e.message}"
+            when (val result = performersRepository.createPerformer(PerformerRequest(performerName, type, specialty, performerId))) {
+                is ApiResult.Success -> draftPerformers.add(result.data)
+                is ApiResult.Error -> saveError = "Failed to add performer: ${result.errorType.toUserMessage()}"
             }
         }
     }
@@ -160,12 +159,12 @@ class EditPerformanceViewModel @Inject constructor(
     fun refreshSetList() {
         val id = performanceId ?: return
         viewModelScope.launch {
-            try {
-                val performance = performancesRepository.getPerformance(id)
-                currentSetList.clear()
-                currentSetList.addAll(performance.setList.sortedBy { it.order })
-            } catch (exception: Exception) {
-                // Silently ignore — the set list display may be stale but draft fields are unaffected
+            when (val result = performancesRepository.getPerformance(id)) {
+                is ApiResult.Success -> {
+                    currentSetList.clear()
+                    currentSetList.addAll(result.data.setList.sortedBy { it.order })
+                }
+                is ApiResult.Error -> saveError = "Couldn't refresh set list. Your edits are safe."
             }
         }
     }
@@ -174,57 +173,48 @@ class EditPerformanceViewModel @Inject constructor(
         val date = draftDate?.let { epochMillisToIso(it) } ?: return
         val status = draftStatus ?: return
         val venueId = draftVenueId ?: return
+        val performerIds = draftPerformers.map { it.id }
 
         viewModelScope.launch {
             isSaving = true
-            try {
-                val performerIds = draftPerformers.map { it.id }
-                if (isCreateMode) {
-                    performancesRepository.createPerformance(
-                        PerformanceRequest(
-                            date = date,
-                            venueId = venueId,
-                            performerIds = performerIds,
-                            status = status,
-                            setList = pendingSetListEntries.map { entry ->
-                                SetListEntryInlineRequest(
-                                    workId = entry.workId,
-                                    order = entry.order,
-                                    featuredPerformers = entry.featuredPerformers.map { p ->
-                                        FeaturedPerformerRequest(p.performerId, p.role.ifBlank { null })
-                                    }
-                                )
-                            }
-                        )
+            val result = if (isCreateMode) {
+                performancesRepository.createPerformance(
+                    PerformanceRequest(
+                        date = date,
+                        venueId = venueId,
+                        performerIds = performerIds,
+                        status = status,
+                        setList = pendingSetListEntries.map { entry ->
+                            SetListEntryInlineRequest(
+                                workId = entry.workId,
+                                order = entry.order,
+                                featuredPerformers = entry.featuredPerformers.map { p ->
+                                    FeaturedPerformerRequest(p.performerId, p.role.ifBlank { null })
+                                }
+                            )
+                        }
                     )
-                } else {
-                    performancesRepository.updatePerformance(
-                        performanceId!!,
-                        PerformanceRequest(
-                            date = date,
-                            venueId = venueId,
-                            performerIds = performerIds,
-                            status = status
-                        )
-                    )
-                }
-                onSaved()
-            } catch (e: Exception) {
-                saveError = "Failed to save: ${e.message}"
-            } finally {
-                isSaving = false
+                )
+            } else {
+                performancesRepository.updatePerformance(
+                    performanceId!!,
+                    PerformanceRequest(date = date, venueId = venueId, performerIds = performerIds, status = status)
+                )
             }
+            when (result) {
+                is ApiResult.Success -> onSaved()
+                is ApiResult.Error -> saveError = result.errorType.toUserMessage()
+            }
+            isSaving = false
         }
     }
 
     fun deletePerformance(onDeleted: () -> Unit) {
         val id = performanceId ?: return
         viewModelScope.launch {
-            try {
-                performancesRepository.deletePerformance(id)
-                onDeleted()
-            } catch (e: Exception) {
-                saveError = "Failed to delete: ${e.message}"
+            when (val result = performancesRepository.deletePerformance(id)) {
+                is ApiResult.Success -> onDeleted()
+                is ApiResult.Error -> saveError = result.errorType.toUserMessage()
             }
         }
     }
@@ -248,5 +238,5 @@ data class PendingFeaturedPerformer(
 sealed interface PerformanceEditUiState {
     data object Loading : PerformanceEditUiState
     data object Ready : PerformanceEditUiState
-    data class Error(val message: String) : PerformanceEditUiState
+    data class Error(val errorType: ApiErrorType.Type) : PerformanceEditUiState
 }

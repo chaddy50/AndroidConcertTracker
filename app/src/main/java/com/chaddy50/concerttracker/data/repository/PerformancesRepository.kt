@@ -1,7 +1,9 @@
 package com.chaddy50.concerttracker.data.repository
 
+import com.chaddy50.concerttracker.data.api.ApiResult
 import com.chaddy50.concerttracker.data.api.ConcertTrackerApiService
 import com.chaddy50.concerttracker.data.api.PerformanceRequest
+import com.chaddy50.concerttracker.data.api.safeApiCall
 import com.chaddy50.concerttracker.data.entity.Performance
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.coroutines.flow.first
@@ -37,48 +39,36 @@ class PerformancesRepository @Inject constructor(
         return cachedApiService!!
     }
 
-    suspend fun getNextUpcomingPerformance(): Performance? {
-        return apiService().getPerformances(
-            status = "UPCOMING",
-            sort = "date_asc",
-            limit = 1
-        ).firstOrNull()
+    suspend fun getNextUpcomingPerformance(): ApiResult<Performance?> = safeApiCall {
+        apiService().getPerformances(status = "UPCOMING", sort = "date_asc", limit = 1).firstOrNull()
     }
 
-    suspend fun getRecentlyAttendedPerformances(): List<Performance> {
+    suspend fun getRecentlyAttendedPerformances(): ApiResult<List<Performance>> = safeApiCall {
         val thirtyDaysAgo = Instant.now().minus(30, ChronoUnit.DAYS).toString()
-        return apiService().getPerformances(
-            status = "ATTENDED",
-            sort = "date_desc",
-            dateAfter = thirtyDaysAgo
-        )
+        apiService().getPerformances(status = "ATTENDED", sort = "date_desc", dateAfter = thirtyDaysAgo)
     }
 
-    suspend fun getUpcomingPerformances(): List<Performance> {
-        return apiService().getPerformances(
-            status = "UPCOMING",
-            sort = "date_asc"
-        )
+    suspend fun getUpcomingPerformances(): ApiResult<List<Performance>> = safeApiCall {
+        apiService().getPerformances(status = "UPCOMING", sort = "date_asc")
     }
 
-    suspend fun getPastPerformances(): List<Performance> {
-        return apiService().getPerformances(
-            status = "ATTENDED,CANCELLED,MISSED,SKIPPED",
-            sort = "date_desc"
-        )
+    suspend fun getPastPerformances(): ApiResult<List<Performance>> = safeApiCall {
+        apiService().getPerformances(status = "ATTENDED,CANCELLED,MISSED,SKIPPED", sort = "date_desc")
     }
 
-    suspend fun getPerformance(id: String): Performance = apiService().getPerformance(id)
-
-    suspend fun createPerformance(request: PerformanceRequest): Performance {
-        return apiService().createPerformance(request)
+    suspend fun getPerformance(id: String): ApiResult<Performance> = safeApiCall {
+        apiService().getPerformance(id)
     }
 
-    suspend fun updatePerformance(id: String, request: PerformanceRequest): Performance {
-        return apiService().updatePerformance(id, request)
+    suspend fun createPerformance(request: PerformanceRequest): ApiResult<Performance> = safeApiCall {
+        apiService().createPerformance(request)
     }
 
-    suspend fun deletePerformance(id: String) {
+    suspend fun updatePerformance(id: String, request: PerformanceRequest): ApiResult<Performance> = safeApiCall {
+        apiService().updatePerformance(id, request)
+    }
+
+    suspend fun deletePerformance(id: String): ApiResult<Unit> = safeApiCall {
         apiService().deletePerformance(id)
     }
 }

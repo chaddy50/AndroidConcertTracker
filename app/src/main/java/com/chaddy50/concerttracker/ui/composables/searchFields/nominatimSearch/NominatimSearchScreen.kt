@@ -65,7 +65,7 @@ fun NominatimSearchScreen(
             }
             is CreateVenueUiState.Error -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = state.message, color = MaterialTheme.colorScheme.error)
+                    Text(text = state.errorType.toUserMessage(), color = MaterialTheme.colorScheme.error)
                 }
             }
             is CreateVenueUiState.Results -> {
@@ -77,6 +77,13 @@ fun NominatimSearchScreen(
                     }
                 )
             }
+        }
+        if (viewModel.saveError != null) {
+            Text(
+                text = viewModel.saveError!!,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
         }
     }
 }

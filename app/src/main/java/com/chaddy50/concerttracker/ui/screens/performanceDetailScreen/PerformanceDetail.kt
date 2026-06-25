@@ -38,7 +38,8 @@ private val GROUP_TYPES = setOf(PerformerType.ORCHESTRA, PerformerType.ENSEMBLE,
 fun PerformanceDetail(
     performance: Performance,
     draftNotes: Map<String, String>,
-    onDraftNoteChange: (entryId: String, notes: String) -> Unit
+    onDraftNoteChange: (entryId: String, notes: String) -> Unit,
+    didSavingNotesHaveError: Boolean = false
 ) {
     LazyColumn(modifier = Modifier.padding(16.dp)) {
         item {
@@ -99,6 +100,14 @@ fun PerformanceDetail(
         if (performance.setList.isNotEmpty()) {
             item {
                 HorizontalDivider(modifier = Modifier.padding(top= 8.dp, bottom=8.dp))
+                if (didSavingNotesHaveError) {
+                    Text(
+                        text = "Failed to save notes",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                }
             }
             items(performance.setList.sortedBy { it.order }) { entry ->
                 SetListEntryCard(

@@ -8,8 +8,10 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
-import com.chaddy50.concerttracker.data.entity.Performance
+import com.chaddy50.concerttracker.data.api.ApiErrorType
+import com.chaddy50.concerttracker.data.api.ApiResult
 import com.chaddy50.concerttracker.data.api.SetListEntryRequest
+import com.chaddy50.concerttracker.data.entity.Performance
 import com.chaddy50.concerttracker.data.repository.PerformancesRepository
 import com.chaddy50.concerttracker.data.repository.SetListEntriesRepository
 import com.chaddy50.concerttracker.navigation.routes.PerformanceDetail
@@ -19,6 +21,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(FlowPreview::class)
 @HiltViewModel
@@ -36,11 +39,14 @@ class PerformanceDetailViewModel @Inject constructor(
     var draftNotes: Map<String, String> by mutableStateOf(emptyMap())
         private set
 
+    var didSavingNotesHaveError: ApiErrorType.Type? by mutableStateOf(null)
+        private set
+
     init {
         viewModelScope.launch {
             snapshotFlow { draftNotes }
                 .drop(1)
-                .debounce(1000L)
+                .debounce(1000L.milliseconds)
                 .collect { autoSaveNotes(it) }
         }
         loadPerformance()
@@ -49,12 +55,13 @@ class PerformanceDetailViewModel @Inject constructor(
     fun loadPerformance() {
         viewModelScope.launch {
             uiState = PerformanceDetailUiState.Loading
-            uiState = try {
-                val performance = performancesRepository.getPerformance(performanceId)
-                draftNotes = performance.setList.associate { it.id to (it.notes ?: "") }
-                PerformanceDetailUiState.Success(performance)
-            } catch (e: Exception) {
-                PerformanceDetailUiState.Error(e.message ?: "Unknown error")
+            when (val result = performancesRepository.getPerformance(performanceId)) {
+                is ApiResult.Success -> {
+                    val performance = result.data
+                    draftNotes = performance.setList.associate { it.id to (it.notes ?: "") }
+                    uiState = PerformanceDetailUiState.Success(performance)
+                }
+                is ApiResult.Error -> uiState = PerformanceDetailUiState.Error(result.errorType)
             }
         }
     }
@@ -66,25 +73,28 @@ class PerformanceDetailViewModel @Inject constructor(
     private fun autoSaveNotes(notes: Map<String, String>) {
         val performance = (uiState as? PerformanceDetailUiState.Success)?.performance ?: return
         viewModelScope.launch {
-            try {
-                val changedNotes = notes.filter { (entryId, note) ->
-                    val original = performance.setList.find { it.id == entryId }?.notes ?: ""
-                    note != original
+            val changedNotes = notes.filter { (entryId, note) ->
+                val original = performance.setList.find { it.id == entryId }?.notes ?: ""
+                note != original
+            }
+            if (changedNotes.isEmpty()) return@launch
+            var anyFailed = false
+            changedNotes.forEach { (entryId, note) ->
+                val result = setListEntriesRepository.updateSetListEntry(
+                    entryId,
+                    SetListEntryRequest(notes = note.ifBlank { null })
+                )
+                if (result is ApiResult.Error) {
+                    anyFailed = true
+                    didSavingNotesHaveError = result.errorType
                 }
-                if (changedNotes.isEmpty()) return@launch
-                changedNotes.forEach { (entryId, note) ->
-                    setListEntriesRepository.updateSetListEntry(
-                        entryId,
-                        SetListEntryRequest(notes = note.ifBlank { null })
-                    )
-                }
-                // Advance the baseline so subsequent debounce fires only save new changes
+            }
+            if (!anyFailed) {
+                didSavingNotesHaveError = null
                 val updatedSetList = performance.setList.map { entry ->
                     entry.copy(notes = notes[entry.id]?.ifBlank { null } ?: entry.notes)
                 }
                 uiState = PerformanceDetailUiState.Success(performance.copy(setList = updatedSetList))
-            } catch (_: Exception) {
-                // TODO: surface error to user
             }
         }
     }
@@ -93,5 +103,5 @@ class PerformanceDetailViewModel @Inject constructor(
 sealed interface PerformanceDetailUiState {
     data object Loading : PerformanceDetailUiState
     data class Success(val performance: Performance) : PerformanceDetailUiState
-    data class Error(val message: String) : PerformanceDetailUiState
+    data class Error(val errorType: ApiErrorType.Type) : PerformanceDetailUiState
 }

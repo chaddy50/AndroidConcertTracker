@@ -5,18 +5,19 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.chaddy50.concerttracker.data.api.OpenOpusApiService
+import com.chaddy50.concerttracker.data.api.ApiErrorType
+import com.chaddy50.concerttracker.data.api.ApiResult
 import com.chaddy50.concerttracker.data.api.OpenOpusComposer
 import com.chaddy50.concerttracker.data.repository.ComposersRepository
+import com.chaddy50.concerttracker.data.repository.OpenOpusRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class ComposerSearchViewModel @Inject constructor(
-    private val openOpusApiService: OpenOpusApiService,
+    private val openOpusRepository: OpenOpusRepository,
     private val composersRepository: ComposersRepository
 ) : ViewModel() {
 
@@ -35,37 +36,27 @@ class ComposerSearchViewModel @Inject constructor(
         if (searchQuery.isBlank()) return
         viewModelScope.launch {
             uiState = ComposerSearchUiState.Loading
-            try {
-                coroutineScope {
-                    val localDeferred = async {
-                        runCatching {
-                            composersRepository.searchComposers(searchQuery.trim())
-                        }.getOrDefault(emptyList())
-                    }
-                    val apiDeferred = async {
-                        runCatching {
-                            openOpusApiService.searchComposers(searchQuery.trim()).composers
-                        }.getOrDefault(emptyList())
-                    }
+            val localDeferred = async { composersRepository.searchComposers(searchQuery.trim()) }
+            val apiDeferred = async { openOpusRepository.searchComposers(searchQuery.trim()) }
 
-                    val localComposers = localDeferred.await()
-                    val apiComposers = apiDeferred.await()
+            val localResult = localDeferred.await()
+            val apiResult = apiDeferred.await()
 
-                    val apiOpenOpusIds = apiComposers.map { it.id }.toSet()
-                    val localOnly = localComposers
-                        .filter { it.openOpusId == null || it.openOpusId !in apiOpenOpusIds }
-                        .map { OpenOpusComposer(id = it.openOpusId ?: "", name = it.name, completeName = it.name) }
+            val localComposers = (localResult as? ApiResult.Success)?.data
+            val apiComposers = (apiResult as? ApiResult.Success)?.data
 
-                    val combined = localOnly + apiComposers
-                    uiState = if (combined.isEmpty()) {
-                        ComposerSearchUiState.Empty
-                    } else {
-                        ComposerSearchUiState.Results(combined)
-                    }
-                }
-            } catch (exception: Exception) {
-                uiState = ComposerSearchUiState.Error(exception.message ?: "Unknown error")
+            if (localComposers == null && apiComposers == null) {
+                uiState = ComposerSearchUiState.Error((localResult as ApiResult.Error).errorType)
+                return@launch
             }
+
+            val apiOpenOpusIds = (apiComposers ?: emptyList()).map { it.id }.toSet()
+            val localOnly = (localComposers ?: emptyList())
+                .filter { it.openOpusId == null || it.openOpusId !in apiOpenOpusIds }
+                .map { OpenOpusComposer(id = it.openOpusId ?: "", name = it.name, completeName = it.name) }
+
+            val combined = localOnly + (apiComposers ?: emptyList())
+            uiState = if (combined.isEmpty()) ComposerSearchUiState.Empty else ComposerSearchUiState.Results(combined)
         }
     }
 }
@@ -75,5 +66,5 @@ sealed interface ComposerSearchUiState {
     data object Loading : ComposerSearchUiState
     data object Empty : ComposerSearchUiState
     data class Results(val composers: List<OpenOpusComposer>) : ComposerSearchUiState
-    data class Error(val message: String) : ComposerSearchUiState
+    data class Error(val errorType: ApiErrorType.Type) : ComposerSearchUiState
 }

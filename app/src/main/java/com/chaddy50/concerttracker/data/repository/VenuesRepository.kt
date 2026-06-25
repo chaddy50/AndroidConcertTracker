@@ -1,7 +1,9 @@
 package com.chaddy50.concerttracker.data.repository
 
+import com.chaddy50.concerttracker.data.api.ApiResult
 import com.chaddy50.concerttracker.data.api.ConcertTrackerApiService
 import com.chaddy50.concerttracker.data.api.VenueRequest
+import com.chaddy50.concerttracker.data.api.safeApiCall
 import com.chaddy50.concerttracker.data.entity.Venue
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.coroutines.flow.first
@@ -35,5 +37,7 @@ class VenuesRepository @Inject constructor(
         return cachedApiService!!
     }
 
-    suspend fun createVenue(request: VenueRequest): Venue = apiService().createVenue(request)
+    suspend fun createVenue(request: VenueRequest): ApiResult<Venue> = safeApiCall {
+        apiService().createVenue(request)
+    }
 }

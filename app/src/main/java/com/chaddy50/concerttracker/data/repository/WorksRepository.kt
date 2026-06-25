@@ -1,8 +1,10 @@
 package com.chaddy50.concerttracker.data.repository
 
+import com.chaddy50.concerttracker.data.api.ApiResult
 import com.chaddy50.concerttracker.data.api.ComposerRequest
 import com.chaddy50.concerttracker.data.api.ConcertTrackerApiService
 import com.chaddy50.concerttracker.data.api.WorkRequest
+import com.chaddy50.concerttracker.data.api.safeApiCall
 import com.chaddy50.concerttracker.data.entity.Work
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.coroutines.flow.first
@@ -13,7 +15,6 @@ import retrofit2.HttpException
 import retrofit2.Retrofit
 import javax.inject.Inject
 import javax.inject.Singleton
-
 
 @Singleton
 class WorksRepository @Inject constructor(
@@ -38,8 +39,8 @@ class WorksRepository @Inject constructor(
         return cachedApiService!!
     }
 
-    suspend fun searchWorks(query: String): List<Work> {
-        return apiService().getWorks(name = query.ifBlank { null })
+    suspend fun searchWorks(query: String): ApiResult<List<Work>> = safeApiCall {
+        apiService().getWorks(name = query.ifBlank { null })
     }
 
     suspend fun createWorkFromOpenOpus(
@@ -47,30 +48,25 @@ class WorksRepository @Inject constructor(
         title: String,
         openOpusComposerId: String,
         composerName: String
-    ): Work {
-        return try {
+    ): ApiResult<Work> = safeApiCall {
+        try {
             apiService().createWork(
                 WorkRequest(
                     title = title,
                     openOpusId = openOpusWorkId,
-                    composers = listOf(
-                        ComposerRequest(
-                            name = composerName,
-                            openOpusId = openOpusComposerId
-                        )
-                    )
+                    composers = listOf(ComposerRequest(name = composerName, openOpusId = openOpusComposerId))
                 )
             )
-        } catch (exception: HttpException) {
-            if (exception.code() == 409) {
-                val body = exception.response()?.errorBody()?.string()
+        } catch (e: HttpException) {
+            if (e.code() == 409) {
+                val body = e.response()?.errorBody()?.string()
                 if (body != null) {
                     json.decodeFromString<Work>(body)
                 } else {
-                    throw exception
+                    throw e
                 }
             } else {
-                throw exception
+                throw e
             }
         }
     }

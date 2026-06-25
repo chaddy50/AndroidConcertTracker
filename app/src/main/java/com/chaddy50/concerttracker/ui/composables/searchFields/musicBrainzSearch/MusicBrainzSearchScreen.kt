@@ -88,7 +88,7 @@ fun MusicBrainzSearchScreen(
                             modifier = Modifier.fillParentMaxSize(),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(text = state.message, color = MaterialTheme.colorScheme.error)
+                            Text(text = state.errorType.toUserMessage(), color = MaterialTheme.colorScheme.error)
                         }
                     }
                 }

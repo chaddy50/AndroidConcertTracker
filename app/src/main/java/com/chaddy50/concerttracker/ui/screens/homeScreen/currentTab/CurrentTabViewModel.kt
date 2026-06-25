@@ -5,11 +5,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.chaddy50.concerttracker.data.api.ApiErrorType
+import com.chaddy50.concerttracker.data.api.ApiResult
 import com.chaddy50.concerttracker.data.entity.Performance
 import com.chaddy50.concerttracker.data.repository.PerformancesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -28,17 +29,17 @@ class CurrentTabViewModel @Inject constructor(
     fun loadData() {
         viewModelScope.launch {
             uiState = CurrentTabUiState.Loading
-            try {
-                coroutineScope {
-                    val nextUpcomingDeferred = async { repository.getNextUpcomingPerformance() }
-                    val recentAttendedDeferred = async { repository.getRecentlyAttendedPerformances() }
-                    uiState = CurrentTabUiState.Success(
-                        nextUpcoming = nextUpcomingDeferred.await(),
-                        recentAttended = recentAttendedDeferred.await()
-                    )
-                }
-            } catch (e: Exception) {
-                uiState = CurrentTabUiState.Error(e.message ?: "Unknown error")
+            val nextDeferred = async { repository.getNextUpcomingPerformance() }
+            val recentDeferred = async { repository.getRecentlyAttendedPerformances() }
+            val nextResult = nextDeferred.await()
+            val recentResult = recentDeferred.await()
+            uiState = when {
+                nextResult is ApiResult.Error -> CurrentTabUiState.Error(nextResult.errorType)
+                recentResult is ApiResult.Error -> CurrentTabUiState.Error(recentResult.errorType)
+                else -> CurrentTabUiState.Success(
+                    nextUpcoming = (nextResult as ApiResult.Success).data,
+                    recentAttended = (recentResult as ApiResult.Success).data
+                )
             }
         }
     }
@@ -50,5 +51,5 @@ sealed interface CurrentTabUiState {
         val nextUpcoming: Performance?,
         val recentAttended: List<Performance>
     ) : CurrentTabUiState
-    data class Error(val message: String) : CurrentTabUiState
+    data class Error(val errorType: ApiErrorType.Type) : CurrentTabUiState
 }

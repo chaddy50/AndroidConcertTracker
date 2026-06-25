@@ -1,7 +1,9 @@
 package com.chaddy50.concerttracker.data.repository
 
+import com.chaddy50.concerttracker.data.api.ApiResult
 import com.chaddy50.concerttracker.data.api.MusicBrainzApiService
 import com.chaddy50.concerttracker.data.api.MusicBrainzResult
+import com.chaddy50.concerttracker.data.api.safeApiCall
 import com.chaddy50.concerttracker.data.enum.MusicBrainzEntityType
 import com.chaddy50.concerttracker.data.enum.PerformerType
 import javax.inject.Inject
@@ -14,8 +16,8 @@ class MusicBrainzRepository @Inject constructor(
     suspend fun search(
         type: MusicBrainzEntityType,
         query: String
-    ): List<MusicBrainzResult> {
-        return when (type) {
+    ): ApiResult<List<MusicBrainzResult>> = safeApiCall {
+        when (type) {
             MusicBrainzEntityType.PERFORMER -> searchArtists(query, forcedType = null)
             MusicBrainzEntityType.CONDUCTOR -> searchArtists(query, forcedType = PerformerType.CONDUCTOR)
             MusicBrainzEntityType.COMPOSER -> searchArtists(query, forcedType = null)

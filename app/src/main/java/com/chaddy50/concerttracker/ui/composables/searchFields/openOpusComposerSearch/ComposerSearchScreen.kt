@@ -72,7 +72,7 @@ fun ComposerSearchScreen(
                 }
                 is ComposerSearchUiState.Error -> item {
                     Box(modifier = Modifier.fillParentMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(text = state.message, color = MaterialTheme.colorScheme.error)
+                        Text(text = state.errorType.toUserMessage(), color = MaterialTheme.colorScheme.error)
                     }
                 }
                 is ComposerSearchUiState.Results -> {

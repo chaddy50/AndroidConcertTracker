@@ -25,7 +25,7 @@ fun PerformanceDetailScreen(viewModel: PerformanceDetailViewModel = hiltViewMode
         is PerformanceDetailUiState.Error -> {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = state.message, color = MaterialTheme.colorScheme.error)
+                    Text(text = state.errorType.toUserMessage(), color = MaterialTheme.colorScheme.error)
                     Button(
                         onClick = viewModel::loadPerformance,
                         modifier = Modifier.padding(top = 8.dp)
@@ -39,7 +39,8 @@ fun PerformanceDetailScreen(viewModel: PerformanceDetailViewModel = hiltViewMode
             PerformanceDetail(
                 performance = state.performance,
                 draftNotes = viewModel.draftNotes,
-                onDraftNoteChange = viewModel::updateDraftNote
+                onDraftNoteChange = viewModel::updateDraftNote,
+                didSavingNotesHaveError = viewModel.didSavingNotesHaveError != null
             )
         }
     }
