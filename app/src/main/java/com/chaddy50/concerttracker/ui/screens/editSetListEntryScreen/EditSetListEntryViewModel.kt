@@ -109,7 +109,7 @@ class EditSetListEntryViewModel @Inject constructor(
                             }
                             draftWorkId = entry.work.id
                             draftWorkTitle = entry.work.title
-                            draftComposerName = entry.work.composers.joinToString(", ") { it.shortName ?: it.name }
+                            draftComposerName = entry.work.composers.joinToString(", ") { it.sortName ?: it.name }
                             draftOrder = entry.order.toString()
                             draftFeaturedPerformers.clear()
                             draftFeaturedPerformers.addAll(

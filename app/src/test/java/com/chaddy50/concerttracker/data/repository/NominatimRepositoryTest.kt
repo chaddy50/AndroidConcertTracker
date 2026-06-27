@@ -5,7 +5,7 @@ import com.chaddy50.concerttracker.data.api.ApiResult
 import com.chaddy50.concerttracker.data.api.NominatimApiService
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
+import com.chaddy50.concerttracker.testJson
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
@@ -20,7 +20,7 @@ import retrofit2.Retrofit
 class NominatimRepositoryTest {
 
     private val mockWebServer = MockWebServer()
-    private val json = Json { ignoreUnknownKeys = true }
+    private val json = testJson()
     private lateinit var repository: NominatimRepository
 
     private val venueJson = """{"osm_id":123,"osm_type":"way","display_name":"Test Hall, City","name":"Test Hall"}"""

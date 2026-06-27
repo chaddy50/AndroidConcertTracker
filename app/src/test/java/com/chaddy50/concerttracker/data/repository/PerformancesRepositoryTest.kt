@@ -8,7 +8,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
+import com.chaddy50.concerttracker.testJson
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -23,11 +23,11 @@ class PerformancesRepositoryTest {
 
     private val mockWebServer = MockWebServer()
     private val settingsRepository: SettingsRepository = mockk()
-    private val json = Json { ignoreUnknownKeys = true }
+    private val json = testJson()
     private lateinit var repository: PerformancesRepository
 
     private val performanceJson = """
-        {"id":"p1","date":"2024-01-01T19:00:00Z","venue":{"id":"v1","name":"Hall","osmId":"123","osmType":"way"},"status":"UPCOMING"}
+        {"id":"p1","date":"2024-01-01T19:00:00Z","venue":{"id":"v1","name":"Hall","osm_id":"123","osm_type":"way"},"status":"UPCOMING"}
     """.trimIndent()
 
     private val performanceListJson = """

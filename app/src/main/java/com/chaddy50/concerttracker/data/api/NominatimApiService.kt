@@ -1,6 +1,5 @@
 package com.chaddy50.concerttracker.data.api
 
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import retrofit2.http.GET
 import retrofit2.http.Query
@@ -20,9 +19,9 @@ interface NominatimApiService {
 
 @Serializable
 data class NominatimResult(
-    @SerialName("osm_id") val osmId: Long,
-    @SerialName("osm_type") val osmType: String,
-    @SerialName("display_name") val displayName: String,
+    val osmId: Long,
+    val osmType: String,
+    val displayName: String,
     val name: String = ""
 )
 

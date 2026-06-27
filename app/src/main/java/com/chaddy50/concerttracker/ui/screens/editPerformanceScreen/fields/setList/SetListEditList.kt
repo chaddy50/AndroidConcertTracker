@@ -24,7 +24,7 @@ fun SetListEditList(
         modifier = modifier
     ) {
         setList.forEachIndexed { index, entry ->
-            val composerNames = entry.work.composers.joinToString(", ") { it.shortName ?: it.name }
+            val composerNames = entry.work.composers.joinToString(", ") { it.sortName ?: it.name }
             SetListEntryRow(
                 workTitle = entry.work.title,
                 composerNames = composerNames,

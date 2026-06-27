@@ -7,7 +7,7 @@ import com.chaddy50.concerttracker.data.enum.MusicBrainzEntityType
 import com.chaddy50.concerttracker.data.enum.PerformerType
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
+import com.chaddy50.concerttracker.testJson
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
@@ -22,7 +22,7 @@ import retrofit2.Retrofit
 class MusicBrainzRepositoryTest {
 
     private val mockWebServer = MockWebServer()
-    private val json = Json { ignoreUnknownKeys = true }
+    private val json = testJson()
     private lateinit var repository: MusicBrainzRepository
 
     @Before

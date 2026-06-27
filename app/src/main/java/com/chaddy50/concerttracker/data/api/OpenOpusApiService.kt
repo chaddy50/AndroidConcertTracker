@@ -1,6 +1,5 @@
 package com.chaddy50.concerttracker.data.api
 
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import retrofit2.http.GET
 import retrofit2.http.Path
@@ -44,7 +43,7 @@ data class OpenOpusStatus(
 data class OpenOpusComposer(
     val id: String,
     val name: String,
-    @SerialName("complete_name") val completeName: String,
+    val completeName: String,
     val epoch: String? = null
 )
 
