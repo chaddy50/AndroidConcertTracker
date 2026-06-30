@@ -24,11 +24,11 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.chaddy50.concerttracker.R
-import com.chaddy50.concerttracker.data.entity.Composer
-import com.chaddy50.concerttracker.data.entity.Performer
-import com.chaddy50.concerttracker.data.entity.SetListEntry
-import com.chaddy50.concerttracker.data.entity.FeaturedPerformer
-import com.chaddy50.concerttracker.data.entity.Work
+import com.chaddy50.concerttracker.data.domain.Composer
+import com.chaddy50.concerttracker.data.domain.Performer
+import com.chaddy50.concerttracker.data.domain.SetListEntry
+import com.chaddy50.concerttracker.data.domain.FeaturedPerformer
+import com.chaddy50.concerttracker.data.domain.Work
 import com.chaddy50.concerttracker.data.enum.PerformerType
 import com.chaddy50.concerttracker.ui.composables.NotesDialog
 import com.chaddy50.concerttracker.ui.theme.ConcertTrackerTheme

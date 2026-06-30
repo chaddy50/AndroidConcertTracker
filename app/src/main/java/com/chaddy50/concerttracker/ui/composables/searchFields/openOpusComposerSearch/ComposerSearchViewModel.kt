@@ -5,9 +5,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.chaddy50.concerttracker.data.api.ApiErrorType
-import com.chaddy50.concerttracker.data.api.ApiResult
-import com.chaddy50.concerttracker.data.api.OpenOpusComposer
+import com.chaddy50.concerttracker.data.external.api.ApiErrorType
+import com.chaddy50.concerttracker.data.external.api.ApiResult
+import com.chaddy50.concerttracker.data.external.api.OpenOpusComposer
 import com.chaddy50.concerttracker.data.repository.ComposersRepository
 import com.chaddy50.concerttracker.data.repository.OpenOpusRepository
 import dagger.hilt.android.lifecycle.HiltViewModel

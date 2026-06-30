@@ -28,7 +28,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.chaddy50.concerttracker.data.api.OpenOpusWork
+import com.chaddy50.concerttracker.data.external.api.OpenOpusWork
 
 @Composable
 fun WorkSearchScreen(

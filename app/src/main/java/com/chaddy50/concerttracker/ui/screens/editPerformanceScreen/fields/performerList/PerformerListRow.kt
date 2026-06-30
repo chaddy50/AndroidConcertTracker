@@ -13,7 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import com.chaddy50.concerttracker.data.entity.Performer
+import com.chaddy50.concerttracker.data.domain.Performer
 
 @Composable
 fun PerformerListRow(performer: Performer, onRemove: () -> Unit) {

@@ -1,9 +1,10 @@
 package com.chaddy50.concerttracker.data.repository
 
-import com.chaddy50.concerttracker.data.api.ApiResult
-import com.chaddy50.concerttracker.data.api.ConcertTrackerApiService
-import com.chaddy50.concerttracker.data.api.safeApiCall
-import com.chaddy50.concerttracker.data.entity.Composer
+import com.chaddy50.concerttracker.data.external.api.ApiResult
+import com.chaddy50.concerttracker.data.external.api.ConcertTrackerApiService
+import com.chaddy50.concerttracker.data.external.api.safeApiCall
+import com.chaddy50.concerttracker.data.external.dataTransferObjects.toDomain
+import com.chaddy50.concerttracker.data.domain.Composer
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.Json
@@ -37,6 +38,6 @@ class ComposersRepository @Inject constructor(
     }
 
     suspend fun searchComposers(query: String): ApiResult<List<Composer>> = safeApiCall {
-        apiService().getComposers(name = query.ifBlank { null })
+        apiService().getComposers(name = query.ifBlank { null }).map { it.toDomain() }
     }
 }

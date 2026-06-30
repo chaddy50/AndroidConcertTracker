@@ -1,10 +1,10 @@
 package com.chaddy50.concerttracker.data.repository
 
-import com.chaddy50.concerttracker.data.api.ApiResult
-import com.chaddy50.concerttracker.data.api.OpenOpusApiService
-import com.chaddy50.concerttracker.data.api.OpenOpusComposer
-import com.chaddy50.concerttracker.data.api.OpenOpusWork
-import com.chaddy50.concerttracker.data.api.safeApiCall
+import com.chaddy50.concerttracker.data.external.api.ApiResult
+import com.chaddy50.concerttracker.data.external.api.OpenOpusApiService
+import com.chaddy50.concerttracker.data.external.api.OpenOpusComposer
+import com.chaddy50.concerttracker.data.external.api.OpenOpusWork
+import com.chaddy50.concerttracker.data.external.api.safeApiCall
 import javax.inject.Inject
 import javax.inject.Singleton
 

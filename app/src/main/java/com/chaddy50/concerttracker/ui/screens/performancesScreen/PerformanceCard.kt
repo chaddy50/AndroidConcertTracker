@@ -14,9 +14,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.chaddy50.concerttracker.data.entity.Performance
-import com.chaddy50.concerttracker.data.entity.Performer
-import com.chaddy50.concerttracker.data.entity.Venue
+import com.chaddy50.concerttracker.data.domain.Performance
+import com.chaddy50.concerttracker.data.domain.Performer
+import com.chaddy50.concerttracker.data.domain.Venue
 import com.chaddy50.concerttracker.data.enum.PerformanceStatus
 import com.chaddy50.concerttracker.data.enum.PerformerType
 import com.chaddy50.concerttracker.ui.composables.PerformerRow

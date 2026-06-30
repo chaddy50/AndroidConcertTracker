@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chaddy50.concerttracker.ui.screens.performancesScreen.PerformanceCard
 
 @Composable
@@ -22,7 +23,7 @@ fun PastTab(
     onPerformanceClick: (String) -> Unit,
     viewModel: PastTabViewModel = hiltViewModel()
 ) {
-    when (val state = viewModel.uiState) {
+    when (val state = viewModel.uiState.collectAsStateWithLifecycle().value) {
         is PastTabUiState.Loading -> {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
@@ -32,28 +33,24 @@ fun PastTab(
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(text = state.errorType.toUserMessage(), color = MaterialTheme.colorScheme.error)
-                    Button(
-                        onClick = viewModel::loadData,
-                        modifier = Modifier.padding(top = 8.dp)
-                    ) {
+                    Button(onClick = viewModel::loadPerformances, modifier = Modifier.padding(top = 8.dp)) {
                         Text("Retry")
                     }
                 }
             }
         }
-        is PastTabUiState.Success -> {
-            if (state.performances.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No past concerts")
-                }
-            } else {
-                LazyColumn(modifier = Modifier.padding(16.dp)) {
-                    items(state.performances, key = { it.id }) { performance ->
-                        PerformanceCard(
-                            performance = performance,
-                            onClick = { onPerformanceClick(performance.id) }
-                        )
-                    }
+        is PastTabUiState.Empty -> {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("No past concerts")
+            }
+        }
+        is PastTabUiState.Content -> {
+            LazyColumn(modifier = Modifier.padding(16.dp)) {
+                items(state.performances, key = { it.id }) { performance ->
+                    PerformanceCard(
+                        performance = performance,
+                        onClick = { onPerformanceClick(performance.id) }
+                    )
                 }
             }
         }

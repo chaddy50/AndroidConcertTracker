@@ -1,14 +1,14 @@
 package com.chaddy50.concerttracker.ui.screens.editSetListEntryScreen
 
 import androidx.lifecycle.SavedStateHandle
-import com.chaddy50.concerttracker.data.api.ApiErrorType
-import com.chaddy50.concerttracker.data.api.ApiResult
-import com.chaddy50.concerttracker.data.entity.FeaturedPerformer
-import com.chaddy50.concerttracker.data.entity.Performance
-import com.chaddy50.concerttracker.data.entity.Performer
-import com.chaddy50.concerttracker.data.entity.SetListEntry
-import com.chaddy50.concerttracker.data.entity.Venue
-import com.chaddy50.concerttracker.data.entity.Work
+import com.chaddy50.concerttracker.data.external.api.ApiErrorType
+import com.chaddy50.concerttracker.data.external.api.ApiResult
+import com.chaddy50.concerttracker.data.domain.FeaturedPerformer
+import com.chaddy50.concerttracker.data.domain.Performance
+import com.chaddy50.concerttracker.data.domain.Performer
+import com.chaddy50.concerttracker.data.domain.SetListEntry
+import com.chaddy50.concerttracker.data.domain.Venue
+import com.chaddy50.concerttracker.data.domain.Work
 import com.chaddy50.concerttracker.data.enum.PerformanceStatus
 import com.chaddy50.concerttracker.data.enum.PerformerType
 import com.chaddy50.concerttracker.data.repository.PerformancesRepository

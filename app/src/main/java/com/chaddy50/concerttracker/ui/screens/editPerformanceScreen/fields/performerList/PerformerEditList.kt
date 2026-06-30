@@ -8,7 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.chaddy50.concerttracker.R
-import com.chaddy50.concerttracker.data.entity.Performer
+import com.chaddy50.concerttracker.data.domain.Performer
 import com.chaddy50.concerttracker.ui.composables.LabeledOutlineCard
 
 @Composable

@@ -29,7 +29,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.chaddy50.concerttracker.data.api.OpenOpusComposer
+import com.chaddy50.concerttracker.data.external.api.OpenOpusComposer
 
 @Composable
 fun ComposerSearchScreen(

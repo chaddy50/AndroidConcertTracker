@@ -19,7 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.chaddy50.concerttracker.data.api.MusicBrainzResult
+import com.chaddy50.concerttracker.data.external.api.MusicBrainzResult
 import com.chaddy50.concerttracker.data.enum.MusicBrainzEntityType
 import com.chaddy50.concerttracker.data.enum.PerformerType
 import java.util.UUID

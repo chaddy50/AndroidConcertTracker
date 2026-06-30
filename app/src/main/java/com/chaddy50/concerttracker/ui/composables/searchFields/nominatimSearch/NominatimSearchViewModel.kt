@@ -5,11 +5,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.chaddy50.concerttracker.data.api.ApiErrorType
-import com.chaddy50.concerttracker.data.api.ApiResult
-import com.chaddy50.concerttracker.data.api.NominatimResult
-import com.chaddy50.concerttracker.data.api.VenueRequest
-import com.chaddy50.concerttracker.data.entity.Venue
+import com.chaddy50.concerttracker.data.external.api.ApiErrorType
+import com.chaddy50.concerttracker.data.external.api.ApiResult
+import com.chaddy50.concerttracker.data.external.api.NominatimResult
+import com.chaddy50.concerttracker.data.external.api.VenueRequest
+import com.chaddy50.concerttracker.data.domain.Venue
 import com.chaddy50.concerttracker.data.repository.NominatimRepository
 import com.chaddy50.concerttracker.data.repository.VenuesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel

@@ -31,7 +31,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.chaddy50.concerttracker.R
-import com.chaddy50.concerttracker.data.api.MusicBrainzResult
+import com.chaddy50.concerttracker.data.external.api.MusicBrainzResult
 import com.chaddy50.concerttracker.data.enum.MusicBrainzEntityType
 
 @Composable

@@ -23,7 +23,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.chaddy50.concerttracker.R
-import com.chaddy50.concerttracker.data.entity.Venue
+import com.chaddy50.concerttracker.data.domain.Venue
 
 @Composable
 fun NominatimSearchScreen(

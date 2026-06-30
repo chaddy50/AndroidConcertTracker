@@ -7,9 +7,9 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
-import com.chaddy50.concerttracker.data.api.ApiErrorType
-import com.chaddy50.concerttracker.data.api.ApiResult
-import com.chaddy50.concerttracker.data.api.OpenOpusWork
+import com.chaddy50.concerttracker.data.external.api.ApiErrorType
+import com.chaddy50.concerttracker.data.external.api.ApiResult
+import com.chaddy50.concerttracker.data.external.api.OpenOpusWork
 import com.chaddy50.concerttracker.data.repository.OpenOpusRepository
 import com.chaddy50.concerttracker.navigation.routes.OpenOpusWorkSearch
 import dagger.hilt.android.lifecycle.HiltViewModel

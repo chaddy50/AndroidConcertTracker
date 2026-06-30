@@ -7,10 +7,10 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
-import com.chaddy50.concerttracker.data.api.ApiErrorType
-import com.chaddy50.concerttracker.data.api.ApiResult
-import com.chaddy50.concerttracker.data.api.MusicBrainzResult
-import com.chaddy50.concerttracker.data.entity.Performer
+import com.chaddy50.concerttracker.data.external.api.ApiErrorType
+import com.chaddy50.concerttracker.data.external.api.ApiResult
+import com.chaddy50.concerttracker.data.external.api.MusicBrainzResult
+import com.chaddy50.concerttracker.data.domain.Performer
 import com.chaddy50.concerttracker.data.enum.MusicBrainzEntityType
 import com.chaddy50.concerttracker.data.enum.PerformerType
 import com.chaddy50.concerttracker.data.repository.MusicBrainzRepository

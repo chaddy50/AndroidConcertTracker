@@ -1,9 +1,9 @@
 package com.chaddy50.concerttracker.ui.composables.searchFields.openOpusWorkSearch
 
 import androidx.lifecycle.SavedStateHandle
-import com.chaddy50.concerttracker.data.api.ApiErrorType
-import com.chaddy50.concerttracker.data.api.ApiResult
-import com.chaddy50.concerttracker.data.api.OpenOpusWork
+import com.chaddy50.concerttracker.data.external.api.ApiErrorType
+import com.chaddy50.concerttracker.data.external.api.ApiResult
+import com.chaddy50.concerttracker.data.external.api.OpenOpusWork
 import com.chaddy50.concerttracker.data.repository.OpenOpusRepository
 import io.mockk.coEvery
 import io.mockk.coVerify

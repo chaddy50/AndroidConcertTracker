@@ -8,7 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.chaddy50.concerttracker.data.entity.Performer
+import com.chaddy50.concerttracker.data.domain.Performer
 import com.chaddy50.concerttracker.data.enum.PerformerType
 import com.chaddy50.concerttracker.ui.theme.ConcertTrackerTheme
 

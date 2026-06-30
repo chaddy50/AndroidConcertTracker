@@ -8,17 +8,22 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
-import com.chaddy50.concerttracker.data.api.ApiErrorType
-import com.chaddy50.concerttracker.data.api.ApiResult
-import com.chaddy50.concerttracker.data.api.SetListEntryRequest
-import com.chaddy50.concerttracker.data.entity.Performance
+import com.chaddy50.concerttracker.data.external.api.ApiErrorType
+import com.chaddy50.concerttracker.data.external.api.ApiResult
+import com.chaddy50.concerttracker.data.external.api.SetListEntryRequest
+import com.chaddy50.concerttracker.data.domain.Performance
 import com.chaddy50.concerttracker.data.repository.PerformancesRepository
 import com.chaddy50.concerttracker.data.repository.SetListEntriesRepository
 import com.chaddy50.concerttracker.navigation.routes.PerformanceDetail
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
@@ -33,8 +38,28 @@ class PerformanceDetailViewModel @Inject constructor(
 
     private val performanceId: String = savedStateHandle.toRoute<PerformanceDetail>().id
 
-    var uiState: PerformanceDetailUiState by mutableStateOf(PerformanceDetailUiState.Loading)
-        private set
+    private val isLoading = MutableStateFlow(false)
+    private val loadError = MutableStateFlow<ApiErrorType.Type?>(null)
+
+    /** The latest cached performance, kept in sync with Room so note auto-save can diff against it. */
+    private var loadedPerformance: Performance? = null
+
+    val uiState: StateFlow<PerformanceDetailUiState> = combine(
+        performancesRepository.observePerformance(performanceId),
+        isLoading,
+        loadError
+    ) { performance, loading, error ->
+        when {
+            loading -> PerformanceDetailUiState.Loading
+            error != null -> PerformanceDetailUiState.Error(error)
+            performance == null -> PerformanceDetailUiState.Empty
+            else -> PerformanceDetailUiState.Content(performance)
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = PerformanceDetailUiState.Loading
+    )
 
     var draftNotes: Map<String, String> by mutableStateOf(emptyMap())
         private set
@@ -43,6 +68,12 @@ class PerformanceDetailViewModel @Inject constructor(
         private set
 
     init {
+        viewModelScope.launch {
+            performancesRepository.observePerformance(performanceId).collect { performance ->
+                loadedPerformance = performance
+                if (performance != null) seedDraftNotes(performance)
+            }
+        }
         viewModelScope.launch {
             snapshotFlow { draftNotes }
                 .drop(1)
@@ -54,15 +85,13 @@ class PerformanceDetailViewModel @Inject constructor(
 
     fun loadPerformance() {
         viewModelScope.launch {
-            uiState = PerformanceDetailUiState.Loading
-            when (val result = performancesRepository.getPerformance(performanceId)) {
-                is ApiResult.Success -> {
-                    val performance = result.data
-                    draftNotes = performance.setList.associate { it.id to (it.notes ?: "") }
-                    uiState = PerformanceDetailUiState.Success(performance)
-                }
-                is ApiResult.Error -> uiState = PerformanceDetailUiState.Error(result.errorType)
+            isLoading.value = true
+            loadError.value = null
+            val result = performancesRepository.loadPerformance(performanceId)
+            if (result is ApiResult.Error) {
+                loadError.value = result.errorType
             }
+            isLoading.value = false
         }
     }
 
@@ -70,8 +99,22 @@ class PerformanceDetailViewModel @Inject constructor(
         draftNotes = draftNotes + (entryId to notes)
     }
 
+    /**
+     * Seeds note drafts for set-list entries we haven't seen yet, preserving any in-progress edits
+     * and dropping drafts for entries that no longer exist. Room re-emits on every write-through, so
+     * we must not clobber what the user is currently typing.
+     */
+    private fun seedDraftNotes(performance: Performance) {
+        val validIds = performance.setList.map { it.id }.toSet()
+        val seeded = draftNotes.toMutableMap()
+        performance.setList.forEach { entry ->
+            if (!seeded.containsKey(entry.id)) seeded[entry.id] = entry.notes ?: ""
+        }
+        draftNotes = seeded.filterKeys { it in validIds }
+    }
+
     private fun autoSaveNotes(notes: Map<String, String>) {
-        val performance = (uiState as? PerformanceDetailUiState.Success)?.performance ?: return
+        val performance = loadedPerformance ?: return
         viewModelScope.launch {
             val changedNotes = notes.filter { (entryId, note) ->
                 val original = performance.setList.find { it.id == entryId }?.notes ?: ""
@@ -91,10 +134,6 @@ class PerformanceDetailViewModel @Inject constructor(
             }
             if (!anyFailed) {
                 didSavingNotesHaveError = null
-                val updatedSetList = performance.setList.map { entry ->
-                    entry.copy(notes = notes[entry.id]?.ifBlank { null } ?: entry.notes)
-                }
-                uiState = PerformanceDetailUiState.Success(performance.copy(setList = updatedSetList))
             }
         }
     }
@@ -102,6 +141,7 @@ class PerformanceDetailViewModel @Inject constructor(
 
 sealed interface PerformanceDetailUiState {
     data object Loading : PerformanceDetailUiState
-    data class Success(val performance: Performance) : PerformanceDetailUiState
     data class Error(val errorType: ApiErrorType.Type) : PerformanceDetailUiState
+    data object Empty : PerformanceDetailUiState
+    data class Content(val performance: Performance) : PerformanceDetailUiState
 }

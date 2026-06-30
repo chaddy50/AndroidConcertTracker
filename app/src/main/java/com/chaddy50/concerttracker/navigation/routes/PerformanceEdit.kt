@@ -28,7 +28,6 @@ fun NavGraphBuilder.performanceEdit(navController: NavController) {
         val pendingVenue by handle.pendingVenueFlow().collectAsStateWithLifecycle(null)
         val pendingPerformer by handle.pendingPerformerFlow().collectAsStateWithLifecycle(null)
         val pendingSetListEntry by handle.pendingSetListEntryFlow().collectAsStateWithLifecycle(null)
-        val shouldReload by handle.getStateFlow<Boolean>("shouldReload", false).collectAsStateWithLifecycle()
 
         LaunchedEffect(pendingVenue) {
             pendingVenue?.let {
@@ -55,13 +54,6 @@ fun NavGraphBuilder.performanceEdit(navController: NavController) {
                     viewModel.addPendingSetListEntry(result.workId, result.workTitle, result.composerName, result.order, performers)
                 }
                 handle.clearPendingSetListEntry()
-            }
-        }
-
-        LaunchedEffect(shouldReload) {
-            if (shouldReload) {
-                viewModel.refreshSetList()
-                handle["shouldReload"] = false
             }
         }
 

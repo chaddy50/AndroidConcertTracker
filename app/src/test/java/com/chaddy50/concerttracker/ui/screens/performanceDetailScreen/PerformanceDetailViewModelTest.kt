@@ -2,21 +2,26 @@ package com.chaddy50.concerttracker.ui.screens.performanceDetailScreen
 
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.lifecycle.SavedStateHandle
-import com.chaddy50.concerttracker.data.api.ApiErrorType
-import com.chaddy50.concerttracker.data.api.ApiResult
-import com.chaddy50.concerttracker.data.api.SetListEntryRequest
-import com.chaddy50.concerttracker.data.entity.Performance
-import com.chaddy50.concerttracker.data.entity.SetListEntry
-import com.chaddy50.concerttracker.data.entity.Venue
-import com.chaddy50.concerttracker.data.entity.Work
+import com.chaddy50.concerttracker.data.external.api.ApiErrorType
+import com.chaddy50.concerttracker.data.external.api.ApiResult
+import com.chaddy50.concerttracker.data.external.api.SetListEntryRequest
+import com.chaddy50.concerttracker.data.domain.Performance
+import com.chaddy50.concerttracker.data.domain.SetListEntry
+import com.chaddy50.concerttracker.data.domain.Venue
+import com.chaddy50.concerttracker.data.domain.Work
 import com.chaddy50.concerttracker.data.enum.PerformanceStatus
 import com.chaddy50.concerttracker.data.repository.PerformancesRepository
 import com.chaddy50.concerttracker.data.repository.SetListEntriesRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -60,37 +65,93 @@ class PerformanceDetailViewModelTest {
     )
 
     @Before
-    fun setUp() {
-        Dispatchers.setMain(testDispatcher)
-    }
+    fun setUp() = Dispatchers.setMain(testDispatcher)
 
     @After
-    fun tearDown() {
-        Dispatchers.resetMain()
-    }
+    fun tearDown() = Dispatchers.resetMain()
 
     @Test
-    fun `loadPerformance transitions Loading then Success`() = runTest {
+    fun `uiState emits the observed performance`() = runTest {
         val performance = performance(listOf(entry("e1", "note")))
-        coEvery { performancesRepository.getPerformance("p1") } returns ApiResult.Success(performance)
+        every { performancesRepository.observePerformance("p1") } returns flowOf(performance)
+        coEvery { performancesRepository.loadPerformance("p1") } returns ApiResult.Success(Unit)
         val viewModel = viewModel()
-        assertTrue(viewModel.uiState is PerformanceDetailUiState.Loading)
+        backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
-        assertEquals(PerformanceDetailUiState.Success(performance), viewModel.uiState)
+
+        val state = viewModel.uiState.value
+        assertTrue(state is PerformanceDetailUiState.Content)
+        assertEquals(performance, (state as PerformanceDetailUiState.Content).performance)
     }
 
     @Test
-    fun `loadPerformance transitions to Error with errorType on failure`() = runTest {
-        coEvery { performancesRepository.getPerformance("p1") } returns ApiResult.Error(ApiErrorType.Type.NETWORK)
+    fun `uiState is Loading while a refresh is in flight, even when a performance is cached`() = runTest {
+        every { performancesRepository.observePerformance("p1") } returns
+            flowOf(performance(listOf(entry("e1", "note"))))
+        val loadResult = CompletableDeferred<ApiResult<Unit>>()
+        coEvery { performancesRepository.loadPerformance("p1") } coAnswers { loadResult.await() }
         val viewModel = viewModel()
+        backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
-        assertEquals(PerformanceDetailUiState.Error(ApiErrorType.Type.NETWORK), viewModel.uiState)
+
+        // The load is still suspended, so Loading takes priority over the cached performance.
+        assertTrue(viewModel.uiState.value is PerformanceDetailUiState.Loading)
+
+        loadResult.complete(ApiResult.Success(Unit))
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value is PerformanceDetailUiState.Content)
+    }
+
+    @Test
+    fun `uiState surfaces loadPerformance error when nothing is cached`() = runTest {
+        every { performancesRepository.observePerformance("p1") } returns flowOf(null)
+        coEvery { performancesRepository.loadPerformance("p1") } returns ApiResult.Error(ApiErrorType.Type.NETWORK)
+        val viewModel = viewModel()
+        backgroundScope.launch { viewModel.uiState.collect {} }
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state is PerformanceDetailUiState.Error)
+        assertEquals(ApiErrorType.Type.NETWORK, (state as PerformanceDetailUiState.Error).errorType)
+    }
+
+    @Test
+    fun `uiState is Empty when the load succeeds but nothing is cached`() = runTest {
+        every { performancesRepository.observePerformance("p1") } returns flowOf(null)
+        coEvery { performancesRepository.loadPerformance("p1") } returns ApiResult.Success(Unit)
+        val viewModel = viewModel()
+        backgroundScope.launch { viewModel.uiState.collect {} }
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value is PerformanceDetailUiState.Empty)
+    }
+
+    @Test
+    fun `uiState re-emits when a set-list entry is added to the cached performance`() = runTest {
+        val flow = MutableStateFlow(performance(listOf(entry("e1", null))))
+        every { performancesRepository.observePerformance("p1") } returns flow
+        coEvery { performancesRepository.loadPerformance("p1") } returns ApiResult.Success(Unit)
+        val viewModel = viewModel()
+        backgroundScope.launch { viewModel.uiState.collect {} }
+        advanceUntilIdle()
+        val initial = viewModel.uiState.value
+        assertTrue(initial is PerformanceDetailUiState.Content)
+        assertEquals(1, (initial as PerformanceDetailUiState.Content).performance.setList.size)
+
+        flow.value = performance(listOf(entry("e1", null), entry("e2", null)))
+        advanceUntilIdle()
+
+        val updated = viewModel.uiState.value
+        assertTrue(updated is PerformanceDetailUiState.Content)
+        assertEquals(2, (updated as PerformanceDetailUiState.Content).performance.setList.size)
     }
 
     @Test
     fun `autoSaveNotes sets didSavingNotesHaveError when save fails`() = runTest {
-        coEvery { performancesRepository.getPerformance("p1") } returns
-            ApiResult.Success(performance(listOf(entry("e1", "old"))))
+        every { performancesRepository.observePerformance("p1") } returns
+            flowOf(performance(listOf(entry("e1", "old"))))
+        coEvery { performancesRepository.loadPerformance("p1") } returns ApiResult.Success(Unit)
         coEvery { setListEntriesRepository.updateSetListEntry(any(), any()) } returns
             ApiResult.Error(ApiErrorType.Type.SERVER)
         val viewModel = viewModel()
@@ -105,8 +166,9 @@ class PerformanceDetailViewModelTest {
 
     @Test
     fun `autoSaveNotes clears error and only sends changed notes`() = runTest {
-        coEvery { performancesRepository.getPerformance("p1") } returns
-            ApiResult.Success(performance(listOf(entry("e1", "a"), entry("e2", "b"))))
+        every { performancesRepository.observePerformance("p1") } returns
+            flowOf(performance(listOf(entry("e1", "a"), entry("e2", "b"))))
+        coEvery { performancesRepository.loadPerformance("p1") } returns ApiResult.Success(Unit)
         coEvery { setListEntriesRepository.updateSetListEntry(any(), any()) } returns
             ApiResult.Success(entry("e1", "x"))
         val viewModel = viewModel()

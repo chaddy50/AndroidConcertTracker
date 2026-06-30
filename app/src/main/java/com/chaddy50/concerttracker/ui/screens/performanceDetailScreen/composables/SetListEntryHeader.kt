@@ -4,11 +4,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import com.chaddy50.concerttracker.data.entity.Composer
-import com.chaddy50.concerttracker.data.entity.Performer
-import com.chaddy50.concerttracker.data.entity.SetListEntry
-import com.chaddy50.concerttracker.data.entity.FeaturedPerformer
-import com.chaddy50.concerttracker.data.entity.Work
+import com.chaddy50.concerttracker.data.domain.Composer
+import com.chaddy50.concerttracker.data.domain.Performer
+import com.chaddy50.concerttracker.data.domain.SetListEntry
+import com.chaddy50.concerttracker.data.domain.FeaturedPerformer
+import com.chaddy50.concerttracker.data.domain.Work
 import com.chaddy50.concerttracker.data.enum.PerformerType
 import com.chaddy50.concerttracker.ui.composables.PerformerRow
 import com.chaddy50.concerttracker.ui.theme.ConcertTrackerTheme

@@ -79,7 +79,8 @@ fun NavGraphBuilder.setListEntryEdit(navController: NavController) {
 
         EditSetListEntryScreen(
             onSaved = {
-                navController.previousBackStackEntry?.savedStateHandle?.set("shouldReload", true)
+                // The set list is observed from Room on the Edit Performance screen, so the
+                // write-through from createSetListEntry/updateSetListEntryFull re-emits automatically.
                 navController.popBackStack()
             },
             onSavedAsPending = { pendingEntryData ->
@@ -100,7 +101,6 @@ fun NavGraphBuilder.setListEntryEdit(navController: NavController) {
                 navController.popBackStack()
             },
             onDeleted = {
-                navController.previousBackStackEntry?.savedStateHandle?.set("shouldReload", true)
                 navController.popBackStack()
             },
             onCancel = { navController.popBackStack() },

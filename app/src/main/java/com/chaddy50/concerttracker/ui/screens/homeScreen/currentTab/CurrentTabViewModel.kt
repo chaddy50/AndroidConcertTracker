@@ -1,16 +1,18 @@
 package com.chaddy50.concerttracker.ui.screens.homeScreen.currentTab
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.chaddy50.concerttracker.data.api.ApiErrorType
-import com.chaddy50.concerttracker.data.api.ApiResult
-import com.chaddy50.concerttracker.data.entity.Performance
+import com.chaddy50.concerttracker.data.external.api.ApiErrorType
+import com.chaddy50.concerttracker.data.external.api.ApiResult
+import com.chaddy50.concerttracker.data.domain.Performance
 import com.chaddy50.concerttracker.data.repository.PerformancesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -19,37 +21,50 @@ class CurrentTabViewModel @Inject constructor(
     private val repository: PerformancesRepository
 ) : ViewModel() {
 
-    var uiState: CurrentTabUiState by mutableStateOf(CurrentTabUiState.Loading)
-        private set
+    private val isLoading = MutableStateFlow(false)
+    private val loadError = MutableStateFlow<ApiErrorType.Type?>(null)
+
+    val uiState: StateFlow<CurrentTabUiState> = combine(
+        repository.observeNextUpcomingPerformance(),
+        repository.observeRecentlyAttendedPerformances(),
+        isLoading,
+        loadError
+    ) { nextUpcoming, recentlyAttended, loading, error ->
+        when {
+            loading -> CurrentTabUiState.Loading
+            error != null -> CurrentTabUiState.Error(error)
+            nextUpcoming == null && recentlyAttended.isEmpty() -> CurrentTabUiState.Empty
+            else -> CurrentTabUiState.Content(nextUpcoming, recentlyAttended)
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = CurrentTabUiState.Loading
+    )
 
     init {
-        loadData()
+        loadPerformances()
     }
 
-    fun loadData() {
+    fun loadPerformances() {
         viewModelScope.launch {
-            uiState = CurrentTabUiState.Loading
-            val nextDeferred = async { repository.getNextUpcomingPerformance() }
-            val recentDeferred = async { repository.getRecentlyAttendedPerformances() }
-            val nextResult = nextDeferred.await()
-            val recentResult = recentDeferred.await()
-            uiState = when {
-                nextResult is ApiResult.Error -> CurrentTabUiState.Error(nextResult.errorType)
-                recentResult is ApiResult.Error -> CurrentTabUiState.Error(recentResult.errorType)
-                else -> CurrentTabUiState.Success(
-                    nextUpcoming = (nextResult as ApiResult.Success).data,
-                    recentAttended = (recentResult as ApiResult.Success).data
-                )
+            isLoading.value = true
+            loadError.value = null
+            val result = repository.loadPerformances()
+            if (result is ApiResult.Error) {
+                loadError.value = result.errorType
             }
+            isLoading.value = false
         }
     }
 }
 
 sealed interface CurrentTabUiState {
     data object Loading : CurrentTabUiState
-    data class Success(
-        val nextUpcoming: Performance?,
-        val recentAttended: List<Performance>
-    ) : CurrentTabUiState
     data class Error(val errorType: ApiErrorType.Type) : CurrentTabUiState
+    data object Empty : CurrentTabUiState
+    data class Content(
+        val nextUpcoming: Performance?,
+        val recentlyAttended: List<Performance>
+    ) : CurrentTabUiState
 }

@@ -8,15 +8,15 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
-import com.chaddy50.concerttracker.data.api.ApiErrorType
-import com.chaddy50.concerttracker.data.api.ApiResult
-import com.chaddy50.concerttracker.data.api.FeaturedPerformerRequest
-import com.chaddy50.concerttracker.data.api.PerformanceRequest
-import com.chaddy50.concerttracker.data.api.PerformerRequest
-import com.chaddy50.concerttracker.data.api.SetListEntryInlineRequest
-import com.chaddy50.concerttracker.data.entity.Performance
-import com.chaddy50.concerttracker.data.entity.Performer
-import com.chaddy50.concerttracker.data.entity.SetListEntry
+import com.chaddy50.concerttracker.data.external.api.ApiErrorType
+import com.chaddy50.concerttracker.data.external.api.ApiResult
+import com.chaddy50.concerttracker.data.external.api.FeaturedPerformerRequest
+import com.chaddy50.concerttracker.data.external.api.PerformanceRequest
+import com.chaddy50.concerttracker.data.external.api.PerformerRequest
+import com.chaddy50.concerttracker.data.external.api.SetListEntryInlineRequest
+import com.chaddy50.concerttracker.data.domain.Performance
+import com.chaddy50.concerttracker.data.domain.Performer
+import com.chaddy50.concerttracker.data.domain.SetListEntry
 import com.chaddy50.concerttracker.data.enum.PerformanceStatus
 import com.chaddy50.concerttracker.data.enum.PerformerType
 import com.chaddy50.concerttracker.data.repository.PerformancesRepository
@@ -76,7 +76,25 @@ class EditPerformanceViewModel @Inject constructor(
     private var loadedPerformance: Performance? = null
 
     init {
-        if (!isCreateMode) loadPerformance()
+        if (!isCreateMode) {
+            loadPerformance()
+            observeSetList()
+        }
+    }
+
+    /**
+     * The set list isn't part of the editable draft — its entries are persisted immediately by the
+     * entry sub-screen — so it's observed straight from Room and stays in sync after any add/edit/
+     * delete write-through without a manual refresh.
+     */
+    private fun observeSetList() {
+        val id = performanceId ?: return
+        viewModelScope.launch {
+            performancesRepository.observePerformance(id).collect { performance ->
+                currentSetList.clear()
+                currentSetList.addAll(performance?.setList?.sortedBy { it.order } ?: emptyList())
+            }
+        }
     }
 
     fun loadPerformance() {
@@ -92,8 +110,6 @@ class EditPerformanceViewModel @Inject constructor(
                     draftVenueName = performance.venue.name
                     draftPerformers.clear()
                     draftPerformers.addAll(performance.performers)
-                    currentSetList.clear()
-                    currentSetList.addAll(performance.setList.sortedBy { it.order })
                     uiState = PerformanceEditUiState.Ready
                 }
                 is ApiResult.Error -> uiState = PerformanceEditUiState.Error(result.errorType)
@@ -153,19 +169,6 @@ class EditPerformanceViewModel @Inject constructor(
         val index = pendingSetListEntries.indexOfFirst { it.localId == localId }
         if (index != -1) {
             pendingSetListEntries[index] = PendingSetListEntry(localId, workId, workTitle, composerName, order, featuredPerformers)
-        }
-    }
-
-    fun refreshSetList() {
-        val id = performanceId ?: return
-        viewModelScope.launch {
-            when (val result = performancesRepository.getPerformance(id)) {
-                is ApiResult.Success -> {
-                    currentSetList.clear()
-                    currentSetList.addAll(result.data.setList.sortedBy { it.order })
-                }
-                is ApiResult.Error -> saveError = "Couldn't refresh set list. Your edits are safe."
-            }
         }
     }
 

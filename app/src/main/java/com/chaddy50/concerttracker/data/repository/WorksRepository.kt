@@ -1,11 +1,13 @@
 package com.chaddy50.concerttracker.data.repository
 
-import com.chaddy50.concerttracker.data.api.ApiResult
-import com.chaddy50.concerttracker.data.api.ComposerRequest
-import com.chaddy50.concerttracker.data.api.ConcertTrackerApiService
-import com.chaddy50.concerttracker.data.api.WorkRequest
-import com.chaddy50.concerttracker.data.api.safeApiCall
-import com.chaddy50.concerttracker.data.entity.Work
+import com.chaddy50.concerttracker.data.external.api.ApiResult
+import com.chaddy50.concerttracker.data.external.api.ComposerRequest
+import com.chaddy50.concerttracker.data.external.api.ConcertTrackerApiService
+import com.chaddy50.concerttracker.data.external.api.WorkRequest
+import com.chaddy50.concerttracker.data.external.api.safeApiCall
+import com.chaddy50.concerttracker.data.external.dataTransferObjects.WorkDto
+import com.chaddy50.concerttracker.data.external.dataTransferObjects.toDomain
+import com.chaddy50.concerttracker.data.domain.Work
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.Json
@@ -40,7 +42,7 @@ class WorksRepository @Inject constructor(
     }
 
     suspend fun searchWorks(query: String): ApiResult<List<Work>> = safeApiCall {
-        apiService().getWorks(name = query.ifBlank { null })
+        apiService().getWorks(name = query.ifBlank { null }).map { it.toDomain() }
     }
 
     suspend fun createWorkFromOpenOpus(
@@ -49,7 +51,7 @@ class WorksRepository @Inject constructor(
         openOpusComposerId: String,
         composerName: String
     ): ApiResult<Work> = safeApiCall {
-        try {
+        val dto = try {
             apiService().createWork(
                 WorkRequest(
                     title = title,
@@ -60,14 +62,11 @@ class WorksRepository @Inject constructor(
         } catch (e: HttpException) {
             if (e.code() == 409) {
                 val body = e.response()?.errorBody()?.string()
-                if (body != null) {
-                    json.decodeFromString<Work>(body)
-                } else {
-                    throw e
-                }
+                if (body != null) json.decodeFromString<WorkDto>(body) else throw e
             } else {
                 throw e
             }
         }
+        dto.toDomain()
     }
 }

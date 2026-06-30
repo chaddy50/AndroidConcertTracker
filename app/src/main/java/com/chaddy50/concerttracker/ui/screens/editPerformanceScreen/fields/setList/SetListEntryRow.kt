@@ -14,7 +14,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.chaddy50.concerttracker.data.entity.SetListEntry
 
 @Composable
 fun SetListEntryRow(

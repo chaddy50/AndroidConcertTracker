@@ -1,9 +1,9 @@
 package com.chaddy50.concerttracker.ui.composables.searchFields.openOpusComposerSearch
 
-import com.chaddy50.concerttracker.data.api.ApiErrorType
-import com.chaddy50.concerttracker.data.api.ApiResult
-import com.chaddy50.concerttracker.data.api.OpenOpusComposer
-import com.chaddy50.concerttracker.data.entity.Composer
+import com.chaddy50.concerttracker.data.external.api.ApiErrorType
+import com.chaddy50.concerttracker.data.external.api.ApiResult
+import com.chaddy50.concerttracker.data.external.api.OpenOpusComposer
+import com.chaddy50.concerttracker.data.domain.Composer
 import com.chaddy50.concerttracker.data.repository.ComposersRepository
 import com.chaddy50.concerttracker.data.repository.OpenOpusRepository
 import io.mockk.coVerify

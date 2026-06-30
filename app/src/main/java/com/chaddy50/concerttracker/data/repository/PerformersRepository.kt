@@ -1,10 +1,12 @@
 package com.chaddy50.concerttracker.data.repository
 
-import com.chaddy50.concerttracker.data.api.ApiResult
-import com.chaddy50.concerttracker.data.api.ConcertTrackerApiService
-import com.chaddy50.concerttracker.data.api.PerformerRequest
-import com.chaddy50.concerttracker.data.api.safeApiCall
-import com.chaddy50.concerttracker.data.entity.Performer
+import com.chaddy50.concerttracker.data.external.api.ApiResult
+import com.chaddy50.concerttracker.data.external.api.ConcertTrackerApiService
+import com.chaddy50.concerttracker.data.external.api.PerformerRequest
+import com.chaddy50.concerttracker.data.external.api.safeApiCall
+import com.chaddy50.concerttracker.data.external.dataTransferObjects.PerformerDto
+import com.chaddy50.concerttracker.data.external.dataTransferObjects.toDomain
+import com.chaddy50.concerttracker.data.domain.Performer
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.Json
@@ -39,23 +41,20 @@ class PerformersRepository @Inject constructor(
     }
 
     suspend fun searchPerformers(query: String): ApiResult<List<Performer>> = safeApiCall {
-        apiService().getPerformers(name = query.ifBlank { null })
+        apiService().getPerformers(name = query.ifBlank { null }).map { it.toDomain() }
     }
 
     suspend fun createPerformer(request: PerformerRequest): ApiResult<Performer> = safeApiCall {
-        try {
+        val dto = try {
             apiService().createPerformer(request)
         } catch (e: HttpException) {
             if (e.code() == 409) {
                 val body = e.response()?.errorBody()?.string()
-                if (body != null) {
-                    json.decodeFromString<Performer>(body)
-                } else {
-                    throw e
-                }
+                if (body != null) json.decodeFromString<PerformerDto>(body) else throw e
             } else {
                 throw e
             }
         }
+        dto.toDomain()
     }
 }

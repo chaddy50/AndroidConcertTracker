@@ -11,7 +11,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.chaddy50.concerttracker.ui.theme.ConcertTrackerTheme
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import com.chaddy50.concerttracker.data.api.NominatimResult
+import com.chaddy50.concerttracker.data.external.api.NominatimResult
 
 @Composable
 fun NominatimResultList(

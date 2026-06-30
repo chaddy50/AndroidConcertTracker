@@ -1,6 +1,6 @@
 package com.chaddy50.concerttracker.data.repository
 
-import com.chaddy50.concerttracker.data.api.ApiResult
+import com.chaddy50.concerttracker.data.external.api.ApiResult
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf

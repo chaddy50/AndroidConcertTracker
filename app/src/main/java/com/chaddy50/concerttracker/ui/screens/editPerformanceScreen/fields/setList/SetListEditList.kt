@@ -6,7 +6,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import com.chaddy50.concerttracker.data.entity.SetListEntry
+import com.chaddy50.concerttracker.data.domain.SetListEntry
 import com.chaddy50.concerttracker.ui.composables.LabeledOutlineCard
 import com.chaddy50.concerttracker.ui.screens.editPerformanceScreen.PendingSetListEntry
 

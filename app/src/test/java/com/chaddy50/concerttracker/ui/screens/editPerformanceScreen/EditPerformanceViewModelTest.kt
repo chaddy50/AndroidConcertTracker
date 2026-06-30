@@ -1,22 +1,25 @@
 package com.chaddy50.concerttracker.ui.screens.editPerformanceScreen
 
 import androidx.lifecycle.SavedStateHandle
-import com.chaddy50.concerttracker.data.api.ApiErrorType
-import com.chaddy50.concerttracker.data.api.ApiResult
-import com.chaddy50.concerttracker.data.entity.Performance
-import com.chaddy50.concerttracker.data.entity.Performer
-import com.chaddy50.concerttracker.data.entity.SetListEntry
-import com.chaddy50.concerttracker.data.entity.Venue
-import com.chaddy50.concerttracker.data.entity.Work
+import com.chaddy50.concerttracker.data.external.api.ApiErrorType
+import com.chaddy50.concerttracker.data.external.api.ApiResult
+import com.chaddy50.concerttracker.data.domain.Performance
+import com.chaddy50.concerttracker.data.domain.Performer
+import com.chaddy50.concerttracker.data.domain.SetListEntry
+import com.chaddy50.concerttracker.data.domain.Venue
+import com.chaddy50.concerttracker.data.domain.Work
 import com.chaddy50.concerttracker.data.enum.PerformanceStatus
 import com.chaddy50.concerttracker.data.enum.PerformerType
 import com.chaddy50.concerttracker.data.repository.PerformancesRepository
 import com.chaddy50.concerttracker.data.repository.PerformersRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -26,7 +29,6 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -80,7 +82,8 @@ class EditPerformanceViewModelTest {
     @Test
     fun `loadPerformance populates draft fields on Success`() = runTest {
         coEvery { performancesRepository.getPerformance("p1") } returns
-            ApiResult.Success(performance(setList = listOf(entry("e2", 2), entry("e1", 1))))
+            ApiResult.Success(performance())
+        every { performancesRepository.observePerformance("p1") } returns flowOf(performance())
         val viewModel = editViewModel()
         advanceUntilIdle()
 
@@ -88,13 +91,13 @@ class EditPerformanceViewModelTest {
         assertNotNull(viewModel.draftDate)
         assertEquals("v1", viewModel.draftVenueId)
         assertEquals(PerformanceStatus.UPCOMING, viewModel.draftStatus)
-        assertEquals(listOf("e1", "e2"), viewModel.currentSetList.map { it.id })
     }
 
     @Test
     fun `loadPerformance shows Error with errorType on failure`() = runTest {
         coEvery { performancesRepository.getPerformance("p1") } returns
             ApiResult.Error(ApiErrorType.Type.TIMEOUT)
+        every { performancesRepository.observePerformance("p1") } returns flowOf(null)
         val viewModel = editViewModel()
         advanceUntilIdle()
         assertEquals(PerformanceEditUiState.Error(ApiErrorType.Type.TIMEOUT), viewModel.uiState)
@@ -131,34 +134,18 @@ class EditPerformanceViewModelTest {
     }
 
     @Test
-    fun `refreshSetList updates currentSetList on Success`() = runTest {
-        coEvery { performancesRepository.getPerformance("p1") } returnsMany listOf(
-            ApiResult.Success(performance(setList = listOf(entry("e1", 1)))),
-            ApiResult.Success(performance(setList = listOf(entry("e1", 1), entry("e2", 2))))
-        )
+    fun `currentSetList observes Room, sorts by order, and updates on write-through`() = runTest {
+        coEvery { performancesRepository.getPerformance("p1") } returns ApiResult.Success(performance())
+        val roomFlow = MutableStateFlow(performance(setList = listOf(entry("e2", 2), entry("e1", 1))))
+        every { performancesRepository.observePerformance("p1") } returns roomFlow
         val viewModel = editViewModel()
-        advanceUntilIdle()
-        assertEquals(1, viewModel.currentSetList.size)
-
-        viewModel.refreshSetList()
         advanceUntilIdle()
         assertEquals(listOf("e1", "e2"), viewModel.currentSetList.map { it.id })
-        assertNull(viewModel.saveError)
-    }
 
-    @Test
-    fun `refreshSetList sets saveError on Error without clearing list`() = runTest {
-        coEvery { performancesRepository.getPerformance("p1") } returnsMany listOf(
-            ApiResult.Success(performance(setList = listOf(entry("e1", 1)))),
-            ApiResult.Error(ApiErrorType.Type.NETWORK)
-        )
-        val viewModel = editViewModel()
+        // a set-list mutation writes through to Room; the observed flow re-emits with no manual refresh
+        roomFlow.value = performance(setList = listOf(entry("e1", 1), entry("e2", 2), entry("e3", 3)))
         advanceUntilIdle()
-
-        viewModel.refreshSetList()
-        advanceUntilIdle()
-        assertEquals(1, viewModel.currentSetList.size)
-        assertNotNull(viewModel.saveError)
+        assertEquals(listOf("e1", "e2", "e3"), viewModel.currentSetList.map { it.id })
     }
 
     @Test
@@ -200,6 +187,7 @@ class EditPerformanceViewModelTest {
     @Test
     fun `deletePerformance invokes onDeleted on Success`() = runTest {
         coEvery { performancesRepository.getPerformance("p1") } returns ApiResult.Success(performance())
+        every { performancesRepository.observePerformance("p1") } returns flowOf(performance())
         coEvery { performancesRepository.deletePerformance("p1") } returns ApiResult.Success(Unit)
         val viewModel = editViewModel()
         advanceUntilIdle()
@@ -213,6 +201,7 @@ class EditPerformanceViewModelTest {
     @Test
     fun `deletePerformance sets saveError on Error`() = runTest {
         coEvery { performancesRepository.getPerformance("p1") } returns ApiResult.Success(performance())
+        every { performancesRepository.observePerformance("p1") } returns flowOf(performance())
         coEvery { performancesRepository.deletePerformance("p1") } returns
             ApiResult.Error(ApiErrorType.Type.SERVER)
         val viewModel = editViewModel()

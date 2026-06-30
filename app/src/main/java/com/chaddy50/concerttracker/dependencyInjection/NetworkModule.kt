@@ -1,8 +1,8 @@
 package com.chaddy50.concerttracker.dependencyInjection
 
-import com.chaddy50.concerttracker.data.api.MusicBrainzApiService
-import com.chaddy50.concerttracker.data.api.NominatimApiService
-import com.chaddy50.concerttracker.data.api.OpenOpusApiService
+import com.chaddy50.concerttracker.data.external.api.MusicBrainzApiService
+import com.chaddy50.concerttracker.data.external.api.NominatimApiService
+import com.chaddy50.concerttracker.data.external.api.OpenOpusApiService
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import dagger.Module
 import dagger.Provides

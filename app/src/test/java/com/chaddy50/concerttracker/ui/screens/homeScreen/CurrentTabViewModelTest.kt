@@ -1,17 +1,22 @@
 package com.chaddy50.concerttracker.ui.screens.homeScreen
 
-import com.chaddy50.concerttracker.data.api.ApiErrorType
-import com.chaddy50.concerttracker.data.api.ApiResult
-import com.chaddy50.concerttracker.data.entity.Performance
-import com.chaddy50.concerttracker.data.entity.Venue
+import com.chaddy50.concerttracker.data.external.api.ApiErrorType
+import com.chaddy50.concerttracker.data.external.api.ApiResult
+import com.chaddy50.concerttracker.data.domain.Performance
+import com.chaddy50.concerttracker.data.domain.Venue
 import com.chaddy50.concerttracker.data.enum.PerformanceStatus
 import com.chaddy50.concerttracker.data.repository.PerformancesRepository
 import com.chaddy50.concerttracker.ui.screens.homeScreen.currentTab.CurrentTabUiState
 import com.chaddy50.concerttracker.ui.screens.homeScreen.currentTab.CurrentTabViewModel
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -19,7 +24,6 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -49,64 +53,89 @@ class CurrentTabViewModelTest {
     }
 
     @Test
-    fun `uiState is Loading immediately after loadData`() = runTest {
-        coEvery { repository.getNextUpcomingPerformance() } returns ApiResult.Success(upcoming)
-        coEvery { repository.getRecentlyAttendedPerformances() } returns ApiResult.Success(listOf(recent))
+    fun `uiState combines next upcoming and recently attended from Room`() = runTest {
+        every { repository.observeNextUpcomingPerformance() } returns flowOf(upcoming)
+        every { repository.observeRecentlyAttendedPerformances() } returns flowOf(listOf(recent))
+        coEvery { repository.loadPerformances() } returns ApiResult.Success(Unit)
         val viewModel = CurrentTabViewModel(repository)
-        assertTrue(viewModel.uiState is CurrentTabUiState.Loading)
-    }
-
-    @Test
-    fun `transitions to Success with both fields when both calls return Success`() = runTest {
-        coEvery { repository.getNextUpcomingPerformance() } returns ApiResult.Success(upcoming)
-        coEvery { repository.getRecentlyAttendedPerformances() } returns ApiResult.Success(listOf(recent))
-        val viewModel = CurrentTabViewModel(repository)
+        backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
-        val state = viewModel.uiState as CurrentTabUiState.Success
+
+        val state = viewModel.uiState.value
+        assertTrue(state is CurrentTabUiState.Content)
+        state as CurrentTabUiState.Content
         assertEquals("p1", state.nextUpcoming?.id)
-        assertEquals(1, state.recentAttended.size)
+        assertEquals(listOf("p2"), state.recentlyAttended.map { it.id })
     }
 
     @Test
-    fun `transitions to Success with null nextUpcoming when that call returns Success null`() = runTest {
-        coEvery { repository.getNextUpcomingPerformance() } returns ApiResult.Success(null)
-        coEvery { repository.getRecentlyAttendedPerformances() } returns ApiResult.Success(listOf(recent))
+    fun `uiState re-emits when a newly created performance appears in the Room flow`() = runTest {
+        val nextFlow = MutableStateFlow<Performance?>(null)
+        every { repository.observeNextUpcomingPerformance() } returns nextFlow
+        every { repository.observeRecentlyAttendedPerformances() } returns flowOf(emptyList())
+        coEvery { repository.loadPerformances() } returns ApiResult.Success(Unit)
         val viewModel = CurrentTabViewModel(repository)
+        backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
-        val state = viewModel.uiState as CurrentTabUiState.Success
-        assertNull(state.nextUpcoming)
-        assertEquals(1, state.recentAttended.size)
+        assertTrue(viewModel.uiState.value is CurrentTabUiState.Empty)
+
+        nextFlow.value = upcoming
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state is CurrentTabUiState.Content)
+        assertEquals("p1", (state as CurrentTabUiState.Content).nextUpcoming?.id)
     }
 
     @Test
-    fun `transitions to Error when nextUpcoming call returns Error`() = runTest {
-        coEvery { repository.getNextUpcomingPerformance() } returns ApiResult.Error(ApiErrorType.Type.NETWORK)
-        coEvery { repository.getRecentlyAttendedPerformances() } returns ApiResult.Success(listOf(recent))
+    fun `uiState is Loading while a refresh is in flight, even when content is cached`() = runTest {
+        every { repository.observeNextUpcomingPerformance() } returns flowOf(upcoming)
+        every { repository.observeRecentlyAttendedPerformances() } returns flowOf(listOf(recent))
+        val loadResult = CompletableDeferred<ApiResult<Unit>>()
+        coEvery { repository.loadPerformances() } coAnswers { loadResult.await() }
         val viewModel = CurrentTabViewModel(repository)
+        backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
-        assertEquals(CurrentTabUiState.Error(ApiErrorType.Type.NETWORK), viewModel.uiState)
+
+        // The load is still suspended, so Loading takes priority over the cached content.
+        assertTrue(viewModel.uiState.value is CurrentTabUiState.Loading)
+
+        loadResult.complete(ApiResult.Success(Unit))
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value is CurrentTabUiState.Content)
     }
 
     @Test
-    fun `transitions to Error when recentAttended call returns Error`() = runTest {
-        coEvery { repository.getNextUpcomingPerformance() } returns ApiResult.Success(upcoming)
-        coEvery { repository.getRecentlyAttendedPerformances() } returns ApiResult.Error(ApiErrorType.Type.TIMEOUT)
+    fun `init triggers loadPerformances and surfaces its error`() = runTest {
+        every { repository.observeNextUpcomingPerformance() } returns flowOf(null)
+        every { repository.observeRecentlyAttendedPerformances() } returns flowOf(emptyList())
+        coEvery { repository.loadPerformances() } returns ApiResult.Error(ApiErrorType.Type.NETWORK)
         val viewModel = CurrentTabViewModel(repository)
+        backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
-        assertEquals(CurrentTabUiState.Error(ApiErrorType.Type.TIMEOUT), viewModel.uiState)
+
+        val state = viewModel.uiState.value
+        assertTrue(state is CurrentTabUiState.Error)
+        assertEquals(ApiErrorType.Type.NETWORK, (state as CurrentTabUiState.Error).errorType)
     }
 
     @Test
-    fun `retry succeeds after failure`() = runTest {
-        coEvery { repository.getNextUpcomingPerformance() } returns ApiResult.Error(ApiErrorType.Type.SERVER)
-        coEvery { repository.getRecentlyAttendedPerformances() } returns ApiResult.Error(ApiErrorType.Type.SERVER)
+    fun `retry clears the error on a subsequent successful loadPerformances`() = runTest {
+        every { repository.observeNextUpcomingPerformance() } returns flowOf(null)
+        every { repository.observeRecentlyAttendedPerformances() } returns flowOf(emptyList())
+        coEvery { repository.loadPerformances() } returns ApiResult.Error(ApiErrorType.Type.SERVER)
         val viewModel = CurrentTabViewModel(repository)
+        backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
-        assertTrue(viewModel.uiState is CurrentTabUiState.Error)
-        coEvery { repository.getNextUpcomingPerformance() } returns ApiResult.Success(upcoming)
-        coEvery { repository.getRecentlyAttendedPerformances() } returns ApiResult.Success(listOf(recent))
-        viewModel.loadData()
+        val errorState = viewModel.uiState.value
+        assertTrue(errorState is CurrentTabUiState.Error)
+        assertEquals(ApiErrorType.Type.SERVER, (errorState as CurrentTabUiState.Error).errorType)
+
+        coEvery { repository.loadPerformances() } returns ApiResult.Success(Unit)
+        viewModel.loadPerformances()
         advanceUntilIdle()
-        assertTrue(viewModel.uiState is CurrentTabUiState.Success)
+
+        assertTrue(viewModel.uiState.value is CurrentTabUiState.Empty)
     }
 }
