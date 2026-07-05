@@ -16,7 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.chaddy50.concerttracker.ui.screens.performancesScreen.PerformanceCard
+import com.chaddy50.concerttracker.ui.screens.homeScreen.composables.PerformanceCard
 
 @Composable
 fun CurrentTab(

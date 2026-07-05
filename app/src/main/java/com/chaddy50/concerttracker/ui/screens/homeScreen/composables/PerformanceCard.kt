@@ -1,4 +1,4 @@
-package com.chaddy50.concerttracker.ui.screens.performancesScreen
+package com.chaddy50.concerttracker.ui.screens.homeScreen.composables
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
