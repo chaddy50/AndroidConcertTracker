@@ -55,31 +55,22 @@ interface ConcertTrackerApiService {
     suspend fun deleteSetListEntry(@Path("id") id: String)
 
     @POST("venues/")
-    suspend fun createVenue(@Body request: VenueRequest): VenueDto
-
-    @GET("performers/")
-    suspend fun getPerformers(@Query("name") name: String? = null): List<PerformerDto>
+    suspend fun findOrCreateVenue(@Body request: VenueRequest): VenueDto
 
     @POST("performers/")
-    suspend fun createPerformer(@Body request: PerformerRequest): PerformerDto
+    suspend fun findOrCreatePerformer(@Body request: PerformerRequest): PerformerDto
 
     @GET("performers/{id}")
     suspend fun getPerformer(@Path("id") id: String): PerformerDto
 
-    @GET("composers/")
-    suspend fun getComposers(@Query("name") name: String? = null): List<ComposerDto>
-
     @POST("composers/")
-    suspend fun createComposer(@Body request: ComposerRequest): ComposerDto
+    suspend fun findOrCreateComposer(@Body request: ComposerRequest): ComposerDto
 
     @GET("composers/{id}")
     suspend fun getComposer(@Path("id") id: String): ComposerDto
 
-    @GET("works/")
-    suspend fun getWorks(@Query("name") name: String? = null): List<WorkDto>
-
     @POST("works/")
-    suspend fun createWork(@Body request: WorkRequest): WorkDto
+    suspend fun findOrCreateWork(@Body request: WorkRequest): WorkDto
 
     @GET("works/{id}")
     suspend fun getWork(@Path("id") id: String): WorkDto
@@ -95,7 +86,10 @@ data class WorkRequest(
 @Serializable
 data class ComposerRequest(
     val name: String,
-    val openOpusId: String? = null
+    val openOpusId: String? = null,
+    // When set, attach the work to this already-materialized composer (our id) instead of
+    // find-or-creating one by natural key. Used for cached composers with no Open Opus id.
+    val id: String? = null
 )
 
 @Serializable

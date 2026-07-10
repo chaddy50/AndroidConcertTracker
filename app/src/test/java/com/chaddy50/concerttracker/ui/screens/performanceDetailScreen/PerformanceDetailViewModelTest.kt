@@ -85,7 +85,7 @@ class PerformanceDetailViewModelTest {
     }
 
     @Test
-    fun `uiState is Loading while a refresh is in flight, even when a performance is cached`() = runTest {
+    fun `uiState shows the cached performance immediately, even while a refresh is in flight`() = runTest {
         every { performancesRepository.observePerformance("p1") } returns
             flowOf(performance(listOf(entry("e1", "note"))))
         val loadResult = CompletableDeferred<ApiResult<Unit>>()
@@ -94,8 +94,8 @@ class PerformanceDetailViewModelTest {
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
 
-        // The load is still suspended, so Loading takes priority over the cached performance.
-        assertTrue(viewModel.uiState.value is PerformanceDetailUiState.Loading)
+        // Offline-first: the cached performance wins over the in-flight refresh spinner.
+        assertTrue(viewModel.uiState.value is PerformanceDetailUiState.Content)
 
         loadResult.complete(ApiResult.Success(Unit))
         advanceUntilIdle()
@@ -104,16 +104,26 @@ class PerformanceDetailViewModelTest {
     }
 
     @Test
-    fun `uiState surfaces loadPerformance error when nothing is cached`() = runTest {
+    fun `cached performance is kept when the refresh fails offline`() = runTest {
+        every { performancesRepository.observePerformance("p1") } returns
+            flowOf(performance(listOf(entry("e1", "note"))))
+        coEvery { performancesRepository.loadPerformance("p1") } returns ApiResult.Error(ApiErrorType.Type.NETWORK)
+        val viewModel = viewModel()
+        backgroundScope.launch { viewModel.uiState.collect {} }
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value is PerformanceDetailUiState.Content)
+    }
+
+    @Test
+    fun `refresh failure with nothing cached shows Empty, not an error`() = runTest {
         every { performancesRepository.observePerformance("p1") } returns flowOf(null)
         coEvery { performancesRepository.loadPerformance("p1") } returns ApiResult.Error(ApiErrorType.Type.NETWORK)
         val viewModel = viewModel()
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
 
-        val state = viewModel.uiState.value
-        assertTrue(state is PerformanceDetailUiState.Error)
-        assertEquals(ApiErrorType.Type.NETWORK, (state as PerformanceDetailUiState.Error).errorType)
+        assertTrue(viewModel.uiState.value is PerformanceDetailUiState.Empty)
     }
 
     @Test

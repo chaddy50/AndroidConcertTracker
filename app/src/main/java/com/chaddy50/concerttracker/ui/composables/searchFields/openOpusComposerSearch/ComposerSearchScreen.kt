@@ -29,12 +29,10 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.chaddy50.concerttracker.data.external.api.OpenOpusComposer
 
 @Composable
 fun ComposerSearchScreen(
-    onComposerSelected: (OpenOpusComposer) -> Unit,
-    onCustomComposerSelected: (composerName: String) -> Unit,
+    onComposerChosen: (composerEntityId: String?, composerOpenOpusId: String?, composerName: String) -> Unit,
     viewModel: ComposerSearchViewModel = hiltViewModel()
 ) {
     var showCustomDialog by remember { mutableStateOf(false) }
@@ -76,13 +74,13 @@ fun ComposerSearchScreen(
                     }
                 }
                 is ComposerSearchUiState.Results -> {
-                    items(state.composers) { composer ->
+                    items(state.rows) { row ->
                         ListItem(
-                            headlineContent = { Text(composer.completeName) },
-                            supportingContent = composer.epoch?.let { { Text(it) } },
+                            headlineContent = { Text(row.name) },
+                            supportingContent = row.epoch?.let { { Text(it) } },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { onComposerSelected(composer) }
+                                .clickable { onComposerChosen(row.composerId, row.openOpusId, row.name) }
                         )
                         HorizontalDivider()
                     }
@@ -109,7 +107,7 @@ fun ComposerSearchScreen(
             onDismiss = { showCustomDialog = false },
             onConfirm = { composerName ->
                 showCustomDialog = false
-                onCustomComposerSelected(composerName)
+                onComposerChosen(null, null, composerName)
             }
         )
     }

@@ -7,8 +7,12 @@ import com.chaddy50.concerttracker.data.external.api.safeApiCall
 import com.chaddy50.concerttracker.data.external.dataTransferObjects.PerformerDto
 import com.chaddy50.concerttracker.data.external.dataTransferObjects.toDomain
 import com.chaddy50.concerttracker.data.domain.Performer
+import com.chaddy50.concerttracker.data.local.dao.PerformerDao
+import com.chaddy50.concerttracker.data.local.entity.toDomain
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -21,8 +25,13 @@ import javax.inject.Singleton
 class PerformersRepository @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val okHttpClient: OkHttpClient,
-    private val json: Json
+    private val json: Json,
+    private val performerDao: PerformerDao
 ) {
+
+    fun searchPerformers(query: String): Flow<List<Performer>> =
+        performerDao.searchPerformers(query.trim()).map { list -> list.map { it.toDomain() } }
+
     private var cachedBaseUrl: String? = null
     private var cachedApiService: ConcertTrackerApiService? = null
 
@@ -40,13 +49,9 @@ class PerformersRepository @Inject constructor(
         return cachedApiService!!
     }
 
-    suspend fun searchPerformers(query: String): ApiResult<List<Performer>> = safeApiCall {
-        apiService().getPerformers(name = query.ifBlank { null }).map { it.toDomain() }
-    }
-
-    suspend fun createPerformer(request: PerformerRequest): ApiResult<Performer> = safeApiCall {
+    suspend fun findOrCreatePerformer(request: PerformerRequest): ApiResult<Performer> = safeApiCall {
         val dto = try {
-            apiService().createPerformer(request)
+            apiService().findOrCreatePerformer(request)
         } catch (e: HttpException) {
             if (e.code() == 409) {
                 val body = e.response()?.errorBody()?.string()

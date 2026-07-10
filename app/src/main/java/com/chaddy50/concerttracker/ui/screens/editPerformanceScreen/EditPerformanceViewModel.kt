@@ -12,7 +12,6 @@ import com.chaddy50.concerttracker.data.external.api.ApiErrorType
 import com.chaddy50.concerttracker.data.external.api.ApiResult
 import com.chaddy50.concerttracker.data.external.api.FeaturedPerformerRequest
 import com.chaddy50.concerttracker.data.external.api.PerformanceRequest
-import com.chaddy50.concerttracker.data.external.api.PerformerRequest
 import com.chaddy50.concerttracker.data.external.api.SetListEntryInlineRequest
 import com.chaddy50.concerttracker.data.domain.Performance
 import com.chaddy50.concerttracker.data.domain.Performer
@@ -20,7 +19,6 @@ import com.chaddy50.concerttracker.data.domain.SetListEntry
 import com.chaddy50.concerttracker.data.enum.PerformanceStatus
 import com.chaddy50.concerttracker.data.enum.PerformerType
 import com.chaddy50.concerttracker.data.repository.PerformancesRepository
-import com.chaddy50.concerttracker.data.repository.PerformersRepository
 import com.chaddy50.concerttracker.navigation.routes.PerformanceEdit
 import com.chaddy50.concerttracker.util.epochMillisToIso
 import com.chaddy50.concerttracker.util.isoToEpochMillis
@@ -31,8 +29,7 @@ import javax.inject.Inject
 @HiltViewModel
 class EditPerformanceViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-    private val performancesRepository: PerformancesRepository,
-    private val performersRepository: PerformersRepository
+    private val performancesRepository: PerformancesRepository
 ) : ViewModel() {
 
     private val performanceId: String? = savedStateHandle.toRoute<PerformanceEdit>().id
@@ -131,15 +128,10 @@ class EditPerformanceViewModel @Inject constructor(
     }
 
     fun addDraftPerformer(performerId: String, performerName: String, performerTypeName: String?, specialty: String?) {
-        if (draftPerformers.any { it.musicbrainzId == performerId }) return
+        if (draftPerformers.any { it.id == performerId }) return
         val type = performerTypeName?.let { runCatching { PerformerType.valueOf(it) }.getOrNull() }
             ?: PerformerType.OTHER
-        viewModelScope.launch {
-            when (val result = performersRepository.createPerformer(PerformerRequest(performerName, type, specialty, performerId))) {
-                is ApiResult.Success -> draftPerformers.add(result.data)
-                is ApiResult.Error -> saveError = "Failed to add performer: ${result.errorType.toUserMessage()}"
-            }
-        }
+        draftPerformers.add(Performer(id = performerId, name = performerName, type = type, specialty = specialty))
     }
 
     fun removeDraftPerformer(performerId: String) {

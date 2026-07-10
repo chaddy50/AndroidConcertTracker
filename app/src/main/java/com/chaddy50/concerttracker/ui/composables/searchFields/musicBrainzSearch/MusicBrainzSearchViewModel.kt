@@ -10,6 +10,7 @@ import androidx.navigation.toRoute
 import com.chaddy50.concerttracker.data.external.api.ApiErrorType
 import com.chaddy50.concerttracker.data.external.api.ApiResult
 import com.chaddy50.concerttracker.data.external.api.MusicBrainzResult
+import com.chaddy50.concerttracker.data.external.api.PerformerRequest
 import com.chaddy50.concerttracker.data.domain.Performer
 import com.chaddy50.concerttracker.data.enum.MusicBrainzEntityType
 import com.chaddy50.concerttracker.data.enum.PerformerType
@@ -17,7 +18,7 @@ import com.chaddy50.concerttracker.data.repository.MusicBrainzRepository
 import com.chaddy50.concerttracker.data.repository.PerformersRepository
 import com.chaddy50.concerttracker.navigation.routes.MusicBrainzSearch
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.async
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -36,52 +37,108 @@ class MusicBrainzSearchViewModel @Inject constructor(
     var uiState: MusicBrainzSearchUiState by mutableStateOf(MusicBrainzSearchUiState.Idle)
         private set
 
+    var isSaving: Boolean by mutableStateOf(false)
+        private set
+
+    var saveError: String? by mutableStateOf(null)
+        private set
+
+    // The merged list is (performers cached in Room) + (online MusicBrainz results), de-duplicated by
+    // MusicBrainz id, presented as one list the user can't tell apart. Cached performers stay usable offline.
+    private var localPerformers: List<Performer> = emptyList()
+    private var apiPerformers: List<MusicBrainzResult> = emptyList()
+    private var apiError: ApiErrorType.Type? = null
+    private var isSearching = false
+    private var hasSearched = false
+    private var cachedJob: Job? = null
+
+    init {
+        observeCached("")
+    }
+
     fun updateSearchQuery(query: String) {
         searchQuery = query
-        uiState = MusicBrainzSearchUiState.Idle
+        observeCached(query)
+    }
+
+    private fun observeCached(query: String) {
+        cachedJob?.cancel()
+        cachedJob = viewModelScope.launch {
+            performersRepository.searchPerformers(query).collect { performers ->
+                localPerformers = performers.filter(::doesEntityTypeMatch)
+                recomputeUiState()
+            }
+        }
+    }
+
+    private fun doesEntityTypeMatch(performer: Performer): Boolean = when (entityType) {
+        MusicBrainzEntityType.PERFORMER -> performer.type != PerformerType.CONDUCTOR
+        MusicBrainzEntityType.CONDUCTOR -> performer.type == PerformerType.CONDUCTOR
+        MusicBrainzEntityType.COMPOSER -> false
     }
 
     fun search() {
         viewModelScope.launch {
-            uiState = MusicBrainzSearchUiState.Loading
-
-            val localDeferred = async { performersRepository.searchPerformers(searchQuery) }
-            val apiDeferred = async { musicBrainzRepository.search(entityType, searchQuery) }
-
-            val localResult = localDeferred.await()
-            val apiResult = apiDeferred.await()
-
-            val localPerformers = (localResult as? ApiResult.Success)?.data?.let(::buildListOfLocalPerformers)
-            val apiPerformers = (apiResult as? ApiResult.Success)?.data
-
-            if (localPerformers == null && apiPerformers == null) {
-                uiState = MusicBrainzSearchUiState.Error((localResult as ApiResult.Error).errorType)
-                return@launch
+            isSearching = true
+            hasSearched = true
+            apiError = null
+            recomputeUiState()
+            when (val result = musicBrainzRepository.search(entityType, searchQuery)) {
+                is ApiResult.Success -> apiPerformers = result.data
+                is ApiResult.Error -> {
+                    apiPerformers = emptyList()
+                    apiError = result.errorType
+                }
             }
-
-            val localIds = (localPerformers ?: emptyList()).map { it.id }.toSet()
-            val combined = (localPerformers ?: emptyList()) + (apiPerformers ?: emptyList()).filter { it.id !in localIds }
-            uiState = if (combined.isEmpty()) MusicBrainzSearchUiState.Empty else MusicBrainzSearchUiState.Results(combined)
+            isSearching = false
+            recomputeUiState()
         }
     }
 
-    private fun buildListOfLocalPerformers(performers: List<Performer>): List<MusicBrainzResult> {
-        return performers
-            .filter { performer ->
-                when (entityType) {
-                    MusicBrainzEntityType.PERFORMER -> performer.type != PerformerType.CONDUCTOR
-                    MusicBrainzEntityType.CONDUCTOR -> performer.type == PerformerType.CONDUCTOR
-                    MusicBrainzEntityType.COMPOSER -> false
-                }
+    fun selectPerformer(performer: Performer, onSelected: (Performer) -> Unit) = onSelected(performer)
+
+    fun selectPerformerFromApi(result: MusicBrainzResult, onSelected: (Performer) -> Unit) =
+        findOrCreatePerformer(result.name, result.performerType ?: PerformerType.OTHER, result.description, result.id, onSelected)
+
+    fun createCustomPerformer(name: String, type: PerformerType, specialty: String?, onSelected: (Performer) -> Unit) =
+        findOrCreatePerformer(name, type, specialty, null, onSelected)
+
+    private fun findOrCreatePerformer(
+        name: String,
+        type: PerformerType,
+        specialty: String?,
+        musicbrainzId: String?,
+        onSelected: (Performer) -> Unit
+    ) {
+        viewModelScope.launch {
+            isSaving = true
+            saveError = null
+            when (val result = performersRepository.findOrCreatePerformer(PerformerRequest(name, type, specialty, musicbrainzId))) {
+                is ApiResult.Success -> onSelected(result.data)
+                is ApiResult.Error -> saveError = result.errorType.toUserMessage()
             }
-            .map { performer ->
-                MusicBrainzResult(
-                    id = performer.musicbrainzId ?: "",
-                    name = performer.name,
-                    description = performer.specialty,
-                    performerType = performer.type
-                )
-            }
+            isSaving = false
+        }
+    }
+
+    private fun recomputeUiState() {
+        val rows = buildRows()
+        uiState = when {
+            rows.isNotEmpty() -> MusicBrainzSearchUiState.Results(rows)
+            isSearching -> MusicBrainzSearchUiState.Loading
+            apiError != null -> MusicBrainzSearchUiState.Error(apiError!!)
+            hasSearched -> MusicBrainzSearchUiState.Empty
+            else -> MusicBrainzSearchUiState.Idle
+        }
+    }
+
+    private fun buildRows(): List<PerformerSearchResult> {
+        val cachedMusicBrainzIds = localPerformers.mapNotNull { it.musicbrainzId }.toSet()
+        val localRows = localPerformers.map { PerformerSearchResult.Local(it) }
+        val apiRows = apiPerformers
+            .filter { it.id !in cachedMusicBrainzIds }
+            .map { PerformerSearchResult.FromApi(it) }
+        return localRows + apiRows
     }
 }
 
@@ -89,6 +146,6 @@ sealed interface MusicBrainzSearchUiState {
     data object Idle : MusicBrainzSearchUiState
     data object Loading : MusicBrainzSearchUiState
     data object Empty : MusicBrainzSearchUiState
-    data class Results(val results: List<MusicBrainzResult>) : MusicBrainzSearchUiState
+    data class Results(val rows: List<PerformerSearchResult>) : MusicBrainzSearchUiState
     data class Error(val errorType: ApiErrorType.Type) : MusicBrainzSearchUiState
 }

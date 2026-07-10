@@ -2,8 +2,6 @@ package com.chaddy50.concerttracker.ui.screens.homeScreen.upcomingTab
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.chaddy50.concerttracker.data.external.api.ApiErrorType
-import com.chaddy50.concerttracker.data.external.api.ApiResult
 import com.chaddy50.concerttracker.data.domain.Performance
 import com.chaddy50.concerttracker.data.repository.PerformancesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,18 +19,15 @@ class UpcomingTabViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val isLoading = MutableStateFlow(false)
-    private val loadError = MutableStateFlow<ApiErrorType.Type?>(null)
 
     val uiState: StateFlow<UpcomingTabUiState> = combine(
         repository.observeUpcomingPerformances(),
-        isLoading,
-        loadError
-    ) { performances, loading, error ->
+        isLoading
+    ) { performances, loading ->
         when {
+            performances.isNotEmpty() -> UpcomingTabUiState.Content(performances)
             loading -> UpcomingTabUiState.Loading
-            error != null -> UpcomingTabUiState.Error(error)
-            performances.isEmpty() -> UpcomingTabUiState.Empty
-            else -> UpcomingTabUiState.Content(performances)
+            else -> UpcomingTabUiState.Empty
         }
     }.stateIn(
         scope = viewModelScope,
@@ -47,11 +42,7 @@ class UpcomingTabViewModel @Inject constructor(
     fun loadPerformances() {
         viewModelScope.launch {
             isLoading.value = true
-            loadError.value = null
-            val result = repository.loadPerformances()
-            if (result is ApiResult.Error) {
-                loadError.value = result.errorType
-            }
+            repository.loadPerformances()
             isLoading.value = false
         }
     }
@@ -59,7 +50,6 @@ class UpcomingTabViewModel @Inject constructor(
 
 sealed interface UpcomingTabUiState {
     data object Loading : UpcomingTabUiState
-    data class Error(val errorType: ApiErrorType.Type) : UpcomingTabUiState
     data object Empty : UpcomingTabUiState
     data class Content(val performances: List<Performance>) : UpcomingTabUiState
 }

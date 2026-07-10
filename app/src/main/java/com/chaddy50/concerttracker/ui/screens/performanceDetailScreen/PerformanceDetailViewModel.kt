@@ -39,21 +39,20 @@ class PerformanceDetailViewModel @Inject constructor(
     private val performanceId: String = savedStateHandle.toRoute<PerformanceDetail>().id
 
     private val isLoading = MutableStateFlow(false)
-    private val loadError = MutableStateFlow<ApiErrorType.Type?>(null)
 
     /** The latest cached performance, kept in sync with Room so note auto-save can diff against it. */
     private var loadedPerformance: Performance? = null
 
     val uiState: StateFlow<PerformanceDetailUiState> = combine(
         performancesRepository.observePerformance(performanceId),
-        isLoading,
-        loadError
-    ) { performance, loading, error ->
+        isLoading
+    ) { performance, loading ->
+        // Offline-first: Room is the source of truth. A failed refresh is never surfaced here — a
+        // missing performance simply means Empty ("not found").
         when {
+            performance != null -> PerformanceDetailUiState.Content(performance)
             loading -> PerformanceDetailUiState.Loading
-            error != null -> PerformanceDetailUiState.Error(error)
-            performance == null -> PerformanceDetailUiState.Empty
-            else -> PerformanceDetailUiState.Content(performance)
+            else -> PerformanceDetailUiState.Empty
         }
     }.stateIn(
         scope = viewModelScope,
@@ -86,11 +85,7 @@ class PerformanceDetailViewModel @Inject constructor(
     fun loadPerformance() {
         viewModelScope.launch {
             isLoading.value = true
-            loadError.value = null
-            val result = performancesRepository.loadPerformance(performanceId)
-            if (result is ApiResult.Error) {
-                loadError.value = result.errorType
-            }
+            performancesRepository.loadPerformance(performanceId)
             isLoading.value = false
         }
     }
@@ -141,7 +136,6 @@ class PerformanceDetailViewModel @Inject constructor(
 
 sealed interface PerformanceDetailUiState {
     data object Loading : PerformanceDetailUiState
-    data class Error(val errorType: ApiErrorType.Type) : PerformanceDetailUiState
     data object Empty : PerformanceDetailUiState
     data class Content(val performance: Performance) : PerformanceDetailUiState
 }

@@ -26,5 +26,6 @@ data class WorkWithComposers(
 fun WorkWithComposers.toDomain() = Work(
     id = work.id,
     title = work.title,
-    composers = composers.map { it.toDomain() }
+    composers = composers.map { it.toDomain() },
+    openOpusId = work.openOpusId
 )

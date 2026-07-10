@@ -6,5 +6,6 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "works")
 data class WorkEntity(
     @PrimaryKey val id: String,
-    val title: String
+    val title: String,
+    val openOpusId: String? = null
 )

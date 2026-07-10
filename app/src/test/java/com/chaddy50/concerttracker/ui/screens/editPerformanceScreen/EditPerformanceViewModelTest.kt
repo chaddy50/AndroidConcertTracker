@@ -11,7 +11,6 @@ import com.chaddy50.concerttracker.data.domain.Work
 import com.chaddy50.concerttracker.data.enum.PerformanceStatus
 import com.chaddy50.concerttracker.data.enum.PerformerType
 import com.chaddy50.concerttracker.data.repository.PerformancesRepository
-import com.chaddy50.concerttracker.data.repository.PerformersRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -29,6 +28,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -43,7 +43,6 @@ class EditPerformanceViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private val performancesRepository: PerformancesRepository = mockk()
-    private val performersRepository: PerformersRepository = mockk()
 
     private fun performer(id: String, mbId: String?) =
         Performer(id = id, name = "Performer $id", type = PerformerType.SOLO, musicbrainzId = mbId)
@@ -62,11 +61,11 @@ class EditPerformanceViewModelTest {
         )
 
     private fun editViewModel() = EditPerformanceViewModel(
-        SavedStateHandle(mapOf("id" to "p1")), performancesRepository, performersRepository
+        SavedStateHandle(mapOf("id" to "p1")), performancesRepository
     )
 
     private fun createViewModel() = EditPerformanceViewModel(
-        SavedStateHandle(mapOf("id" to null)), performancesRepository, performersRepository
+        SavedStateHandle(mapOf("id" to null)), performancesRepository
     )
 
     @Before
@@ -104,33 +103,26 @@ class EditPerformanceViewModelTest {
     }
 
     @Test
-    fun `addDraftPerformer adds on Success and skips duplicates`() = runTest {
-        coEvery { performersRepository.createPerformer(any()) } returns
-            ApiResult.Success(performer("perf1", mbId = "mb1"))
+    fun `addDraftPerformer adds the already-materialized performer and skips duplicates by our id`() = runTest {
         val viewModel = createViewModel()
         advanceUntilIdle()
 
-        viewModel.addDraftPerformer("mb1", "Performer perf1", "SOLO", null)
-        advanceUntilIdle()
+        viewModel.addDraftPerformer("perf1", "Performer perf1", "SOLO", null)
         assertEquals(listOf("perf1"), viewModel.draftPerformers.map { it.id })
+        assertEquals(PerformerType.SOLO, viewModel.draftPerformers.single().type)
 
-        viewModel.addDraftPerformer("mb1", "Performer perf1", "SOLO", null)
-        advanceUntilIdle()
+        viewModel.addDraftPerformer("perf1", "Performer perf1", "SOLO", null)
         assertEquals(1, viewModel.draftPerformers.size)
-        coVerify(exactly = 1) { performersRepository.createPerformer(any()) }
     }
 
     @Test
-    fun `addDraftPerformer sets saveError on Error`() = runTest {
-        coEvery { performersRepository.createPerformer(any()) } returns
-            ApiResult.Error(ApiErrorType.Type.SERVER)
+    fun `addDraftPerformer performs no network create`() = runTest {
         val viewModel = createViewModel()
         advanceUntilIdle()
 
-        viewModel.addDraftPerformer("mb1", "Name", "SOLO", null)
-        advanceUntilIdle()
-        assertTrue(viewModel.draftPerformers.isEmpty())
-        assertNotNull(viewModel.saveError)
+        viewModel.addDraftPerformer("perf1", "Name", "SOLO", null)
+        assertEquals(1, viewModel.draftPerformers.size)
+        assertNull(viewModel.saveError)
     }
 
     @Test

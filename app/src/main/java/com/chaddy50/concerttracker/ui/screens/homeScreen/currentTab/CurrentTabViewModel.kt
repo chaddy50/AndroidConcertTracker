@@ -2,8 +2,6 @@ package com.chaddy50.concerttracker.ui.screens.homeScreen.currentTab
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.chaddy50.concerttracker.data.external.api.ApiErrorType
-import com.chaddy50.concerttracker.data.external.api.ApiResult
 import com.chaddy50.concerttracker.data.domain.Performance
 import com.chaddy50.concerttracker.data.repository.PerformancesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -11,7 +9,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -22,19 +19,19 @@ class CurrentTabViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val isLoading = MutableStateFlow(false)
-    private val loadError = MutableStateFlow<ApiErrorType.Type?>(null)
 
     val uiState: StateFlow<CurrentTabUiState> = combine(
         repository.observeNextUpcomingPerformance(),
         repository.observeRecentlyAttendedPerformances(),
-        isLoading,
-        loadError
-    ) { nextUpcoming, recentlyAttended, loading, error ->
+        isLoading
+    ) { nextUpcoming, recentlyAttended, loading ->
+        // Offline-first: Room is the source of truth, so the screen reflects the cache. A failed
+        // background refresh is never surfaced here — no content simply means Empty.
         when {
+            nextUpcoming != null || recentlyAttended.isNotEmpty() ->
+                CurrentTabUiState.Content(nextUpcoming, recentlyAttended)
             loading -> CurrentTabUiState.Loading
-            error != null -> CurrentTabUiState.Error(error)
-            nextUpcoming == null && recentlyAttended.isEmpty() -> CurrentTabUiState.Empty
-            else -> CurrentTabUiState.Content(nextUpcoming, recentlyAttended)
+            else -> CurrentTabUiState.Empty
         }
     }.stateIn(
         scope = viewModelScope,
@@ -49,11 +46,7 @@ class CurrentTabViewModel @Inject constructor(
     fun loadPerformances() {
         viewModelScope.launch {
             isLoading.value = true
-            loadError.value = null
-            val result = repository.loadPerformances()
-            if (result is ApiResult.Error) {
-                loadError.value = result.errorType
-            }
+            repository.loadPerformances()
             isLoading.value = false
         }
     }
@@ -61,7 +54,6 @@ class CurrentTabViewModel @Inject constructor(
 
 sealed interface CurrentTabUiState {
     data object Loading : CurrentTabUiState
-    data class Error(val errorType: ApiErrorType.Type) : CurrentTabUiState
     data object Empty : CurrentTabUiState
     data class Content(
         val nextUpcoming: Performance?,

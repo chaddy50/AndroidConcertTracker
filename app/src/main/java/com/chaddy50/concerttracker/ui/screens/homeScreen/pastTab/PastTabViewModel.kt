@@ -2,8 +2,6 @@ package com.chaddy50.concerttracker.ui.screens.homeScreen.pastTab
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.chaddy50.concerttracker.data.external.api.ApiErrorType
-import com.chaddy50.concerttracker.data.external.api.ApiResult
 import com.chaddy50.concerttracker.data.domain.Performance
 import com.chaddy50.concerttracker.data.repository.PerformancesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,18 +19,17 @@ class PastTabViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val isLoading = MutableStateFlow(false)
-    private val loadError = MutableStateFlow<ApiErrorType.Type?>(null)
 
     val uiState: StateFlow<PastTabUiState> = combine(
         repository.observePastPerformances(),
-        isLoading,
-        loadError
-    ) { performances, loading, error ->
+        isLoading
+    ) { performances, loading ->
+        // Offline-first: Room is the source of truth, so the screen reflects the cache. A failed
+        // background refresh is never surfaced here — no content simply means Empty.
         when {
+            performances.isNotEmpty() -> PastTabUiState.Content(performances)
             loading -> PastTabUiState.Loading
-            error != null -> PastTabUiState.Error(error)
-            performances.isEmpty() -> PastTabUiState.Empty
-            else -> PastTabUiState.Content(performances)
+            else -> PastTabUiState.Empty
         }
     }.stateIn(
         scope = viewModelScope,
@@ -47,11 +44,7 @@ class PastTabViewModel @Inject constructor(
     fun loadPerformances() {
         viewModelScope.launch {
             isLoading.value = true
-            loadError.value = null
-            val result = repository.loadPerformances()
-            if (result is ApiResult.Error) {
-                loadError.value = result.errorType
-            }
+            repository.loadPerformances()
             isLoading.value = false
         }
     }
@@ -59,7 +52,6 @@ class PastTabViewModel @Inject constructor(
 
 sealed interface PastTabUiState {
     data object Loading : PastTabUiState
-    data class Error(val errorType: ApiErrorType.Type) : PastTabUiState
     data object Empty : PastTabUiState
     data class Content(val performances: List<Performance>) : PastTabUiState
 }

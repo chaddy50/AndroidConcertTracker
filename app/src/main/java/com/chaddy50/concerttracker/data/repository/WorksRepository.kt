@@ -8,8 +8,12 @@ import com.chaddy50.concerttracker.data.external.api.safeApiCall
 import com.chaddy50.concerttracker.data.external.dataTransferObjects.WorkDto
 import com.chaddy50.concerttracker.data.external.dataTransferObjects.toDomain
 import com.chaddy50.concerttracker.data.domain.Work
+import com.chaddy50.concerttracker.data.local.dao.WorkDao
+import com.chaddy50.concerttracker.data.local.relation.toDomain
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -22,8 +26,13 @@ import javax.inject.Singleton
 class WorksRepository @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val okHttpClient: OkHttpClient,
-    private val json: Json
+    private val json: Json,
+    private val workDao: WorkDao
 ) {
+
+    fun searchWorksForComposer(composerId: String, query: String): Flow<List<Work>> =
+        workDao.searchWorksForComposer(composerId, query.trim()).map { list -> list.map { it.toDomain() } }
+
     private var cachedBaseUrl: String? = null
     private var cachedApiService: ConcertTrackerApiService? = null
 
@@ -41,22 +50,25 @@ class WorksRepository @Inject constructor(
         return cachedApiService!!
     }
 
-    suspend fun searchWorks(query: String): ApiResult<List<Work>> = safeApiCall {
-        apiService().getWorks(name = query.ifBlank { null }).map { it.toDomain() }
-    }
-
-    suspend fun createWorkFromOpenOpus(
-        openOpusWorkId: String,
+    suspend fun findOrCreateWork(
+        openOpusWorkId: String?,
         title: String,
-        openOpusComposerId: String,
+        existingComposerId: String?,
+        openOpusComposerId: String?,
         composerName: String
     ): ApiResult<Work> = safeApiCall {
         val dto = try {
-            apiService().createWork(
+            apiService().findOrCreateWork(
                 WorkRequest(
                     title = title,
                     openOpusId = openOpusWorkId,
-                    composers = listOf(ComposerRequest(name = composerName, openOpusId = openOpusComposerId))
+                    composers = listOf(
+                        ComposerRequest(
+                            name = composerName,
+                            openOpusId = openOpusComposerId,
+                            id = existingComposerId
+                        )
+                    )
                 )
             )
         } catch (e: HttpException) {

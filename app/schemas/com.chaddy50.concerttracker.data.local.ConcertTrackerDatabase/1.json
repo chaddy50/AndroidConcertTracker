@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "48f993e4fdacec7f0d9b8b3f2e914ddc",
+    "identityHash": "7a291fdb71fdb1732951410e546c3e0d",
     "entities": [
       {
         "tableName": "performances",
@@ -151,7 +151,7 @@
       },
       {
         "tableName": "works",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `title` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `title` TEXT NOT NULL, `openOpusId` TEXT, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -164,6 +164,12 @@
             "columnName": "title",
             "affinity": "TEXT",
             "notNull": true
+          },
+          {
+            "fieldPath": "openOpusId",
+            "columnName": "openOpusId",
+            "affinity": "TEXT",
+            "notNull": false
           }
         ],
         "primaryKey": {
@@ -460,7 +466,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '48f993e4fdacec7f0d9b8b3f2e914ddc')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '7a291fdb71fdb1732951410e546c3e0d')"
     ]
   }
 }

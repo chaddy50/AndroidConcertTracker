@@ -31,12 +31,13 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.chaddy50.concerttracker.R
-import com.chaddy50.concerttracker.data.external.api.MusicBrainzResult
+import com.chaddy50.concerttracker.data.domain.Performer
 import com.chaddy50.concerttracker.data.enum.MusicBrainzEntityType
+import com.chaddy50.concerttracker.data.enum.PerformerType
 
 @Composable
 fun MusicBrainzSearchScreen(
-    onResultSelected: (MusicBrainzResult) -> Unit,
+    onPerformerSelected: (Performer) -> Unit,
     viewModel: MusicBrainzSearchViewModel = hiltViewModel()
 ) {
     var showCustomDialog by remember { mutableStateOf(false) }
@@ -93,8 +94,20 @@ fun MusicBrainzSearchScreen(
                     }
                 }
                 is MusicBrainzSearchUiState.Results -> {
-                    items(state.results) { result ->
-                        ResultItem(result = result, onClick = { onResultSelected(result) })
+                    items(state.rows) { row ->
+                        ResultItem(
+                            name = row.name,
+                            supporting = row.type,
+                            enabled = !viewModel.isSaving,
+                            onClick = {
+                                when (row) {
+                                    is PerformerSearchResult.Local ->
+                                        viewModel.selectPerformer(row.performer, onPerformerSelected)
+                                    is PerformerSearchResult.FromApi ->
+                                        viewModel.selectPerformerFromApi(row.result, onPerformerSelected)
+                                }
+                            }
+                        )
                     }
                 }
             }
@@ -116,6 +129,13 @@ fun MusicBrainzSearchScreen(
                 }
             }
         }
+        if (viewModel.saveError != null) {
+            Text(
+                text = viewModel.saveError!!,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+        }
     }
 
     if (showCustomDialog) {
@@ -125,25 +145,25 @@ fun MusicBrainzSearchScreen(
             onDismiss = { showCustomDialog = false },
             onConfirm = { result ->
                 showCustomDialog = false
-                onResultSelected(result)
+                viewModel.createCustomPerformer(
+                    name = result.name,
+                    type = result.performerType ?: PerformerType.OTHER,
+                    specialty = result.description,
+                    onSelected = onPerformerSelected
+                )
             }
         )
     }
 }
 
 @Composable
-private fun ResultItem(result: MusicBrainzResult, onClick: () -> Unit) {
-    val supporting = when {
-        result.description != null -> result.description
-        result.performerType != null -> "(${result.performerType.name.lowercase().replaceFirstChar { it.uppercase() }})"
-        else -> null
-    }
+private fun ResultItem(name: String, supporting: String?, enabled: Boolean, onClick: () -> Unit) {
     ListItem(
-        headlineContent = { Text(result.name) },
+        headlineContent = { Text(name) },
         supportingContent = supporting?.let { { Text(it) } },
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clickable(enabled = enabled, onClick = onClick)
     )
     HorizontalDivider()
 }

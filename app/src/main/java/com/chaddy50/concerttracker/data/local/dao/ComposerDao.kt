@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Query
 import androidx.room.Upsert
 import com.chaddy50.concerttracker.data.local.entity.ComposerEntity
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ComposerDao {
@@ -13,4 +14,7 @@ interface ComposerDao {
 
     @Query("SELECT * FROM composers WHERE id = :id")
     suspend fun getById(id: String): ComposerEntity?
+
+    @Query("SELECT * FROM composers WHERE name LIKE '%' || :query || '%' ORDER BY name COLLATE NOCASE ASC")
+    fun searchComposers(query: String): Flow<List<ComposerEntity>>
 }

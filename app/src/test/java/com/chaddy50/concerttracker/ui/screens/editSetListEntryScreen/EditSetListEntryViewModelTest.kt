@@ -12,9 +12,7 @@ import com.chaddy50.concerttracker.data.domain.Work
 import com.chaddy50.concerttracker.data.enum.PerformanceStatus
 import com.chaddy50.concerttracker.data.enum.PerformerType
 import com.chaddy50.concerttracker.data.repository.PerformancesRepository
-import com.chaddy50.concerttracker.data.repository.PerformersRepository
 import com.chaddy50.concerttracker.data.repository.SetListEntriesRepository
-import com.chaddy50.concerttracker.data.repository.WorksRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -29,6 +27,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -43,8 +42,6 @@ class EditSetListEntryViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private val performancesRepository: PerformancesRepository = mockk()
-    private val performersRepository: PerformersRepository = mockk()
-    private val worksRepository: WorksRepository = mockk()
     private val setListEntriesRepository: SetListEntriesRepository = mockk()
 
     private fun work(id: String) = Work(id = id, title = "Title $id")
@@ -68,12 +65,12 @@ class EditSetListEntryViewModelTest {
 
     private fun createViewModel() = EditSetListEntryViewModel(
         SavedStateHandle(mapOf("performanceId" to "p1", "entryId" to null)),
-        performancesRepository, performersRepository, worksRepository, setListEntriesRepository
+        performancesRepository, setListEntriesRepository
     )
 
     private fun editViewModel() = EditSetListEntryViewModel(
         SavedStateHandle(mapOf("performanceId" to "p1", "entryId" to "e1")),
-        performancesRepository, performersRepository, worksRepository, setListEntriesRepository
+        performancesRepository, setListEntriesRepository
     )
 
     @Before
@@ -109,70 +106,39 @@ class EditSetListEntryViewModelTest {
     }
 
     @Test
-    fun `selectWork sets draft fields on Success`() = runTest {
+    fun `selectWork references the already-materialized work with no network create`() = runTest {
         coEvery { performancesRepository.getPerformance("p1") } returns ApiResult.Success(performance())
-        coEvery { worksRepository.createWorkFromOpenOpus(any(), any(), any(), any()) } returns
-            ApiResult.Success(work("w99"))
         val viewModel = createViewModel()
         advanceUntilIdle()
 
-        viewModel.selectWork("oo-work", "Title w99", "oo-composer", "Composer")
-        advanceUntilIdle()
+        viewModel.selectWork("w99", "Title w99", "Composer")
         assertEquals("w99", viewModel.draftWorkId)
         assertEquals("Title w99", viewModel.draftWorkTitle)
         assertEquals("Composer", viewModel.draftComposerName)
+        assertNull(viewModel.saveError)
     }
 
     @Test
-    fun `selectWork sets saveError on Error`() = runTest {
+    fun `addDraftFeaturedPerformer adds the already-materialized performer and skips duplicates`() = runTest {
         coEvery { performancesRepository.getPerformance("p1") } returns ApiResult.Success(performance())
-        coEvery { worksRepository.createWorkFromOpenOpus(any(), any(), any(), any()) } returns
-            ApiResult.Error(ApiErrorType.Type.SERVER)
         val viewModel = createViewModel()
         advanceUntilIdle()
 
-        viewModel.selectWork("oo-work", "Title", "oo-composer", "Composer")
-        advanceUntilIdle()
-        assertNotNull(viewModel.saveError)
-    }
-
-    @Test
-    fun `addDraftFeaturedPerformer adds on Success`() = runTest {
-        coEvery { performancesRepository.getPerformance("p1") } returns ApiResult.Success(performance())
-        coEvery { performersRepository.createPerformer(any()) } returns
-            ApiResult.Success(Performer("perf2", "Cellist", PerformerType.SOLO))
-        val viewModel = createViewModel()
-        advanceUntilIdle()
-
-        viewModel.addDraftFeaturedPerformer("mb2", "Cellist", "SOLO", null)
-        advanceUntilIdle()
+        viewModel.addDraftFeaturedPerformer("perf2", "Cellist", "SOLO", null)
         assertEquals(listOf("perf2"), viewModel.draftFeaturedPerformers.map { it.performerId })
-    }
 
-    @Test
-    fun `addDraftFeaturedPerformer sets saveError on Error`() = runTest {
-        coEvery { performancesRepository.getPerformance("p1") } returns ApiResult.Success(performance())
-        coEvery { performersRepository.createPerformer(any()) } returns
-            ApiResult.Error(ApiErrorType.Type.CLIENT)
-        val viewModel = createViewModel()
-        advanceUntilIdle()
-
-        viewModel.addDraftFeaturedPerformer("mb2", "Cellist", "SOLO", null)
-        advanceUntilIdle()
-        assertTrue(viewModel.draftFeaturedPerformers.isEmpty())
-        assertNotNull(viewModel.saveError)
+        viewModel.addDraftFeaturedPerformer("perf2", "Cellist", "SOLO", null)
+        assertEquals(1, viewModel.draftFeaturedPerformers.size)
     }
 
     @Test
     fun `saveSetListEntry creates entry and invokes onSaved on Success`() = runTest {
         coEvery { performancesRepository.getPerformance("p1") } returns ApiResult.Success(performance())
-        coEvery { worksRepository.createWorkFromOpenOpus(any(), any(), any(), any()) } returns
-            ApiResult.Success(work("w99"))
         coEvery { setListEntriesRepository.createSetListEntry(any()) } returns
             ApiResult.Success(entry("e9"))
         val viewModel = createViewModel()
         advanceUntilIdle()
-        viewModel.selectWork("oo", "Title w99", "ooc", "Composer")
+        viewModel.selectWork("w99", "Title w99", "Composer")
         advanceUntilIdle()
 
         var saved = false
@@ -187,13 +153,11 @@ class EditSetListEntryViewModelTest {
     @Test
     fun `saveSetListEntry sets saveError on Error`() = runTest {
         coEvery { performancesRepository.getPerformance("p1") } returns ApiResult.Success(performance())
-        coEvery { worksRepository.createWorkFromOpenOpus(any(), any(), any(), any()) } returns
-            ApiResult.Success(work("w99"))
         coEvery { setListEntriesRepository.createSetListEntry(any()) } returns
             ApiResult.Error(ApiErrorType.Type.SERVER)
         val viewModel = createViewModel()
         advanceUntilIdle()
-        viewModel.selectWork("oo", "Title w99", "ooc", "Composer")
+        viewModel.selectWork("w99", "Title w99", "Composer")
         advanceUntilIdle()
 
         var saved = false

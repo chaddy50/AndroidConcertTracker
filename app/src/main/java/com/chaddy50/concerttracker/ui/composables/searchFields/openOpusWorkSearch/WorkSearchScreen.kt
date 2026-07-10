@@ -28,12 +28,11 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.chaddy50.concerttracker.data.external.api.OpenOpusWork
+import com.chaddy50.concerttracker.data.domain.Work
 
 @Composable
 fun WorkSearchScreen(
-    onWorkSelected: (OpenOpusWork) -> Unit,
-    onCustomWorkSelected: (workTitle: String) -> Unit,
+    onWorkSelected: (Work) -> Unit,
     viewModel: WorkSearchViewModel = hiltViewModel()
 ) {
     var showCustomDialog by remember { mutableStateOf(false) }
@@ -73,28 +72,31 @@ fun WorkSearchScreen(
                         CircularProgressIndicator()
                     }
                 }
+                is WorkSearchUiState.Empty -> item {
+                    Text("No works found", modifier = Modifier.padding(16.dp))
+                }
                 is WorkSearchUiState.Error -> item {
                     Box(modifier = Modifier.fillParentMaxSize(), contentAlignment = Alignment.Center) {
                         Text(text = state.errorType.toUserMessage(), color = MaterialTheme.colorScheme.error)
                     }
                 }
                 is WorkSearchUiState.Results -> {
-                    val filtered = viewModel.filteredWorks
-                    if (filtered.isEmpty()) {
-                        item {
-                            Text("No works found", modifier = Modifier.padding(16.dp))
-                        }
-                    } else {
-                        items(filtered) { work ->
-                            ListItem(
-                                headlineContent = { Text(work.title) },
-                                supportingContent = work.genre?.let { { Text(it) } },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { onWorkSelected(work) }
-                            )
-                            HorizontalDivider()
-                        }
+                    items(state.rows) { row ->
+                        ListItem(
+                            headlineContent = { Text(row.title) },
+                            supportingContent = row.genre?.let { { Text(it) } },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable(enabled = !viewModel.isSaving) {
+                                    when (row) {
+                                        is WorkSearchResult.Local ->
+                                            viewModel.selectWork(row.work, onWorkSelected)
+                                        is WorkSearchResult.FromApi ->
+                                            viewModel.selectWorkFromApi(row.work, onWorkSelected)
+                                    }
+                                }
+                        )
+                        HorizontalDivider()
                     }
                 }
             }
@@ -105,22 +107,29 @@ fun WorkSearchScreen(
                         headlineContent = { Text("Create custom work") },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { showCustomDialog = true }
+                            .clickable(enabled = !viewModel.isSaving) { showCustomDialog = true }
                     )
                     HorizontalDivider()
                 }
             }
         }
+        if (viewModel.saveError != null) {
+            Text(
+                text = viewModel.saveError!!,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+        }
     }
 
     if (showCustomDialog) {
         CustomWorkCreationDialog(
-            composerName = viewModel.composerCompleteName,
+            composerName = viewModel.composerName,
             initialName = viewModel.searchQuery,
             onDismiss = { showCustomDialog = false },
             onConfirm = { workTitle ->
                 showCustomDialog = false
-                onCustomWorkSelected(workTitle)
+                viewModel.createCustomWork(workTitle, onWorkSelected)
             }
         )
     }

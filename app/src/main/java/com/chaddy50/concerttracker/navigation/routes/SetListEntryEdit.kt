@@ -65,7 +65,7 @@ fun NavGraphBuilder.setListEntryEdit(navController: NavController) {
 
         LaunchedEffect(pendingWork) {
             pendingWork?.let {
-                viewModel.selectWork(it.id, it.name, it.composerId, it.composerName)
+                viewModel.selectWork(it.id, it.name, it.composerName)
                 handle.clearPendingWork()
             }
         }

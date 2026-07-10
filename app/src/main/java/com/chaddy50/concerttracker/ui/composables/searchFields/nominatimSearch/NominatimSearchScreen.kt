@@ -1,13 +1,18 @@
 package com.chaddy50.concerttracker.ui.composables.searchFields.nominatimSearch
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -69,13 +74,25 @@ fun NominatimSearchScreen(
                 }
             }
             is CreateVenueUiState.Results -> {
-                NominatimResultList(
-                    results = state.results,
-                    isEnabled = !viewModel.isSaving,
-                    onResultClick = { result ->
-                        viewModel.saveVenue(result, onVenueCreated)
+                LazyColumn {
+                    items(state.rows) { row ->
+                        ListItem(
+                            headlineContent = { Text(row.name) },
+                            supportingContent = row.address?.let { { Text(it) } },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable(enabled = !viewModel.isSaving) {
+                                    when (row) {
+                                        is VenueSearchResult.Local ->
+                                            viewModel.selectVenue(row.venue, onVenueCreated)
+                                        is VenueSearchResult.FromApi ->
+                                            viewModel.selectVenueFromApi(row.result, onVenueCreated)
+                                    }
+                                }
+                        )
+                        HorizontalDivider()
                     }
-                )
+                }
             }
         }
         if (viewModel.saveError != null) {

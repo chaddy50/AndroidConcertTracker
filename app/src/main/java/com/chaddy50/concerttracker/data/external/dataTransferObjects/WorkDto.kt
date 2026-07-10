@@ -8,9 +8,15 @@ import kotlinx.serialization.Serializable
 data class WorkDto(
     val id: String,
     val title: String,
-    val composers: List<ComposerDto> = emptyList()
+    val composers: List<ComposerDto> = emptyList(),
+    val openOpusId: String? = null
 )
 
-internal fun WorkDto.toRow() = WorkEntity(id = id, title = title)
+internal fun WorkDto.toRow() = WorkEntity(id = id, title = title, openOpusId = openOpusId)
 
-fun WorkDto.toDomain() = Work(id = id, title = title, composers = composers.map { it.toDomain() })
+fun WorkDto.toDomain() = Work(
+    id = id,
+    title = title,
+    composers = composers.map { it.toDomain() },
+    openOpusId = openOpusId
+)

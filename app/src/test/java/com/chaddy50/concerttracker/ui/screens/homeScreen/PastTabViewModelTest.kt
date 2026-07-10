@@ -57,7 +57,7 @@ class PastTabViewModelTest {
     }
 
     @Test
-    fun `uiState is Loading while a refresh is in flight, even when content is cached`() = runTest {
+    fun `uiState shows cached content immediately, even while a refresh is in flight`() = runTest {
         every { repository.observePastPerformances() } returns flowOf(listOf(performance))
         val loadResult = CompletableDeferred<ApiResult<Unit>>()
         coEvery { repository.loadPerformances() } coAnswers { loadResult.await() }
@@ -65,8 +65,8 @@ class PastTabViewModelTest {
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
 
-        // The load is still suspended, so Loading takes priority over the cached content.
-        assertTrue(viewModel.uiState.value is PastTabUiState.Loading)
+        // Offline-first: cached content wins over the in-flight refresh spinner.
+        assertTrue(viewModel.uiState.value is PastTabUiState.Content)
 
         loadResult.complete(ApiResult.Success(Unit))
         advanceUntilIdle()
@@ -75,15 +75,26 @@ class PastTabViewModelTest {
     }
 
     @Test
-    fun `init loadPerformances failure is surfaced as Error`() = runTest {
+    fun `cached content is kept when the refresh fails offline`() = runTest {
+        every { repository.observePastPerformances() } returns flowOf(listOf(performance))
+        coEvery { repository.loadPerformances() } returns ApiResult.Error(ApiErrorType.Type.NETWORK)
+        val viewModel = PastTabViewModel(repository)
+        backgroundScope.launch { viewModel.uiState.collect {} }
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state is PastTabUiState.Content)
+        assertEquals(listOf("p1"), (state as PastTabUiState.Content).performances.map { it.id })
+    }
+
+    @Test
+    fun `refresh failure with nothing cached shows Empty, not an error`() = runTest {
         every { repository.observePastPerformances() } returns flowOf(emptyList())
         coEvery { repository.loadPerformances() } returns ApiResult.Error(ApiErrorType.Type.SERVER)
         val viewModel = PastTabViewModel(repository)
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
 
-        val state = viewModel.uiState.value
-        assertTrue(state is PastTabUiState.Error)
-        assertEquals(ApiErrorType.Type.SERVER, (state as PastTabUiState.Error).errorType)
+        assertTrue(viewModel.uiState.value is PastTabUiState.Empty)
     }
 }

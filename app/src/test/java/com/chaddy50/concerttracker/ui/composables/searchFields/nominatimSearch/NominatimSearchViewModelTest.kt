@@ -8,9 +8,11 @@ import com.chaddy50.concerttracker.data.repository.NominatimRepository
 import com.chaddy50.concerttracker.data.repository.VenuesRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -40,6 +42,7 @@ class NominatimSearchViewModelTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
+        every { venuesRepository.searchVenues(any()) } returns flowOf(emptyList())
     }
 
     @After
@@ -48,17 +51,17 @@ class NominatimSearchViewModelTest {
     }
 
     @Test
-    fun `search transitions to Results on Success`() = runTest {
+    fun `search surfaces online results as catalog rows`() = runTest {
         coEvery { nominatimRepository.searchVenues(any()) } returns ApiResult.Success(listOf(result))
         val viewModel = viewModel()
         viewModel.search()
         advanceUntilIdle()
         val state = viewModel.uiState as CreateVenueUiState.Results
-        assertEquals(listOf(42L), state.results.map { it.osmId })
+        assertEquals(listOf(42L), state.rows.filterIsInstance<VenueSearchResult.FromApi>().map { it.result.osmId })
     }
 
     @Test
-    fun `search transitions to Empty when no results`() = runTest {
+    fun `search transitions to Empty when no results and nothing cached`() = runTest {
         coEvery { nominatimRepository.searchVenues(any()) } returns ApiResult.Success(emptyList())
         val viewModel = viewModel()
         viewModel.search()
@@ -67,7 +70,7 @@ class NominatimSearchViewModelTest {
     }
 
     @Test
-    fun `search transitions to Error carrying errorType`() = runTest {
+    fun `search transitions to Error when it fails and nothing cached`() = runTest {
         coEvery { nominatimRepository.searchVenues(any()) } returns
             ApiResult.Error(ApiErrorType.Type.TIMEOUT)
         val viewModel = viewModel()
@@ -77,28 +80,53 @@ class NominatimSearchViewModelTest {
     }
 
     @Test
-    fun `saveVenue invokes onSaved on Success and toggles isSaving`() = runTest {
-        coEvery { venuesRepository.createVenue(any()) } returns ApiResult.Success(venue)
+    fun `cached venues stay in the list when the online search errors offline`() = runTest {
+        every { venuesRepository.searchVenues(any()) } returns flowOf(listOf(venue))
+        coEvery { nominatimRepository.searchVenues(any()) } returns
+            ApiResult.Error(ApiErrorType.Type.NETWORK)
+        val viewModel = viewModel()
+        viewModel.search()
+        advanceUntilIdle()
+        val state = viewModel.uiState as CreateVenueUiState.Results
+        assertEquals(listOf("v1"), state.rows.filterIsInstance<VenueSearchResult.Local>().map { it.venue.id })
+    }
+
+    @Test
+    fun `selecting a cached venue returns it without creating`() = runTest {
+        every { venuesRepository.searchVenues(any()) } returns flowOf(listOf(venue))
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        var saved: Venue? = null
+        viewModel.selectVenue(venue) { saved = it }
+
+        assertEquals(venue, saved)
+        coVerify(exactly = 0) { venuesRepository.findOrCreateVenue(any()) }
+    }
+
+    @Test
+    fun `selectVenueFromApi invokes onSaved on Success and toggles isSaving`() = runTest {
+        coEvery { venuesRepository.findOrCreateVenue(any()) } returns ApiResult.Success(venue)
         val viewModel = viewModel()
 
         var saved: Venue? = null
-        viewModel.saveVenue(result) { saved = it }
+        viewModel.selectVenueFromApi(result) { saved = it }
         advanceUntilIdle()
 
         assertEquals(venue, saved)
         assertFalse(viewModel.isSaving)
         assertNull(viewModel.saveError)
-        coVerify(exactly = 1) { venuesRepository.createVenue(any()) }
+        coVerify(exactly = 1) { venuesRepository.findOrCreateVenue(any()) }
     }
 
     @Test
-    fun `saveVenue sets saveError on Error`() = runTest {
-        coEvery { venuesRepository.createVenue(any()) } returns
+    fun `selectVenueFromApi sets saveError on Error`() = runTest {
+        coEvery { venuesRepository.findOrCreateVenue(any()) } returns
             ApiResult.Error(ApiErrorType.Type.CONFLICT)
         val viewModel = viewModel()
 
         var saved: Venue? = null
-        viewModel.saveVenue(result) { saved = it }
+        viewModel.selectVenueFromApi(result) { saved = it }
         advanceUntilIdle()
 
         assertNull(saved)

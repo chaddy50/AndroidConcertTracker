@@ -5,7 +5,6 @@ import com.chaddy50.concerttracker.data.external.api.SetListEntryCreateRequest
 import com.chaddy50.concerttracker.data.local.ConcertTrackerDatabase
 import com.chaddy50.concerttracker.data.local.inMemoryDatabase
 import com.chaddy50.concerttracker.data.repository.PerformancesRepository
-import com.chaddy50.concerttracker.data.repository.PerformersRepository
 import com.chaddy50.concerttracker.data.repository.SetListEntriesRepository
 import com.chaddy50.concerttracker.data.repository.SettingsRepository
 import com.chaddy50.concerttracker.testJson
@@ -44,7 +43,6 @@ class EditPerformanceSetListObservationTest {
 
     private val mockWebServer = MockWebServer()
     private val settingsRepository: SettingsRepository = mockk()
-    private val performersRepository: PerformersRepository = mockk()
     private val json = testJson()
     private lateinit var db: ConcertTrackerDatabase
     private lateinit var performancesRepository: PerformancesRepository
@@ -85,7 +83,7 @@ class EditPerformanceSetListObservationTest {
         // VM init: loadPerformance() fetches the (empty) performance and caches it in Room.
         mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(parentJson(setList = "")))
         val viewModel = EditPerformanceViewModel(
-            SavedStateHandle(mapOf("id" to "p1")), performancesRepository, performersRepository
+            SavedStateHandle(mapOf("id" to "p1")), performancesRepository
         )
         advanceUntilIdle()
         assertTrue("set list should start empty", viewModel.currentSetList.isEmpty())

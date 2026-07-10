@@ -41,18 +41,18 @@ fun NavGraphBuilder.musicBrainzSearch(navController: NavController) {
     composable<MusicBrainzSearch> { backStackEntry ->
         val entityType = backStackEntry.toRoute<MusicBrainzSearch>().entityType
         MusicBrainzSearchScreen(
-            onResultSelected = { result ->
+            onPerformerSelected = { performer ->
                 val (idKey, nameKey) = when (entityType) {
                     MusicBrainzEntityType.PERFORMER -> "selectedPerformerId" to "selectedPerformerName"
                     MusicBrainzEntityType.CONDUCTOR -> "selectedConductorId" to "selectedConductorName"
                     MusicBrainzEntityType.COMPOSER -> "selectedComposerId" to "selectedComposerName"
                 }
                 navController.previousBackStackEntry?.savedStateHandle?.apply {
-                    set(idKey, result.id)
-                    set(nameKey, result.name)
+                    set(idKey, performer.id)
+                    set(nameKey, performer.name)
                     if (entityType == MusicBrainzEntityType.PERFORMER) {
-                        set("selectedPerformerType", result.performerType?.name)
-                        set("selectedPerformerSpecialty", result.description)
+                        set("selectedPerformerType", performer.type.name)
+                        set("selectedPerformerSpecialty", performer.specialty)
                     }
                 }
                 navController.popBackStack()

@@ -88,7 +88,7 @@ class CurrentTabViewModelTest {
     }
 
     @Test
-    fun `uiState is Loading while a refresh is in flight, even when content is cached`() = runTest {
+    fun `uiState shows cached content immediately, even while a refresh is in flight`() = runTest {
         every { repository.observeNextUpcomingPerformance() } returns flowOf(upcoming)
         every { repository.observeRecentlyAttendedPerformances() } returns flowOf(listOf(recent))
         val loadResult = CompletableDeferred<ApiResult<Unit>>()
@@ -97,8 +97,8 @@ class CurrentTabViewModelTest {
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
 
-        // The load is still suspended, so Loading takes priority over the cached content.
-        assertTrue(viewModel.uiState.value is CurrentTabUiState.Loading)
+        // Offline-first: cached content wins over the in-flight refresh spinner.
+        assertTrue(viewModel.uiState.value is CurrentTabUiState.Content)
 
         loadResult.complete(ApiResult.Success(Unit))
         advanceUntilIdle()
@@ -107,33 +107,24 @@ class CurrentTabViewModelTest {
     }
 
     @Test
-    fun `init triggers loadPerformances and surfaces its error`() = runTest {
-        every { repository.observeNextUpcomingPerformance() } returns flowOf(null)
-        every { repository.observeRecentlyAttendedPerformances() } returns flowOf(emptyList())
+    fun `cached content is kept when the refresh fails offline`() = runTest {
+        every { repository.observeNextUpcomingPerformance() } returns flowOf(upcoming)
+        every { repository.observeRecentlyAttendedPerformances() } returns flowOf(listOf(recent))
         coEvery { repository.loadPerformances() } returns ApiResult.Error(ApiErrorType.Type.NETWORK)
         val viewModel = CurrentTabViewModel(repository)
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
 
-        val state = viewModel.uiState.value
-        assertTrue(state is CurrentTabUiState.Error)
-        assertEquals(ApiErrorType.Type.NETWORK, (state as CurrentTabUiState.Error).errorType)
+        assertTrue(viewModel.uiState.value is CurrentTabUiState.Content)
     }
 
     @Test
-    fun `retry clears the error on a subsequent successful loadPerformances`() = runTest {
+    fun `refresh failure with nothing cached shows Empty, not an error`() = runTest {
         every { repository.observeNextUpcomingPerformance() } returns flowOf(null)
         every { repository.observeRecentlyAttendedPerformances() } returns flowOf(emptyList())
-        coEvery { repository.loadPerformances() } returns ApiResult.Error(ApiErrorType.Type.SERVER)
+        coEvery { repository.loadPerformances() } returns ApiResult.Error(ApiErrorType.Type.NETWORK)
         val viewModel = CurrentTabViewModel(repository)
         backgroundScope.launch { viewModel.uiState.collect {} }
-        advanceUntilIdle()
-        val errorState = viewModel.uiState.value
-        assertTrue(errorState is CurrentTabUiState.Error)
-        assertEquals(ApiErrorType.Type.SERVER, (errorState as CurrentTabUiState.Error).errorType)
-
-        coEvery { repository.loadPerformances() } returns ApiResult.Success(Unit)
-        viewModel.loadPerformances()
         advanceUntilIdle()
 
         assertTrue(viewModel.uiState.value is CurrentTabUiState.Empty)

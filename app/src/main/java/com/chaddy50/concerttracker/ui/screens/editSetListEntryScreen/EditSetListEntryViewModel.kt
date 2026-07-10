@@ -11,14 +11,10 @@ import androidx.navigation.toRoute
 import com.chaddy50.concerttracker.data.external.api.ApiErrorType
 import com.chaddy50.concerttracker.data.external.api.ApiResult
 import com.chaddy50.concerttracker.data.external.api.FeaturedPerformerRequest
-import com.chaddy50.concerttracker.data.external.api.PerformerRequest
 import com.chaddy50.concerttracker.data.external.api.SetListEntryCreateRequest
 import com.chaddy50.concerttracker.data.external.api.SetListEntryUpdateRequest
-import com.chaddy50.concerttracker.data.enum.PerformerType
 import com.chaddy50.concerttracker.data.repository.PerformancesRepository
-import com.chaddy50.concerttracker.data.repository.PerformersRepository
 import com.chaddy50.concerttracker.data.repository.SetListEntriesRepository
-import com.chaddy50.concerttracker.data.repository.WorksRepository
 import com.chaddy50.concerttracker.navigation.routes.SetListEntryEdit
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -35,8 +31,6 @@ data class DraftFeaturedPerformer(
 class EditSetListEntryViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val performancesRepository: PerformancesRepository,
-    private val performersRepository: PerformersRepository,
-    private val worksRepository: WorksRepository,
     private val setListEntriesRepository: SetListEntriesRepository
 ) : ViewModel() {
 
@@ -132,37 +126,20 @@ class EditSetListEntryViewModel @Inject constructor(
         }
     }
 
-    fun selectWork(openOpusWorkId: String, title: String, openOpusComposerId: String, composerName: String) {
-        viewModelScope.launch {
-            when (val result = worksRepository.createWorkFromOpenOpus(openOpusWorkId, title, openOpusComposerId, composerName)) {
-                is ApiResult.Success -> {
-                    draftWorkId = result.data.id
-                    draftWorkTitle = result.data.title
-                    draftComposerName = composerName
-                }
-                is ApiResult.Error -> saveError = "Failed to add work: ${result.errorType.toUserMessage()}"
-            }
-        }
+    fun selectWork(workId: String, title: String, composerName: String) {
+        draftWorkId = workId
+        draftWorkTitle = title
+        draftComposerName = composerName
     }
 
     fun addDraftFeaturedPerformer(
-        musicbrainzId: String,
+        performerId: String,
         performerName: String,
         performerTypeName: String?,
         specialty: String?
     ) {
-        viewModelScope.launch {
-            val type = performerTypeName?.let { runCatching { PerformerType.valueOf(it) }.getOrNull() }
-                ?: PerformerType.OTHER
-            when (val result = performersRepository.createPerformer(PerformerRequest(performerName, type, specialty, musicbrainzId))) {
-                is ApiResult.Success -> {
-                    val performer = result.data
-                    if (draftFeaturedPerformers.none { it.performerId == performer.id }) {
-                        draftFeaturedPerformers.add(DraftFeaturedPerformer(performer.id, performer.name))
-                    }
-                }
-                is ApiResult.Error -> saveError = "Failed to add performer: ${result.errorType.toUserMessage()}"
-            }
+        if (draftFeaturedPerformers.none { it.performerId == performerId }) {
+            draftFeaturedPerformers.add(DraftFeaturedPerformer(performerId, performerName))
         }
     }
 
