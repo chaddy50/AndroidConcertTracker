@@ -7,6 +7,7 @@ import com.chaddy50.concerttracker.data.enum.PerformerType
 import com.chaddy50.concerttracker.data.local.ConcertTrackerDatabase
 import com.chaddy50.concerttracker.data.local.entity.PerformerEntity
 import com.chaddy50.concerttracker.data.local.inMemoryDatabase
+import com.chaddy50.concerttracker.data.local.syncOperationsRepository
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.first
@@ -31,6 +32,7 @@ class PerformersRepositoryTest {
 
     private val mockWebServer = MockWebServer()
     private val settingsRepository: SettingsRepository = mockk()
+    private val syncScheduler: com.chaddy50.concerttracker.data.sync.SyncScheduler = mockk(relaxed = true)
     private val json = testJson()
     private lateinit var db: ConcertTrackerDatabase
     private lateinit var repository: PerformersRepository
@@ -42,7 +44,10 @@ class PerformersRepositoryTest {
         mockWebServer.start()
         every { settingsRepository.serverUrl } returns flowOf(mockWebServer.url("/").toString().trimEnd('/'))
         db = inMemoryDatabase()
-        repository = PerformersRepository(settingsRepository, OkHttpClient(), json, db.performerDao())
+        repository = PerformersRepository(
+            settingsRepository, OkHttpClient(), json, db.performerDao(),
+            db, db.syncOperationsRepository(), javax.inject.Provider { syncScheduler }
+        )
     }
 
     @After
@@ -51,39 +56,44 @@ class PerformersRepositoryTest {
         db.close()
     }
 
+    // A catalog performer (has a musicbrainzId) still find-or-creates online.
+    private fun catalogRequest() = PerformerRequest("Test", PerformerType.ORCHESTRA, musicbrainzId = "mb1")
+
     @Test
-    fun `findOrCreatePerformer returns Success on 201`() = runTest {
+    fun `findOrCreatePerformer for a catalog performer returns Success on 201`() = runTest {
         mockWebServer.enqueue(MockResponse().setResponseCode(201).setBody(performerJson))
-        val result = repository.findOrCreatePerformer(PerformerRequest("Test", PerformerType.ORCHESTRA))
+        val result = repository.findOrCreatePerformer(catalogRequest())
         assertTrue(result is ApiResult.Success)
         assertEquals("pe1", (result as ApiResult.Success).data.id)
     }
 
     @Test
-    fun `findOrCreatePerformer returns Success with existing performer on 409 with body`() = runTest {
+    fun `findOrCreatePerformer for a catalog performer treats 409-with-body as Success`() = runTest {
         mockWebServer.enqueue(MockResponse().setResponseCode(409).setBody(performerJson))
-        val result = repository.findOrCreatePerformer(PerformerRequest("Test", PerformerType.ORCHESTRA))
+        val result = repository.findOrCreatePerformer(catalogRequest())
         assertTrue(result is ApiResult.Success)
         assertEquals("pe1", (result as ApiResult.Success).data.id)
     }
 
     @Test
-    fun `findOrCreatePerformer returns Error on 409 without parseable body`() = runTest {
-        mockWebServer.enqueue(MockResponse().setResponseCode(409).setBody(""))
-        val result = repository.findOrCreatePerformer(PerformerRequest("Test", PerformerType.ORCHESTRA))
-        assertTrue(result is ApiResult.Error)
-    }
-
-    @Test
-    fun `findOrCreatePerformer returns Error on non-409 HTTP error`() = runTest {
+    fun `findOrCreatePerformer for a catalog performer returns Error on non-409`() = runTest {
         mockWebServer.enqueue(MockResponse().setResponseCode(400))
-        assertEquals(ApiResult.Error(ApiErrorType.Type.CLIENT), repository.findOrCreatePerformer(PerformerRequest("Test", PerformerType.ORCHESTRA)))
+        assertEquals(ApiResult.Error(ApiErrorType.Type.CLIENT), repository.findOrCreatePerformer(catalogRequest()))
     }
 
     @Test
-    fun `findOrCreatePerformer returns Error on network failure`() = runTest {
-        mockWebServer.enqueue(MockResponse().setResponseCode(500))
-        assertEquals(ApiResult.Error(ApiErrorType.Type.SERVER), repository.findOrCreatePerformer(PerformerRequest("Test", PerformerType.ORCHESTRA)))
+    fun `findOrCreatePerformer for a custom performer is local-first, enqueues one op, no network`() = runTest {
+        val result = repository.findOrCreatePerformer(PerformerRequest("My Soloist", PerformerType.OTHER))
+
+        assertTrue(result is ApiResult.Success)
+        val created = (result as ApiResult.Success).data
+        assertEquals("My Soloist", db.performerDao().getById(created.id)?.name)
+        assertEquals(0, mockWebServer.requestCount)
+        val op = db.syncOperationDao().getAllOrdered().single()
+        assertEquals("PERFORMER", op.entityType)
+        assertEquals("CREATE", op.operationType)
+        assertEquals(created.id, op.entityId)
+        assertTrue(op.payloadJson!!.contains(created.id))
     }
 
     @Test

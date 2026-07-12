@@ -6,9 +6,11 @@ import com.chaddy50.concerttracker.data.local.dao.ComposerDao
 import com.chaddy50.concerttracker.data.local.dao.PerformanceDao
 import com.chaddy50.concerttracker.data.local.dao.PerformerDao
 import com.chaddy50.concerttracker.data.local.dao.SetListEntryDao
+import com.chaddy50.concerttracker.data.local.dao.SyncOperationDao
 import com.chaddy50.concerttracker.data.local.dao.VenueDao
 import com.chaddy50.concerttracker.data.local.dao.WorkDao
 import com.chaddy50.concerttracker.data.local.entity.ComposerEntity
+import com.chaddy50.concerttracker.data.local.entity.SyncOperationEntity
 import com.chaddy50.concerttracker.data.local.entity.PerformanceEntity
 import com.chaddy50.concerttracker.data.local.entity.HeadlinePerformerEntity
 import com.chaddy50.concerttracker.data.local.entity.PerformerEntity
@@ -28,7 +30,8 @@ import com.chaddy50.concerttracker.data.local.entity.WorkEntity
         SetListEntryEntity::class,
         HeadlinePerformerEntity::class,
         WorkComposerEntity::class,
-        FeaturedPerformerEntity::class
+        FeaturedPerformerEntity::class,
+        SyncOperationEntity::class
     ],
     version = 1,
     exportSchema = true
@@ -40,6 +43,7 @@ abstract class ConcertTrackerDatabase : RoomDatabase() {
     abstract fun performerDao(): PerformerDao
     abstract fun workDao(): WorkDao
     abstract fun composerDao(): ComposerDao
+    abstract fun syncOperationDao(): SyncOperationDao
 
     companion object {
         const val DATABASE_NAME = "concert_tracker.db"

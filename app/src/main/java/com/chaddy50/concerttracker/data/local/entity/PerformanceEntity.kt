@@ -11,9 +11,10 @@ import androidx.room.PrimaryKey
 data class PerformanceEntity(
     @PrimaryKey val id: String,
     val date: String,
-    /** [com.chaddy50.concerttracker.data.enum.PerformanceStatus] name; stored as text so Room never
-     * references the `data.enum` package, which Java codegen cannot import. */
+    /** [com.chaddy50.concerttracker.data.enum.PerformanceStatus] */
     val status: String,
     val venueId: String,
-    val conductorId: String? = null
+    val conductorId: String? = null,
+    /** [com.chaddy50.concerttracker.data.enum.SyncState] */
+    val syncState: String = "SYNCED"
 )

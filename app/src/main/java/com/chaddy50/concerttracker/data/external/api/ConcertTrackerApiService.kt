@@ -46,10 +46,7 @@ interface ConcertTrackerApiService {
     suspend fun createSetListEntry(@Body request: SetListEntryCreateRequest): SetListEntryDto
 
     @PUT("set-list-entries/{id}")
-    suspend fun updateSetListEntry(@Path("id") id: String, @Body request: SetListEntryRequest): SetListEntryDto
-
-    @PUT("set-list-entries/{id}")
-    suspend fun updateSetListEntryFull(@Path("id") id: String, @Body request: SetListEntryUpdateRequest): SetListEntryDto
+    suspend fun updateSetListEntry(@Path("id") id: String, @Body request: SetListEntryUpdateRequest): SetListEntryDto
 
     @DELETE("set-list-entries/{id}")
     suspend fun deleteSetListEntry(@Path("id") id: String)
@@ -80,7 +77,8 @@ interface ConcertTrackerApiService {
 data class WorkRequest(
     val title: String,
     val openOpusId: String? = null,
-    val composers: List<ComposerRequest>
+    val composers: List<ComposerRequest>,
+    val id: String? = null
 )
 
 @Serializable
@@ -98,7 +96,8 @@ data class PerformanceRequest(
     val venueId: String,
     val performerIds: List<String>,
     val status: PerformanceStatus,
-    val setList: List<SetListEntryInlineRequest> = emptyList()
+    val setList: List<SetListEntryInlineRequest> = emptyList(),
+    val id: String? = null
 )
 
 @Serializable
@@ -106,12 +105,8 @@ data class PerformerRequest(
     val name: String,
     val type: PerformerType,
     val specialty: String? = null,
-    val musicbrainzId: String? = null
-)
-
-@Serializable
-data class SetListEntryRequest(
-    val notes: String? = null
+    val musicbrainzId: String? = null,
+    val id: String? = null
 )
 
 @Serializable
@@ -124,7 +119,8 @@ data class FeaturedPerformerRequest(
 data class SetListEntryInlineRequest(
     val workId: String,
     val order: Int,
-    val featuredPerformers: List<FeaturedPerformerRequest> = emptyList()
+    val featuredPerformers: List<FeaturedPerformerRequest> = emptyList(),
+    val id: String? = null
 )
 
 @Serializable
@@ -132,12 +128,14 @@ data class SetListEntryCreateRequest(
     val performanceId: String,
     val workId: String,
     val order: Int,
-    val featuredPerformers: List<FeaturedPerformerRequest>
+    val featuredPerformers: List<FeaturedPerformerRequest>,
+    val id: String? = null
 )
 
 @Serializable
 data class SetListEntryUpdateRequest(
     val workId: String? = null,
     val order: Int? = null,
-    val featuredPerformers: List<FeaturedPerformerRequest>? = null
+    val featuredPerformers: List<FeaturedPerformerRequest>? = null,
+    val notes: String? = null
 )

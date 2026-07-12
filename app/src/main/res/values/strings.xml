@@ -35,9 +35,6 @@
     <!-- Navigation -->
     <string name="navigate_back_content_description">Navigate back</string>
 
-    <!-- Top bar -->
-    <string name="top_bar_menu_content_description">Menu</string>
-    <string name="top_bar_menu_item_settings">Settings</string>
 
     <!-- Create venue screen -->
     <string name="create_venue_title">Choose Venue</string>

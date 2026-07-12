@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.chaddy50.concerttracker.data.local.ConcertTrackerDatabase
 import com.chaddy50.concerttracker.data.local.dao.ComposerDao
+import com.chaddy50.concerttracker.data.local.dao.SyncOperationDao
 import com.chaddy50.concerttracker.data.local.dao.PerformanceDao
 import com.chaddy50.concerttracker.data.local.dao.PerformerDao
 import com.chaddy50.concerttracker.data.local.dao.SetListEntryDao
@@ -50,4 +51,8 @@ object DatabaseModule {
     @Provides
     fun provideComposerDao(database: ConcertTrackerDatabase): ComposerDao =
         database.composerDao()
+
+    @Provides
+    fun provideSyncOperationDao(database: ConcertTrackerDatabase): SyncOperationDao =
+        database.syncOperationDao()
 }

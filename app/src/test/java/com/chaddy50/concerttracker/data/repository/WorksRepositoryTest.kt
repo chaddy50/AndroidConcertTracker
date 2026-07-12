@@ -6,6 +6,7 @@ import com.chaddy50.concerttracker.data.local.entity.ComposerEntity
 import com.chaddy50.concerttracker.data.local.entity.WorkComposerEntity
 import com.chaddy50.concerttracker.data.local.entity.WorkEntity
 import com.chaddy50.concerttracker.data.local.inMemoryDatabase
+import com.chaddy50.concerttracker.data.local.syncOperationsRepository
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.first
@@ -43,7 +44,11 @@ class WorksRepositoryTest {
         every { settingsRepository.serverUrl } returns flowOf(mockWebServer.url("/").toString().trimEnd('/'))
         val client = OkHttpClient()
         db = inMemoryDatabase()
-        worksRepository = WorksRepository(settingsRepository, client, json, db.workDao())
+        worksRepository = WorksRepository(
+            settingsRepository, client, json, db.workDao(), db.composerDao(),
+            db, db.syncOperationsRepository(),
+            javax.inject.Provider { mockk<com.chaddy50.concerttracker.data.sync.SyncScheduler>(relaxed = true) }
+        )
     }
 
     @After
@@ -79,12 +84,34 @@ class WorksRepositoryTest {
     }
 
     @Test
-    fun `findOrCreateWork attaches to an existing composer by our id`() = runTest {
-        mockWebServer.enqueue(MockResponse().setResponseCode(201).setBody(workJson))
-        assertTrue(worksRepository.findOrCreateWork(null, "Custom Work", "c-existing", null, "Custom Composer") is ApiResult.Success)
+    fun `findOrCreateWork for a custom work under a cached composer is local-first, nesting the composer by our id`() = runTest {
+        db.composerDao().upsert(listOf(ComposerEntity("c-existing", "Custom Composer")))
 
-        val body = mockWebServer.takeRequest().body.readUtf8()
-        assertTrue("composer id should be sent", body.contains("\"id\":\"c-existing\""))
+        val result = worksRepository.findOrCreateWork(null, "Custom Work", "c-existing", null, "Custom Composer")
+
+        assertTrue(result is ApiResult.Success)
+        val work = (result as ApiResult.Success).data
+        // work persisted and linked to the existing composer; nothing sent over the network
+        assertEquals(listOf("c-existing"), worksRepository.searchWorksForComposer("c-existing", "").first().single().composers.map { it.id })
+        assertEquals(0, mockWebServer.requestCount)
+        val op = db.syncOperationDao().getAllOrdered().single()
+        assertEquals("WORK", op.entityType)
+        assertEquals("CREATE", op.operationType)
+        assertTrue("composer nested by our id", op.payloadJson!!.contains("\"id\":\"c-existing\""))
+        assertTrue("work id in payload", op.payloadJson!!.contains(work.id))
+    }
+
+    @Test
+    fun `findOrCreateWork for a custom work with a fresh custom composer persists both and enqueues one WORK op`() = runTest {
+        val result = worksRepository.findOrCreateWork(null, "My Work", null, null, "New Composer")
+
+        assertTrue(result is ApiResult.Success)
+        val work = (result as ApiResult.Success).data
+        val composerId = work.composers.single().id
+        assertEquals("New Composer", db.composerDao().getById(composerId)?.name)
+        assertEquals(listOf(work.id), worksRepository.searchWorksForComposer(composerId, "").first().map { it.id })
+        assertEquals(0, mockWebServer.requestCount)
+        assertEquals(listOf("WORK"), db.syncOperationDao().getAllOrdered().map { it.entityType })
     }
 
     @Test

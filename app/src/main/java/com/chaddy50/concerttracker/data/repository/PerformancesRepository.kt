@@ -1,6 +1,10 @@
 package com.chaddy50.concerttracker.data.repository
 
 import androidx.room.withTransaction
+import com.chaddy50.concerttracker.data.enum.SyncEntityType
+import com.chaddy50.concerttracker.data.enum.SyncOperationType
+import com.chaddy50.concerttracker.data.enum.SyncState
+import com.chaddy50.concerttracker.data.external.api.ApiErrorType
 import com.chaddy50.concerttracker.data.external.api.ApiResult
 import com.chaddy50.concerttracker.data.external.api.ConcertTrackerApiService
 import com.chaddy50.concerttracker.data.external.api.PerformanceRequest
@@ -12,11 +16,15 @@ import com.chaddy50.concerttracker.data.local.dao.PerformerDao
 import com.chaddy50.concerttracker.data.local.dao.SetListEntryDao
 import com.chaddy50.concerttracker.data.local.dao.VenueDao
 import com.chaddy50.concerttracker.data.local.dao.WorkDao
+import com.chaddy50.concerttracker.data.local.entity.HeadlinePerformerEntity
 import com.chaddy50.concerttracker.data.external.dataTransferObjects.PerformanceRows
 import com.chaddy50.concerttracker.data.external.dataTransferObjects.toDomain
+import com.chaddy50.concerttracker.data.external.dataTransferObjects.toPendingRows
 import com.chaddy50.concerttracker.data.external.dataTransferObjects.toRows
+import com.chaddy50.concerttracker.data.external.dataTransferObjects.withClientIds
 import com.chaddy50.concerttracker.data.local.relation.toDomain
 import com.chaddy50.concerttracker.data.domain.Performance
+import com.chaddy50.concerttracker.data.sync.SyncScheduler
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -28,6 +36,7 @@ import retrofit2.Retrofit
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import javax.inject.Inject
+import javax.inject.Provider
 import javax.inject.Singleton
 
 @Singleton
@@ -41,7 +50,9 @@ class PerformancesRepository @Inject constructor(
     private val venueDao: VenueDao,
     private val performerDao: PerformerDao,
     private val workDao: WorkDao,
-    private val composerDao: ComposerDao
+    private val composerDao: ComposerDao,
+    private val syncOperationsRepository: SyncOperationsRepository,
+    private val syncScheduler: Provider<SyncScheduler>
 ) {
     private var cachedBaseUrl: String? = null
     private var cachedApiService: ConcertTrackerApiService? = null
@@ -88,29 +99,63 @@ class PerformancesRepository @Inject constructor(
         database.withTransaction {
             performances.forEach { persist(it.toRows()) }
             if (performances.isEmpty()) {
-                performanceDao.deleteAll()
+                performanceDao.deleteAllSynced()
             } else {
-                performanceDao.deleteNotIn(performances.map { it.id })
+                performanceDao.deleteSyncedNotIn(performances.map { it.id })
             }
         }
     }
 
-    suspend fun createPerformance(request: PerformanceRequest): ApiResult<Performance> = safeApiCall {
-        val created = apiService().createPerformance(request)
-        database.withTransaction { persist(created.toRows()) }
-        created.toDomain()
+    suspend fun createPerformance(request: PerformanceRequest): ApiResult<Performance> {
+        val stamped = request.withClientIds()
+        val localId = stamped.id!!
+        database.withTransaction {
+            persist(stamped.toPendingRows())
+            syncOperationsRepository.enqueue(SyncEntityType.PERFORMANCE, SyncOperationType.CREATE, localId, json.encodeToString(stamped))
+        }
+        syncScheduler.get().requestSync()
+        return ApiResult.Success(observePerformance(localId).first()!!)
     }
 
-    suspend fun updatePerformance(id: String, request: PerformanceRequest): ApiResult<Performance> = safeApiCall {
-        val updated = apiService().updatePerformance(id, request)
-        database.withTransaction { persist(updated.toRows()) }
-        updated.toDomain()
+    suspend fun updatePerformance(id: String, request: PerformanceRequest): ApiResult<Performance> {
+        val existing = performanceDao.getById(id) ?: return ApiResult.Error(ApiErrorType.Type.CLIENT)
+        database.withTransaction {
+            performanceDao.upsert(
+                existing.copy(
+                    date = request.date,
+                    status = request.status.name,
+                    venueId = request.venueId,
+                    syncState = SyncState.PENDING.toName()
+                )
+            )
+            performanceDao.deleteHeadlinePerformers(id)
+            performanceDao.upsertHeadlinePerformers(request.performerIds.map { HeadlinePerformerEntity(id, it) })
+            syncOperationsRepository.enqueue(SyncEntityType.PERFORMANCE, SyncOperationType.UPDATE, id, json.encodeToString(request.copy(id = id)))
+        }
+        syncScheduler.get().requestSync()
+        return ApiResult.Success(observePerformance(id).first()!!)
     }
 
-    suspend fun deletePerformance(id: String): ApiResult<Unit> = safeApiCall {
-        apiService().deletePerformance(id)
-        performanceDao.delete(id)
+    suspend fun deletePerformance(id: String): ApiResult<Unit> {
+        val existing = performanceDao.getById(id) ?: return ApiResult.Success(Unit)
+        database.withTransaction {
+            if (existing.syncState == SyncState.PENDING.toName()) {
+                performanceDao.delete(id)
+                syncOperationsRepository.discardForEntity(id)
+            } else {
+                performanceDao.markSyncState(id, SyncState.PENDING_DELETE.toName())
+                syncOperationsRepository.enqueue(SyncEntityType.PERFORMANCE, SyncOperationType.DELETE, id, null)
+            }
+        }
+        syncScheduler.get().requestSync()
+        return ApiResult.Success(Unit)
     }
+
+    suspend fun markSynced(id: String) = performanceDao.markSyncState(id, SyncState.SYNCED.toName())
+
+    suspend fun applyServerDeletion(id: String) = performanceDao.delete(id)
+
+    suspend fun markSyncFailed(id: String) = performanceDao.markSyncState(id, SyncState.FAILED.toName())
 
     /**
      * One-shot network fetch of a single performance, written through to the cache. Used by the

@@ -5,6 +5,7 @@ import androidx.room.Junction
 import androidx.room.Relation
 import com.chaddy50.concerttracker.data.domain.Performance
 import com.chaddy50.concerttracker.data.enum.PerformanceStatus
+import com.chaddy50.concerttracker.data.enum.SyncState
 import com.chaddy50.concerttracker.data.local.entity.PerformanceEntity
 import com.chaddy50.concerttracker.data.local.entity.HeadlinePerformerEntity
 import com.chaddy50.concerttracker.data.local.entity.PerformerEntity
@@ -43,5 +44,9 @@ fun PerformanceWithRelations.toDomain(): Performance = Performance(
     performers = performers.map { it.toDomain() },
     conductor = conductor?.toDomain(),
     status = PerformanceStatus.valueOf(performance.status),
-    setList = setList.map { it.toDomain() }.sortedBy { it.order }
+    setList = setList
+        .filter { it.entry.syncState != SyncState.PENDING_DELETE.toName() }
+        .map { it.toDomain() }
+        .sortedBy { it.order },
+    syncState = SyncState.fromName(performance.syncState)
 )

@@ -35,9 +35,11 @@ class PerformanceDaoTest {
     @After
     fun tearDown() = db.close()
 
-    private suspend fun insert(id: String, status: PerformanceStatus, date: String) {
+    private suspend fun insert(id: String, status: PerformanceStatus, date: String, syncState: String = "SYNCED") {
         db.venueDao().upsert(listOf(VenueEntity("v1", "Hall", "o", "way")))
-        performanceDao.upsert(PerformanceEntity(id = id, date = date, status = status.name, venueId = "v1"))
+        performanceDao.upsert(
+            PerformanceEntity(id = id, date = date, status = status.name, venueId = "v1", syncState = syncState)
+        )
     }
 
     @Test
@@ -91,13 +93,24 @@ class PerformanceDaoTest {
     }
 
     @Test
-    fun `deleteNotIn removes only absent rows`() = runTest {
+    fun `deleteSyncedNotIn removes only absent SYNCED rows and preserves unsynced local work`() = runTest {
         insert("keep", PerformanceStatus.UPCOMING, "2024-01-01T00:00:00Z")
         insert("drop", PerformanceStatus.UPCOMING, "2024-02-01T00:00:00Z")
+        insert("pending", PerformanceStatus.UPCOMING, "2024-03-01T00:00:00Z", syncState = "PENDING")
 
-        performanceDao.deleteNotIn(listOf("keep"))
+        performanceDao.deleteSyncedNotIn(listOf("keep"))
 
-        assertEquals(listOf("keep"), performanceDao.observeUpcoming().first().map { it.performance.id })
+        // "drop" (synced, absent) is pruned; "keep" and the unsynced "pending" survive.
+        assertEquals(listOf("keep", "pending"), performanceDao.observeUpcoming().first().map { it.performance.id })
+    }
+
+    @Test
+    fun `observe queries exclude PENDING_DELETE rows`() = runTest {
+        insert("visible", PerformanceStatus.UPCOMING, "2024-01-01T00:00:00Z")
+        insert("tombstone", PerformanceStatus.UPCOMING, "2024-02-01T00:00:00Z", syncState = "PENDING_DELETE")
+
+        assertEquals(listOf("visible"), performanceDao.observeUpcoming().first().map { it.performance.id })
+        assertNull(performanceDao.observePerformance("tombstone").first())
     }
 
     @Test

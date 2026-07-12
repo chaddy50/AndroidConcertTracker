@@ -10,7 +10,6 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import com.chaddy50.concerttracker.data.external.api.ApiErrorType
 import com.chaddy50.concerttracker.data.external.api.ApiResult
-import com.chaddy50.concerttracker.data.external.api.SetListEntryRequest
 import com.chaddy50.concerttracker.data.domain.Performance
 import com.chaddy50.concerttracker.data.repository.PerformancesRepository
 import com.chaddy50.concerttracker.data.repository.SetListEntriesRepository
@@ -120,7 +119,7 @@ class PerformanceDetailViewModel @Inject constructor(
             changedNotes.forEach { (entryId, note) ->
                 val result = setListEntriesRepository.updateSetListEntry(
                     entryId,
-                    SetListEntryRequest(notes = note.ifBlank { null })
+                    note.ifBlank { null }
                 )
                 if (result is ApiResult.Error) {
                     anyFailed = true

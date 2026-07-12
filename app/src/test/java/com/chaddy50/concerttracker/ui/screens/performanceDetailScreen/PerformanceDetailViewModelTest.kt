@@ -4,7 +4,6 @@ import androidx.compose.runtime.snapshots.Snapshot
 import androidx.lifecycle.SavedStateHandle
 import com.chaddy50.concerttracker.data.external.api.ApiErrorType
 import com.chaddy50.concerttracker.data.external.api.ApiResult
-import com.chaddy50.concerttracker.data.external.api.SetListEntryRequest
 import com.chaddy50.concerttracker.data.domain.Performance
 import com.chaddy50.concerttracker.data.domain.SetListEntry
 import com.chaddy50.concerttracker.data.domain.Venue
@@ -190,7 +189,7 @@ class PerformanceDetailViewModelTest {
 
         assertNull(viewModel.didSavingNotesHaveError)
         coVerify(exactly = 1) {
-            setListEntriesRepository.updateSetListEntry("e1", SetListEntryRequest(notes = "x"))
+            setListEntriesRepository.updateSetListEntry("e1", "x")
         }
         coVerify(exactly = 0) { setListEntriesRepository.updateSetListEntry("e2", any()) }
     }

@@ -6,9 +6,13 @@ import com.chaddy50.concerttracker.data.external.api.PerformanceRequest
 import com.chaddy50.concerttracker.data.enum.PerformanceStatus
 import com.chaddy50.concerttracker.data.local.ConcertTrackerDatabase
 import com.chaddy50.concerttracker.data.local.inMemoryDatabase
+import com.chaddy50.concerttracker.data.local.syncOperationsRepository
+import com.chaddy50.concerttracker.data.sync.SyncScheduler
 import com.chaddy50.concerttracker.testJson
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
+import javax.inject.Provider
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -31,6 +35,7 @@ class PerformancesRepositoryTest {
 
     private val mockWebServer = MockWebServer()
     private val settingsRepository: SettingsRepository = mockk()
+    private val syncScheduler: SyncScheduler = mockk(relaxed = true)
     private val json = testJson()
     private lateinit var db: ConcertTrackerDatabase
     private lateinit var repository: PerformancesRepository
@@ -47,7 +52,8 @@ class PerformancesRepositoryTest {
         repository = PerformancesRepository(
             settingsRepository, OkHttpClient(), json, db,
             db.performanceDao(), db.setListEntryDao(), db.venueDao(),
-            db.performerDao(), db.workDao(), db.composerDao()
+            db.performerDao(), db.workDao(), db.composerDao(),
+            db.syncOperationsRepository(), Provider { syncScheduler }
         )
     }
 
@@ -111,33 +117,51 @@ class PerformancesRepositoryTest {
         assertEquals(listOf("p1"), repository.observeUpcomingPerformances().first().map { it.id })
     }
 
+    /** Seed a synced performance + its cached venue into Room (via the online pull). */
+    private suspend fun seedSyncedPerformance() {
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody("[${performanceJson()}]"))
+        repository.loadPerformances()
+    }
+
     @Test
-    fun `createPerformance persists the created performance into the cache`() = runTest {
-        mockWebServer.enqueue(MockResponse().setResponseCode(201).setBody(performanceJson()))
+    fun `createPerformance persists a PENDING performance locally and enqueues a CREATE op with no network call`() = runTest {
+        seedSyncedPerformance() // caches venue v1
+        val requestsBefore = mockWebServer.requestCount
 
         val result = repository.createPerformance(
-            PerformanceRequest("2024-06-01T19:00:00Z", "v1", emptyList(), PerformanceStatus.UPCOMING)
+            PerformanceRequest("2024-07-01T19:00:00Z", "v1", emptyList(), PerformanceStatus.UPCOMING)
         )
 
         assertTrue(result is ApiResult.Success)
-        assertEquals("p1", repository.observePerformance("p1").first()?.id)
+        val created = (result as ApiResult.Success).data
+        assertEquals(created.id, repository.observePerformance(created.id).first()?.id)
+        assertEquals(com.chaddy50.concerttracker.data.enum.SyncState.PENDING, created.syncState) // domain flag
+        assertEquals("PENDING", db.performanceDao().getById(created.id)?.syncState)
+        assertEquals(requestsBefore, mockWebServer.requestCount) // no network on the write path
+
+        val op = db.syncOperationDao().getAllOrdered().single { it.entityId == created.id }
+        assertEquals("PERFORMANCE", op.entityType)
+        assertEquals("CREATE", op.operationType)
+        assertTrue(op.payloadJson!!.contains(created.id))
+        verify { syncScheduler.requestSync() }
     }
 
     @Test
-    fun `createPerformance returns Error and leaves cache untouched on failure`() = runTest {
-        mockWebServer.enqueue(MockResponse().setResponseCode(500))
+    fun `two offline creates yield two distinct ids, rows, and ops`() = runTest {
+        seedSyncedPerformance()
+        val request = PerformanceRequest("2024-07-01T19:00:00Z", "v1", emptyList(), PerformanceStatus.UPCOMING)
 
-        val result = repository.createPerformance(
-            PerformanceRequest("2024-06-01T19:00:00Z", "v1", emptyList(), PerformanceStatus.UPCOMING)
-        )
+        val a = (repository.createPerformance(request) as ApiResult.Success).data
+        val b = (repository.createPerformance(request) as ApiResult.Success).data
 
-        assertTrue(result is ApiResult.Error)
-        assertNull(repository.observePerformance("p1").first())
+        assertTrue(a.id != b.id)
+        assertEquals(2, db.syncOperationDao().getAllOrdered().count { it.operationType == "CREATE" })
     }
 
     @Test
-    fun `updatePerformance writes the updated performance through to the cache`() = runTest {
-        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(performanceJson(status = "ATTENDED")))
+    fun `updatePerformance mutates in place as PENDING and enqueues one UPDATE op`() = runTest {
+        seedSyncedPerformance()
+        val requestsBefore = mockWebServer.requestCount
 
         val result = repository.updatePerformance(
             "p1",
@@ -146,18 +170,39 @@ class PerformancesRepositoryTest {
 
         assertTrue(result is ApiResult.Success)
         assertEquals(PerformanceStatus.ATTENDED, repository.observePerformance("p1").first()?.status)
+        assertEquals("PENDING", db.performanceDao().getById("p1")?.syncState)
+        assertEquals(requestsBefore, mockWebServer.requestCount)
+        val ops = db.syncOperationDao().getAllOrdered().filter { it.entityId == "p1" }
+        assertEquals(listOf("UPDATE"), ops.map { it.operationType })
     }
 
     @Test
-    fun `deletePerformance removes the performance from the cache`() = runTest {
-        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody("[${performanceJson()}]"))
-        repository.loadPerformances()
-        mockWebServer.enqueue(MockResponse().setResponseCode(204))
+    fun `deletePerformance of a synced row tombstones it and enqueues a DELETE op`() = runTest {
+        seedSyncedPerformance()
+        val requestsBefore = mockWebServer.requestCount
 
         val result = repository.deletePerformance("p1")
 
         assertTrue(result is ApiResult.Success)
-        assertTrue(repository.observeUpcomingPerformances().first().isEmpty())
+        assertTrue(repository.observeUpcomingPerformances().first().isEmpty()) // hidden as PENDING_DELETE
+        assertEquals("PENDING_DELETE", db.performanceDao().getById("p1")?.syncState)
+        assertEquals(requestsBefore, mockWebServer.requestCount)
+        val op = db.syncOperationDao().getAllOrdered().single { it.entityId == "p1" }
+        assertEquals("DELETE", op.operationType)
+        assertNull(op.payloadJson)
+    }
+
+    @Test
+    fun `deletePerformance of an unsynced row hard-deletes it and drops its queued CREATE op`() = runTest {
+        seedSyncedPerformance() // caches venue v1
+        val created = (repository.createPerformance(
+            PerformanceRequest("2024-07-01T19:00:00Z", "v1", emptyList(), PerformanceStatus.UPCOMING)
+        ) as ApiResult.Success).data
+
+        repository.deletePerformance(created.id)
+
+        assertNull(db.performanceDao().getById(created.id))
+        assertTrue(db.syncOperationDao().getAllOrdered().none { it.entityId == created.id })
     }
 
     @Test

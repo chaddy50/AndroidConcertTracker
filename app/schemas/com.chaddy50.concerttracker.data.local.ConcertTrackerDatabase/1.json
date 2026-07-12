@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "7a291fdb71fdb1732951410e546c3e0d",
+    "identityHash": "80c723814b67fd594916cd6aeca22c89",
     "entities": [
       {
         "tableName": "performances",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `date` TEXT NOT NULL, `status` TEXT NOT NULL, `venueId` TEXT NOT NULL, `conductorId` TEXT, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `date` TEXT NOT NULL, `status` TEXT NOT NULL, `venueId` TEXT NOT NULL, `conductorId` TEXT, `syncState` TEXT NOT NULL, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -37,6 +37,12 @@
             "columnName": "conductorId",
             "affinity": "TEXT",
             "notNull": false
+          },
+          {
+            "fieldPath": "syncState",
+            "columnName": "syncState",
+            "affinity": "TEXT",
+            "notNull": true
           }
         ],
         "primaryKey": {
@@ -221,7 +227,7 @@
       },
       {
         "tableName": "set_list_entries",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `performanceId` TEXT NOT NULL, `workId` TEXT NOT NULL, `sort_order` INTEGER NOT NULL, `conductorId` TEXT, `notes` TEXT, PRIMARY KEY(`id`), FOREIGN KEY(`performanceId`) REFERENCES `performances`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `performanceId` TEXT NOT NULL, `workId` TEXT NOT NULL, `sort_order` INTEGER NOT NULL, `conductorId` TEXT, `notes` TEXT, `syncState` TEXT NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`performanceId`) REFERENCES `performances`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "id",
@@ -258,6 +264,12 @@
             "columnName": "notes",
             "affinity": "TEXT",
             "notNull": false
+          },
+          {
+            "fieldPath": "syncState",
+            "columnName": "syncState",
+            "affinity": "TEXT",
+            "notNull": true
           }
         ],
         "primaryKey": {
@@ -461,12 +473,74 @@
             ]
           }
         ]
+      },
+      {
+        "tableName": "sync_operations",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `entityType` TEXT NOT NULL, `operationType` TEXT NOT NULL, `entityId` TEXT NOT NULL, `payloadJson` TEXT, `createdAt` TEXT NOT NULL, `attemptCount` INTEGER NOT NULL, `lastError` TEXT)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "entityType",
+            "columnName": "entityType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "operationType",
+            "columnName": "operationType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "entityId",
+            "columnName": "entityId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "payloadJson",
+            "columnName": "payloadJson",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "attemptCount",
+            "columnName": "attemptCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastError",
+            "columnName": "lastError",
+            "affinity": "TEXT",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
       }
     ],
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '7a291fdb71fdb1732951410e546c3e0d')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '80c723814b67fd594916cd6aeca22c89')"
     ]
   }
 }

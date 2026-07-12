@@ -1,6 +1,7 @@
 package com.chaddy50.concerttracker.data.domain
 
 import com.chaddy50.concerttracker.data.enum.PerformanceStatus
+import com.chaddy50.concerttracker.data.enum.SyncState
 
 data class Performance(
     val id: String,
@@ -9,5 +10,6 @@ data class Performance(
     val performers: List<Performer> = emptyList(),
     val conductor: Performer? = null,
     val status: PerformanceStatus,
-    val setList: List<SetListEntry> = emptyList()
+    val setList: List<SetListEntry> = emptyList(),
+    val syncState: SyncState = SyncState.SYNCED
 )
