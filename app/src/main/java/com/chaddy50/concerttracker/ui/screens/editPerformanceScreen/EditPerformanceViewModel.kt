@@ -8,7 +8,6 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
-import com.chaddy50.concerttracker.data.external.api.ApiErrorType
 import com.chaddy50.concerttracker.data.external.api.ApiResult
 import com.chaddy50.concerttracker.data.external.api.FeaturedPerformerRequest
 import com.chaddy50.concerttracker.data.external.api.PerformanceRequest
@@ -97,19 +96,18 @@ class EditPerformanceViewModel @Inject constructor(
     fun loadPerformance() {
         viewModelScope.launch {
             uiState = PerformanceEditUiState.Loading
-            when (val result = performancesRepository.getPerformance(performanceId!!)) {
-                is ApiResult.Success -> {
-                    val performance = result.data
-                    loadedPerformance = performance
-                    draftDate = isoToEpochMillis(performance.date)
-                    draftStatus = performance.status
-                    draftVenueId = performance.venue.id
-                    draftVenueName = performance.venue.name
-                    draftPerformers.clear()
-                    draftPerformers.addAll(performance.performers)
-                    uiState = PerformanceEditUiState.Ready
-                }
-                is ApiResult.Error -> uiState = PerformanceEditUiState.Error(result.errorType)
+            val performance = performancesRepository.getPerformance(performanceId!!)
+            if (performance != null) {
+                loadedPerformance = performance
+                draftDate = isoToEpochMillis(performance.date)
+                draftStatus = performance.status
+                draftVenueId = performance.venue.id
+                draftVenueName = performance.venue.name
+                draftPerformers.clear()
+                draftPerformers.addAll(performance.performers)
+                uiState = PerformanceEditUiState.Ready
+            } else {
+                uiState = PerformanceEditUiState.NotFound
             }
         }
     }
@@ -233,5 +231,5 @@ data class PendingFeaturedPerformer(
 sealed interface PerformanceEditUiState {
     data object Loading : PerformanceEditUiState
     data object Ready : PerformanceEditUiState
-    data class Error(val errorType: ApiErrorType.Type) : PerformanceEditUiState
+    data object NotFound : PerformanceEditUiState
 }

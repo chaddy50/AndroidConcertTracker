@@ -206,19 +206,44 @@ class PerformancesRepositoryTest {
     }
 
     @Test
-    fun `getPerformance returns Success and caches it`() = runTest {
-        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(performanceJson()))
+    fun `getPerformance returns the cached performance without a network call`() = runTest {
+        seedSyncedPerformance()
+        val requestsBefore = mockWebServer.requestCount
 
-        val result = repository.getPerformance("p1")
+        val performance = repository.getPerformance("p1")
 
-        assertTrue(result is ApiResult.Success)
-        assertEquals("p1", (result as ApiResult.Success).data.id)
-        assertEquals("p1", repository.observePerformance("p1").first()?.id)
+        assertEquals("p1", performance?.id)
+        // Reads straight from Room (the single source of truth) — no network round-trip.
+        assertEquals(requestsBefore, mockWebServer.requestCount)
     }
 
     @Test
-    fun `getPerformance returns Error on 404`() = runTest {
-        mockWebServer.enqueue(MockResponse().setResponseCode(404))
-        assertEquals(ApiResult.Error(ApiErrorType.Type.CLIENT), repository.getPerformance("p1"))
+    fun `getPerformance returns the fully hydrated graph from the cache`() = runTest {
+        seedSyncedPerformance()
+
+        val performance = repository.getPerformance("p1")!!
+
+        assertEquals("Hall", performance.venue.name)
+        assertEquals("maestro", performance.conductor?.id)
+        assertEquals(listOf("orchestra"), performance.performers.map { it.id })
+        val entry = performance.setList.single()
+        assertEquals("Symphony", entry.work.title)
+        assertEquals("Piano", entry.featuredPerformers.single().role)
+        assertEquals("Wow", entry.notes)
+    }
+
+    @Test
+    fun `getPerformance returns a locally-created PENDING performance offline`() = runTest {
+        seedSyncedPerformance() // caches venue v1
+        val created = (repository.createPerformance(
+            PerformanceRequest("2024-07-01T19:00:00Z", "v1", emptyList(), PerformanceStatus.UPCOMING)
+        ) as ApiResult.Success).data
+
+        assertEquals(created.id, repository.getPerformance(created.id)?.id)
+    }
+
+    @Test
+    fun `getPerformance returns null when the performance is not cached`() = runTest {
+        assertNull(repository.getPerformance("missing"))
     }
 }

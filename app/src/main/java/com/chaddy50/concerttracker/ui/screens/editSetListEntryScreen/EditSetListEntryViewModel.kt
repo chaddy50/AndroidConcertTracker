@@ -8,7 +8,6 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
-import com.chaddy50.concerttracker.data.external.api.ApiErrorType
 import com.chaddy50.concerttracker.data.external.api.ApiResult
 import com.chaddy50.concerttracker.data.external.api.FeaturedPerformerRequest
 import com.chaddy50.concerttracker.data.external.api.SetListEntryCreateRequest
@@ -90,36 +89,35 @@ class EditSetListEntryViewModel @Inject constructor(
                 }
                 uiState = SetListEntryEditUiState.Ready
             } else if (performanceId != null) {
-                when (val result = performancesRepository.getPerformance(performanceId)) {
-                    is ApiResult.Success -> {
-                        val performance = result.data
-                        if (isCreateMode) {
-                            draftOrder = (performance.setList.size + 1).toString()
-                        } else {
-                            val entry = performance.setList.find { it.id == entryId }
-                            if (entry == null) {
-                                uiState = SetListEntryEditUiState.Error(ApiErrorType.Type.CLIENT)
-                                return@launch
-                            }
-                            draftWorkId = entry.work.id
-                            draftWorkTitle = entry.work.title
-                            draftComposerName = entry.work.composers.joinToString(", ") { it.sortName ?: it.name }
-                            draftOrder = entry.order.toString()
-                            draftFeaturedPerformers.clear()
-                            draftFeaturedPerformers.addAll(
-                                entry.featuredPerformers.map { featuredPerformer ->
-                                    DraftFeaturedPerformer(
-                                        performerId = featuredPerformer.performer.id,
-                                        name = featuredPerformer.performer.name,
-                                        role = featuredPerformer.role ?: ""
-                                    )
-                                }
+                val performance = performancesRepository.getPerformance(performanceId)
+                if (performance == null) {
+                    uiState = SetListEntryEditUiState.NotFound
+                    return@launch
+                }
+                if (isCreateMode) {
+                    draftOrder = (performance.setList.size + 1).toString()
+                } else {
+                    val entry = performance.setList.find { it.id == entryId }
+                    if (entry == null) {
+                        uiState = SetListEntryEditUiState.NotFound
+                        return@launch
+                    }
+                    draftWorkId = entry.work.id
+                    draftWorkTitle = entry.work.title
+                    draftComposerName = entry.work.composers.joinToString(", ") { it.sortName ?: it.name }
+                    draftOrder = entry.order.toString()
+                    draftFeaturedPerformers.clear()
+                    draftFeaturedPerformers.addAll(
+                        entry.featuredPerformers.map { featuredPerformer ->
+                            DraftFeaturedPerformer(
+                                performerId = featuredPerformer.performer.id,
+                                name = featuredPerformer.performer.name,
+                                role = featuredPerformer.role ?: ""
                             )
                         }
-                        uiState = SetListEntryEditUiState.Ready
-                    }
-                    is ApiResult.Error -> uiState = SetListEntryEditUiState.Error(result.errorType)
+                    )
                 }
+                uiState = SetListEntryEditUiState.Ready
             } else {
                 uiState = SetListEntryEditUiState.Ready
             }
@@ -245,5 +243,5 @@ class EditSetListEntryViewModel @Inject constructor(
 sealed interface SetListEntryEditUiState {
     data object Loading : SetListEntryEditUiState
     data object Ready : SetListEntryEditUiState
-    data class Error(val errorType: ApiErrorType.Type) : SetListEntryEditUiState
+    data object NotFound : SetListEntryEditUiState
 }

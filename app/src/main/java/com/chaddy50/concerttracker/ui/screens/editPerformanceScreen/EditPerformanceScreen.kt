@@ -29,23 +29,15 @@ fun EditPerformanceScreen(
     onNavigateToEditPendingSetListEntry: (localId: String) -> Unit,
     viewModel: EditPerformanceViewModel = hiltViewModel()
 ) {
-    when (val state = viewModel.uiState) {
+    when (viewModel.uiState) {
         is PerformanceEditUiState.Loading -> {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         }
-        is PerformanceEditUiState.Error -> {
+        is PerformanceEditUiState.NotFound -> {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = state.errorType.toUserMessage(), color = MaterialTheme.colorScheme.error)
-                    Button(
-                        onClick = viewModel::loadPerformance,
-                        modifier = Modifier.padding(top = 8.dp)
-                    ) {
-                        Text("Retry")
-                    }
-                }
+                Text(text = "Performance not found", color = MaterialTheme.colorScheme.error)
             }
         }
         is PerformanceEditUiState.Ready -> {

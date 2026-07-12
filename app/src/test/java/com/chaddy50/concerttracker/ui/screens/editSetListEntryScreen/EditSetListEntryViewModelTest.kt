@@ -86,7 +86,7 @@ class EditSetListEntryViewModelTest {
     @Test
     fun `loadData populates drafts from existing entry on Success`() = runTest {
         coEvery { performancesRepository.getPerformance("p1") } returns
-            ApiResult.Success(performance(setList = listOf(entry("e1"))))
+            performance(setList = listOf(entry("e1")))
         val viewModel = editViewModel()
         advanceUntilIdle()
 
@@ -97,17 +97,16 @@ class EditSetListEntryViewModelTest {
     }
 
     @Test
-    fun `loadData shows Error with errorType on failure`() = runTest {
-        coEvery { performancesRepository.getPerformance("p1") } returns
-            ApiResult.Error(ApiErrorType.Type.NETWORK)
+    fun `loadData shows NotFound when the performance is not cached`() = runTest {
+        coEvery { performancesRepository.getPerformance("p1") } returns null
         val viewModel = editViewModel()
         advanceUntilIdle()
-        assertEquals(SetListEntryEditUiState.Error(ApiErrorType.Type.NETWORK), viewModel.uiState)
+        assertEquals(SetListEntryEditUiState.NotFound, viewModel.uiState)
     }
 
     @Test
     fun `selectWork references the already-materialized work with no network create`() = runTest {
-        coEvery { performancesRepository.getPerformance("p1") } returns ApiResult.Success(performance())
+        coEvery { performancesRepository.getPerformance("p1") } returns performance()
         val viewModel = createViewModel()
         advanceUntilIdle()
 
@@ -120,7 +119,7 @@ class EditSetListEntryViewModelTest {
 
     @Test
     fun `addDraftFeaturedPerformer adds the already-materialized performer and skips duplicates`() = runTest {
-        coEvery { performancesRepository.getPerformance("p1") } returns ApiResult.Success(performance())
+        coEvery { performancesRepository.getPerformance("p1") } returns performance()
         val viewModel = createViewModel()
         advanceUntilIdle()
 
@@ -133,7 +132,7 @@ class EditSetListEntryViewModelTest {
 
     @Test
     fun `saveSetListEntry creates entry and invokes onSaved on Success`() = runTest {
-        coEvery { performancesRepository.getPerformance("p1") } returns ApiResult.Success(performance())
+        coEvery { performancesRepository.getPerformance("p1") } returns performance()
         coEvery { setListEntriesRepository.createSetListEntry(any()) } returns
             ApiResult.Success(entry("e9"))
         val viewModel = createViewModel()
@@ -152,7 +151,7 @@ class EditSetListEntryViewModelTest {
 
     @Test
     fun `saveSetListEntry sets saveError on Error`() = runTest {
-        coEvery { performancesRepository.getPerformance("p1") } returns ApiResult.Success(performance())
+        coEvery { performancesRepository.getPerformance("p1") } returns performance()
         coEvery { setListEntriesRepository.createSetListEntry(any()) } returns
             ApiResult.Error(ApiErrorType.Type.SERVER)
         val viewModel = createViewModel()
@@ -172,7 +171,7 @@ class EditSetListEntryViewModelTest {
     @Test
     fun `deleteSetListEntry invokes onDeleted on Success`() = runTest {
         coEvery { performancesRepository.getPerformance("p1") } returns
-            ApiResult.Success(performance(setList = listOf(entry("e1"))))
+            performance(setList = listOf(entry("e1")))
         coEvery { setListEntriesRepository.deleteSetListEntry("e1") } returns ApiResult.Success(Unit)
         val viewModel = editViewModel()
         advanceUntilIdle()
@@ -187,7 +186,7 @@ class EditSetListEntryViewModelTest {
     @Test
     fun `deleteSetListEntry sets saveError on Error`() = runTest {
         coEvery { performancesRepository.getPerformance("p1") } returns
-            ApiResult.Success(performance(setList = listOf(entry("e1"))))
+            performance(setList = listOf(entry("e1")))
         coEvery { setListEntriesRepository.deleteSetListEntry("e1") } returns
             ApiResult.Error(ApiErrorType.Type.NETWORK)
         val viewModel = editViewModel()

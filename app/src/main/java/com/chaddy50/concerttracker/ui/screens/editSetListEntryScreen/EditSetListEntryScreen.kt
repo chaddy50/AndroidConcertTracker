@@ -1,17 +1,13 @@
 package com.chaddy50.concerttracker.ui.screens.editSetListEntryScreen
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
@@ -24,23 +20,15 @@ fun EditSetListEntryScreen(
     onNavigateToSearchPerformer: () -> Unit,
     viewModel: EditSetListEntryViewModel = hiltViewModel()
 ) {
-    when (val state = viewModel.uiState) {
+    when (viewModel.uiState) {
         is SetListEntryEditUiState.Loading -> {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         }
-        is SetListEntryEditUiState.Error -> {
+        is SetListEntryEditUiState.NotFound -> {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = state.errorType.toUserMessage(), color = MaterialTheme.colorScheme.error)
-                    Button(
-                        onClick = viewModel::loadData,
-                        modifier = Modifier.padding(top = 8.dp)
-                    ) {
-                        Text("Retry")
-                    }
-                }
+                Text(text = "Set list entry not found", color = MaterialTheme.colorScheme.error)
             }
         }
         is SetListEntryEditUiState.Ready -> {

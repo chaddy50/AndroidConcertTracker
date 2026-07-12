@@ -37,7 +37,7 @@ class PerformanceDetailViewModel @Inject constructor(
 
     private val performanceId: String = savedStateHandle.toRoute<PerformanceDetail>().id
 
-    private val isLoading = MutableStateFlow(false)
+    private val isLoading = MutableStateFlow(true)
 
     /** The latest cached performance, kept in sync with Room so note auto-save can diff against it. */
     private var loadedPerformance: Performance? = null
@@ -46,8 +46,8 @@ class PerformanceDetailViewModel @Inject constructor(
         performancesRepository.observePerformance(performanceId),
         isLoading
     ) { performance, loading ->
-        // Offline-first: Room is the source of truth. A failed refresh is never surfaced here — a
-        // missing performance simply means Empty ("not found").
+        // Offline-first: Room is the source of truth. A missing performance simply means Empty
+        // ("not found").
         when {
             performance != null -> PerformanceDetailUiState.Content(performance)
             loading -> PerformanceDetailUiState.Loading
@@ -70,6 +70,7 @@ class PerformanceDetailViewModel @Inject constructor(
             performancesRepository.observePerformance(performanceId).collect { performance ->
                 loadedPerformance = performance
                 if (performance != null) seedDraftNotes(performance)
+                isLoading.value = false
             }
         }
         viewModelScope.launch {
@@ -77,15 +78,6 @@ class PerformanceDetailViewModel @Inject constructor(
                 .drop(1)
                 .debounce(1000L.milliseconds)
                 .collect { autoSaveNotes(it) }
-        }
-        loadPerformance()
-    }
-
-    fun loadPerformance() {
-        viewModelScope.launch {
-            isLoading.value = true
-            performancesRepository.loadPerformance(performanceId)
-            isLoading.value = false
         }
     }
 

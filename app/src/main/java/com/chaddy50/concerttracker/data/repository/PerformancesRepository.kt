@@ -18,7 +18,6 @@ import com.chaddy50.concerttracker.data.local.dao.VenueDao
 import com.chaddy50.concerttracker.data.local.dao.WorkDao
 import com.chaddy50.concerttracker.data.local.entity.HeadlinePerformerEntity
 import com.chaddy50.concerttracker.data.external.dataTransferObjects.PerformanceRows
-import com.chaddy50.concerttracker.data.external.dataTransferObjects.toDomain
 import com.chaddy50.concerttracker.data.external.dataTransferObjects.toPendingRows
 import com.chaddy50.concerttracker.data.external.dataTransferObjects.toRows
 import com.chaddy50.concerttracker.data.external.dataTransferObjects.withClientIds
@@ -158,23 +157,12 @@ class PerformancesRepository @Inject constructor(
     suspend fun markSyncFailed(id: String) = performanceDao.markSyncState(id, SyncState.FAILED.toName())
 
     /**
-     * One-shot network fetch of a single performance, written through to the cache. Used by the
-     * edit screens to populate their form working copies.
+     * One-shot Room read of a single performance, used by the edit screens to populate their form
+     * working copies. Offline-safe — reads the cache (the single source of truth) rather than the
+     * network. Returns null when the performance is not cached.
      */
-    suspend fun getPerformance(id: String): ApiResult<Performance> = safeApiCall {
-        val performance = apiService().getPerformance(id)
-        database.withTransaction { persist(performance.toRows()) }
-        performance.toDomain()
-    }
-
-    /**
-     * Re-fetches a single performance into the cache so observers re-emit. Used by
-     * [SetListEntriesRepository] after a set-list mutation.
-     */
-    suspend fun loadPerformance(id: String): ApiResult<Unit> = when (val result = getPerformance(id)) {
-        is ApiResult.Success -> ApiResult.Success(Unit)
-        is ApiResult.Error -> result
-    }
+    suspend fun getPerformance(id: String): Performance? =
+        performanceDao.observePerformance(id).first()?.toDomain()
 
     /** Writes a full performance graph into Room. Caller is responsible for the surrounding transaction. */
     private suspend fun persist(rows: PerformanceRows) {

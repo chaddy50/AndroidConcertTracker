@@ -80,8 +80,7 @@ class EditPerformanceViewModelTest {
 
     @Test
     fun `loadPerformance populates draft fields on Success`() = runTest {
-        coEvery { performancesRepository.getPerformance("p1") } returns
-            ApiResult.Success(performance())
+        coEvery { performancesRepository.getPerformance("p1") } returns performance()
         every { performancesRepository.observePerformance("p1") } returns flowOf(performance())
         val viewModel = editViewModel()
         advanceUntilIdle()
@@ -93,13 +92,12 @@ class EditPerformanceViewModelTest {
     }
 
     @Test
-    fun `loadPerformance shows Error with errorType on failure`() = runTest {
-        coEvery { performancesRepository.getPerformance("p1") } returns
-            ApiResult.Error(ApiErrorType.Type.TIMEOUT)
+    fun `loadPerformance shows NotFound when the performance is not cached`() = runTest {
+        coEvery { performancesRepository.getPerformance("p1") } returns null
         every { performancesRepository.observePerformance("p1") } returns flowOf(null)
         val viewModel = editViewModel()
         advanceUntilIdle()
-        assertEquals(PerformanceEditUiState.Error(ApiErrorType.Type.TIMEOUT), viewModel.uiState)
+        assertEquals(PerformanceEditUiState.NotFound, viewModel.uiState)
     }
 
     @Test
@@ -127,7 +125,7 @@ class EditPerformanceViewModelTest {
 
     @Test
     fun `currentSetList observes Room, sorts by order, and updates on write-through`() = runTest {
-        coEvery { performancesRepository.getPerformance("p1") } returns ApiResult.Success(performance())
+        coEvery { performancesRepository.getPerformance("p1") } returns performance()
         val roomFlow = MutableStateFlow(performance(setList = listOf(entry("e2", 2), entry("e1", 1))))
         every { performancesRepository.observePerformance("p1") } returns roomFlow
         val viewModel = editViewModel()
@@ -178,7 +176,7 @@ class EditPerformanceViewModelTest {
 
     @Test
     fun `deletePerformance invokes onDeleted on Success`() = runTest {
-        coEvery { performancesRepository.getPerformance("p1") } returns ApiResult.Success(performance())
+        coEvery { performancesRepository.getPerformance("p1") } returns performance()
         every { performancesRepository.observePerformance("p1") } returns flowOf(performance())
         coEvery { performancesRepository.deletePerformance("p1") } returns ApiResult.Success(Unit)
         val viewModel = editViewModel()
@@ -192,7 +190,7 @@ class EditPerformanceViewModelTest {
 
     @Test
     fun `deletePerformance sets saveError on Error`() = runTest {
-        coEvery { performancesRepository.getPerformance("p1") } returns ApiResult.Success(performance())
+        coEvery { performancesRepository.getPerformance("p1") } returns performance()
         every { performancesRepository.observePerformance("p1") } returns flowOf(performance())
         coEvery { performancesRepository.deletePerformance("p1") } returns
             ApiResult.Error(ApiErrorType.Type.SERVER)
