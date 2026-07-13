@@ -35,6 +35,10 @@ class PerformanceDaoTest {
     @After
     fun tearDown() = db.close()
 
+    // Home tabs partition purely by date now; status must not affect placement. Fixed instant so tests
+    // are deterministic (never Instant.now()).
+    private val now = "2024-06-01T00:00:00Z"
+
     private suspend fun insert(id: String, status: PerformanceStatus, date: String, syncState: String = "SYNCED") {
         db.venueDao().upsert(listOf(VenueEntity("v1", "Hall", "o", "way")))
         performanceDao.upsert(
@@ -43,45 +47,67 @@ class PerformanceDaoTest {
     }
 
     @Test
-    fun `observeUpcoming returns only upcoming sorted by date ascending`() = runTest {
-        insert("a", PerformanceStatus.UPCOMING, "2024-03-01T00:00:00Z")
-        insert("b", PerformanceStatus.UPCOMING, "2024-01-01T00:00:00Z")
-        insert("c", PerformanceStatus.ATTENDED, "2024-02-01T00:00:00Z")
+    fun `observeUpcoming returns date now-or-later ascending, ignoring status`() = runTest {
+        // Future-dated ATTENDED is still upcoming (status no longer filters); past-dated is excluded.
+        insert("futureAttended", PerformanceStatus.ATTENDED, "2024-07-01T00:00:00Z")
+        insert("futureUpcoming", PerformanceStatus.UPCOMING, "2024-06-15T00:00:00Z")
+        insert("past", PerformanceStatus.UPCOMING, "2024-05-01T00:00:00Z")
 
-        val result = performanceDao.observeUpcoming().first()
+        val result = performanceDao.observeUpcoming(now).first()
 
-        assertEquals(listOf("b", "a"), result.map { it.performance.id })
+        assertEquals(listOf("futureUpcoming", "futureAttended"), result.map { it.performance.id })
     }
 
     @Test
-    fun `observeNextUpcoming returns earliest upcoming and null when none`() = runTest {
-        assertNull(performanceDao.observeNextUpcoming().first())
-        insert("a", PerformanceStatus.UPCOMING, "2024-03-01T00:00:00Z")
-        insert("b", PerformanceStatus.UPCOMING, "2024-01-01T00:00:00Z")
+    fun `observeUpcoming includes a performance dated exactly now`() = runTest {
+        insert("exactlyNow", PerformanceStatus.UPCOMING, now)
 
-        assertEquals("b", performanceDao.observeNextUpcoming().first()?.performance?.id)
+        assertEquals(listOf("exactlyNow"), performanceDao.observeUpcoming(now).first().map { it.performance.id })
     }
 
     @Test
-    fun `observeRecentlyAttended returns attended after cutoff only`() = runTest {
-        insert("recent", PerformanceStatus.ATTENDED, "2024-02-20T00:00:00Z")
-        insert("old", PerformanceStatus.ATTENDED, "2024-01-01T00:00:00Z")
-        insert("upcoming", PerformanceStatus.UPCOMING, "2024-02-25T00:00:00Z")
+    fun `observeNextUpcoming returns earliest future row skipping past, null when none`() = runTest {
+        assertNull(performanceDao.observeNextUpcoming(now).first())
+        insert("past", PerformanceStatus.UPCOMING, "2024-05-01T00:00:00Z")
+        assertNull(performanceDao.observeNextUpcoming(now).first())
 
-        val result = performanceDao.observeRecentlyAttended("2024-02-01T00:00:00Z").first()
+        insert("later", PerformanceStatus.UPCOMING, "2024-07-01T00:00:00Z")
+        // Soonest future row wins even though its status is CANCELLED (status ignored).
+        insert("soonest", PerformanceStatus.CANCELLED, "2024-06-10T00:00:00Z")
 
-        assertEquals(listOf("recent"), result.map { it.performance.id })
+        assertEquals("soonest", performanceDao.observeNextUpcoming(now).first()?.performance?.id)
     }
 
     @Test
-    fun `observePast returns past statuses excluding upcoming, date descending`() = runTest {
-        insert("attended", PerformanceStatus.ATTENDED, "2024-01-01T00:00:00Z")
-        insert("missed", PerformanceStatus.MISSED, "2024-03-01T00:00:00Z")
-        insert("upcoming", PerformanceStatus.UPCOMING, "2024-02-01T00:00:00Z")
+    fun `observeNextUpcoming includes a performance dated exactly now`() = runTest {
+        insert("exactlyNow", PerformanceStatus.UPCOMING, now)
 
-        val result = performanceDao.observePast().first()
+        assertEquals("exactlyNow", performanceDao.observeNextUpcoming(now).first()?.performance?.id)
+    }
 
-        assertEquals(listOf("missed", "attended"), result.map { it.performance.id })
+    @Test
+    fun `observeRecentlyAttended returns rows within cutoff and now, ignoring status, descending`() = runTest {
+        val cutoff = "2024-05-01T00:00:00Z"
+        insert("recent", PerformanceStatus.SKIPPED, "2024-05-20T00:00:00Z")   // in window, non-attended -> included
+        insert("recent2", PerformanceStatus.ATTENDED, "2024-05-10T00:00:00Z") // in window
+        insert("tooOld", PerformanceStatus.ATTENDED, "2024-04-01T00:00:00Z")  // before cutoff -> excluded
+        insert("future", PerformanceStatus.ATTENDED, "2024-07-01T00:00:00Z")  // >= now -> excluded
+
+        val result = performanceDao.observeRecentlyAttended(cutoff, now).first()
+
+        assertEquals(listOf("recent", "recent2"), result.map { it.performance.id })
+    }
+
+    @Test
+    fun `observePast returns all rows before now, ignoring status, descending`() = runTest {
+        // A past-dated UPCOMING row (the stale "June 15" case) now correctly lands in Past.
+        insert("staleUpcoming", PerformanceStatus.UPCOMING, "2024-05-15T00:00:00Z")
+        insert("attended", PerformanceStatus.ATTENDED, "2024-04-01T00:00:00Z")
+        insert("future", PerformanceStatus.UPCOMING, "2024-07-01T00:00:00Z") // excluded
+
+        val result = performanceDao.observePast(now).first()
+
+        assertEquals(listOf("staleUpcoming", "attended"), result.map { it.performance.id })
     }
 
     @Test
@@ -101,7 +127,8 @@ class PerformanceDaoTest {
         performanceDao.deleteSyncedNotIn(listOf("keep"))
 
         // "drop" (synced, absent) is pruned; "keep" and the unsynced "pending" survive.
-        assertEquals(listOf("keep", "pending"), performanceDao.observeUpcoming().first().map { it.performance.id })
+        // Early nowIso so all rows count as upcoming here (this test is about deletion, not date filtering).
+        assertEquals(listOf("keep", "pending"), performanceDao.observeUpcoming("2000-01-01T00:00:00Z").first().map { it.performance.id })
     }
 
     @Test
@@ -109,7 +136,7 @@ class PerformanceDaoTest {
         insert("visible", PerformanceStatus.UPCOMING, "2024-01-01T00:00:00Z")
         insert("tombstone", PerformanceStatus.UPCOMING, "2024-02-01T00:00:00Z", syncState = "PENDING_DELETE")
 
-        assertEquals(listOf("visible"), performanceDao.observeUpcoming().first().map { it.performance.id })
+        assertEquals(listOf("visible"), performanceDao.observeUpcoming("2000-01-01T00:00:00Z").first().map { it.performance.id })
         assertNull(performanceDao.observePerformance("tombstone").first())
     }
 

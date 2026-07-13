@@ -73,18 +73,20 @@ class PerformancesRepository @Inject constructor(
     // region Reads (Room is the single source of truth)
 
     fun observeNextUpcomingPerformance(): Flow<Performance?> =
-        performanceDao.observeNextUpcoming().map { it?.toDomain() }
+        performanceDao.observeNextUpcoming(Instant.now().toString()).map { it?.toDomain() }
 
     fun observeRecentlyAttendedPerformances(): Flow<List<Performance>> {
-        val thirtyDaysAgo = Instant.now().minus(30, ChronoUnit.DAYS).toString()
-        return performanceDao.observeRecentlyAttended(thirtyDaysAgo).map { list -> list.map { it.toDomain() } }
+        val now = Instant.now()
+        val thirtyDaysAgo = now.minus(30, ChronoUnit.DAYS).toString()
+        return performanceDao.observeRecentlyAttended(thirtyDaysAgo, now.toString())
+            .map { list -> list.map { it.toDomain() } }
     }
 
     fun observeUpcomingPerformances(): Flow<List<Performance>> =
-        performanceDao.observeUpcoming().map { list -> list.map { it.toDomain() } }
+        performanceDao.observeUpcoming(Instant.now().toString()).map { list -> list.map { it.toDomain() } }
 
     fun observePastPerformances(): Flow<List<Performance>> =
-        performanceDao.observePast().map { list -> list.map { it.toDomain() } }
+        performanceDao.observePast(Instant.now().toString()).map { list -> list.map { it.toDomain() } }
 
     fun observePerformance(id: String): Flow<Performance?> =
         performanceDao.observePerformance(id).map { it?.toDomain() }

@@ -13,25 +13,20 @@ import kotlinx.coroutines.flow.Flow
 interface PerformanceDao {
 
     @Transaction
-    @Query("SELECT * FROM performances WHERE status = 'UPCOMING' AND syncState != 'PENDING_DELETE' ORDER BY date ASC")
-    fun observeUpcoming(): Flow<List<PerformanceWithRelations>>
+    @Query("SELECT * FROM performances WHERE syncState != 'PENDING_DELETE' AND date >= :nowIso ORDER BY date ASC")
+    fun observeUpcoming(nowIso: String): Flow<List<PerformanceWithRelations>>
 
     @Transaction
-    @Query("SELECT * FROM performances WHERE status = 'UPCOMING' AND syncState != 'PENDING_DELETE' ORDER BY date ASC LIMIT 1")
-    fun observeNextUpcoming(): Flow<PerformanceWithRelations?>
+    @Query("SELECT * FROM performances WHERE syncState != 'PENDING_DELETE' AND date >= :nowIso ORDER BY date ASC LIMIT 1")
+    fun observeNextUpcoming(nowIso: String): Flow<PerformanceWithRelations?>
 
     @Transaction
-    @Query("SELECT * FROM performances WHERE status = 'ATTENDED' AND syncState != 'PENDING_DELETE' AND date > :cutoffIso ORDER BY date DESC")
-    fun observeRecentlyAttended(cutoffIso: String): Flow<List<PerformanceWithRelations>>
+    @Query("SELECT * FROM performances WHERE syncState != 'PENDING_DELETE' AND date > :cutoffIso AND date < :nowIso ORDER BY date DESC")
+    fun observeRecentlyAttended(cutoffIso: String, nowIso: String): Flow<List<PerformanceWithRelations>>
 
     @Transaction
-    @Query(
-        "SELECT * FROM performances " +
-            "WHERE status IN ('ATTENDED', 'CANCELLED', 'MISSED', 'SKIPPED') " +
-            "AND syncState != 'PENDING_DELETE' " +
-            "ORDER BY date DESC"
-    )
-    fun observePast(): Flow<List<PerformanceWithRelations>>
+    @Query("SELECT * FROM performances WHERE syncState != 'PENDING_DELETE' AND date < :nowIso ORDER BY date DESC")
+    fun observePast(nowIso: String): Flow<List<PerformanceWithRelations>>
 
     @Transaction
     @Query("SELECT * FROM performances WHERE id = :id AND syncState != 'PENDING_DELETE'")

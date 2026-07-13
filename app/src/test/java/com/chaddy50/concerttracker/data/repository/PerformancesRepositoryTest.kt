@@ -41,7 +41,7 @@ class PerformancesRepositoryTest {
     private lateinit var repository: PerformancesRepository
 
     private fun performanceJson(id: String = "p1", status: String = "UPCOMING") = """
-        {"id":"$id","date":"2024-06-01T19:00:00Z","venue":{"id":"v1","name":"Hall","osm_id":"123","osm_type":"way"},"performers":[{"id":"orchestra","name":"Orch","type":"ORCHESTRA","musicbrainz_id":"mb1"}],"conductor":{"id":"maestro","name":"Cond","type":"CONDUCTOR"},"status":"$status","set_list":[{"id":"${id}_s1","work":{"id":"w1","title":"Symphony","composers":[{"id":"c1","name":"Bach","sort_name":"Bach, JS","open_opus_id":"oo1"}]},"order":1,"featured_performers":[{"performer":{"id":"soloist","name":"Pianist","type":"SOLO"},"role":"Piano"}],"notes":"Wow"}]}
+        {"id":"$id","date":"2099-06-01T19:00:00Z","venue":{"id":"v1","name":"Hall","osm_id":"123","osm_type":"way"},"performers":[{"id":"orchestra","name":"Orch","type":"ORCHESTRA","musicbrainz_id":"mb1"}],"conductor":{"id":"maestro","name":"Cond","type":"CONDUCTOR"},"status":"$status","set_list":[{"id":"${id}_s1","work":{"id":"w1","title":"Symphony","composers":[{"id":"c1","name":"Bach","sort_name":"Bach, JS","open_opus_id":"oo1"}]},"order":1,"featured_performers":[{"performer":{"id":"soloist","name":"Pianist","type":"SOLO"},"role":"Piano"}],"notes":"Wow"}]}
     """.trimIndent()
 
     @Before
