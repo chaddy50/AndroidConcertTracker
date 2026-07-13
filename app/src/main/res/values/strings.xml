@@ -17,6 +17,11 @@
     <!-- Settings screen -->
     <string name="settings_server_url_label">Server URL</string>
 
+    <!-- Server URL startup prompt -->
+    <string name="server_url_prompt_title">Enter server URL</string>
+    <string name="server_url_prompt_message">Enter the address of your Concert Tracker server to load your performances.</string>
+    <string name="server_url_prompt_confirm">Save</string>
+
     <!-- Performance form field labels -->
     <string name="performance_form_date_label">Date</string>
     <string name="performance_form_time_label">Time</string>
