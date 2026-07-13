@@ -37,6 +37,8 @@ class WorksRepositoryTest {
     private lateinit var worksRepository: WorksRepository
 
     private val workJson = """{"id":"w1","title":"Test Work","composers":[]}"""
+    private val workWithComposerJson =
+        """{"id":"w1","title":"Symphony No. 5","composers":[{"id":"c1","name":"Beethoven"}]}"""
 
     @Before
     fun setUp() {
@@ -45,7 +47,7 @@ class WorksRepositoryTest {
         val client = OkHttpClient()
         db = inMemoryDatabase()
         worksRepository = WorksRepository(
-            settingsRepository, client, json, db.workDao(), db.composerDao(),
+            settingsRepository, client, json, db.workDao(), ComposersRepository(db.composerDao()),
             db, db.syncOperationsRepository(),
             javax.inject.Provider { mockk<com.chaddy50.concerttracker.data.sync.SyncScheduler>(relaxed = true) }
         )
@@ -112,6 +114,38 @@ class WorksRepositoryTest {
         assertEquals(listOf(work.id), worksRepository.searchWorksForComposer(composerId, "").first().map { it.id })
         assertEquals(0, mockWebServer.requestCount)
         assertEquals(listOf("WORK"), db.syncOperationDao().getAllOrdered().map { it.entityType })
+    }
+
+    @Test
+    fun `findOrCreateWork online writes the work graph through to Room`() = runTest {
+        mockWebServer.enqueue(MockResponse().setResponseCode(201).setBody(workWithComposerJson))
+
+        worksRepository.findOrCreateWork("1", "Symphony No. 5", null, "openopus-c", "Beethoven")
+
+        assertEquals("Beethoven", db.composerDao().getById("c1")?.name)
+        val works = worksRepository.searchWorksForComposer("c1", "").first()
+        assertEquals(listOf("w1"), works.map { it.id })
+        assertEquals(listOf("c1"), works.single().composers.map { it.id })
+    }
+
+    @Test
+    fun `findOrCreateWork online caches the work graph on a 409-with-body`() = runTest {
+        mockWebServer.enqueue(MockResponse().setResponseCode(409).setBody(workWithComposerJson))
+
+        worksRepository.findOrCreateWork("1", "Symphony No. 5", null, "openopus-c", "Beethoven")
+
+        assertEquals("Beethoven", db.composerDao().getById("c1")?.name)
+        assertEquals(listOf("w1"), worksRepository.searchWorksForComposer("c1", "").first().map { it.id })
+    }
+
+    @Test
+    fun `findOrCreateWork online writes nothing to Room on error`() = runTest {
+        mockWebServer.enqueue(MockResponse().setResponseCode(400))
+
+        worksRepository.findOrCreateWork("1", "Symphony No. 5", null, "openopus-c", "Beethoven")
+
+        assertEquals(null, db.workDao().getWorkWithComposers("w1"))
+        assertEquals(null, db.composerDao().getById("c1"))
     }
 
     @Test

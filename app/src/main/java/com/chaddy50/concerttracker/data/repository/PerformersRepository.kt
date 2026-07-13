@@ -9,6 +9,7 @@ import com.chaddy50.concerttracker.data.external.api.PerformerRequest
 import com.chaddy50.concerttracker.data.external.api.safeApiCall
 import com.chaddy50.concerttracker.data.external.dataTransferObjects.PerformerDto
 import com.chaddy50.concerttracker.data.external.dataTransferObjects.toDomain
+import com.chaddy50.concerttracker.data.external.dataTransferObjects.toRow
 import com.chaddy50.concerttracker.data.domain.Performer
 import com.chaddy50.concerttracker.data.local.ConcertTrackerDatabase
 import com.chaddy50.concerttracker.data.local.dao.PerformerDao
@@ -89,6 +90,7 @@ class PerformersRepository @Inject constructor(
                 throw e
             }
         }
+        performerDao.upsert(listOf(dto.toRow()))
         dto.toDomain()
     }
 }

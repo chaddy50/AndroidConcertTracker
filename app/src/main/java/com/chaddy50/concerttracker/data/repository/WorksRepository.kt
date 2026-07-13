@@ -8,14 +8,14 @@ import com.chaddy50.concerttracker.data.external.api.ComposerRequest
 import com.chaddy50.concerttracker.data.external.api.ConcertTrackerApiService
 import com.chaddy50.concerttracker.data.external.api.WorkRequest
 import com.chaddy50.concerttracker.data.external.api.safeApiCall
+import com.chaddy50.concerttracker.data.external.dataTransferObjects.ComposerDto
 import com.chaddy50.concerttracker.data.external.dataTransferObjects.WorkDto
 import com.chaddy50.concerttracker.data.external.dataTransferObjects.toDomain
+import com.chaddy50.concerttracker.data.external.dataTransferObjects.toRow
 import com.chaddy50.concerttracker.data.domain.Composer
 import com.chaddy50.concerttracker.data.domain.Work
 import com.chaddy50.concerttracker.data.local.ConcertTrackerDatabase
-import com.chaddy50.concerttracker.data.local.dao.ComposerDao
 import com.chaddy50.concerttracker.data.local.dao.WorkDao
-import com.chaddy50.concerttracker.data.local.entity.ComposerEntity
 import com.chaddy50.concerttracker.data.local.entity.WorkComposerEntity
 import com.chaddy50.concerttracker.data.local.entity.WorkEntity
 import com.chaddy50.concerttracker.data.local.relation.toDomain
@@ -40,7 +40,7 @@ class WorksRepository @Inject constructor(
     private val okHttpClient: OkHttpClient,
     private val json: Json,
     private val workDao: WorkDao,
-    private val composerDao: ComposerDao,
+    private val composersRepository: ComposersRepository,
     private val database: ConcertTrackerDatabase,
     private val syncOperationsRepository: SyncOperationsRepository,
     private val syncScheduler: Provider<SyncScheduler>
@@ -85,7 +85,9 @@ class WorksRepository @Inject constructor(
         val composerId = existingComposerId ?: UUID.randomUUID().toString()
         database.withTransaction {
             if (existingComposerId == null) {
-                composerDao.upsert(listOf(ComposerEntity(composerId, composerName, openOpusId = openOpusComposerId)))
+                composersRepository.upsert(
+                    listOf(ComposerDto(id = composerId, name = composerName, openOpusId = openOpusComposerId))
+                )
             }
             workDao.upsert(listOf(WorkEntity(workId, title, openOpusId = null)))
             workDao.upsertWorkComposers(listOf(WorkComposerEntity(workId, composerId)))
@@ -132,6 +134,11 @@ class WorksRepository @Inject constructor(
             } else {
                 throw e
             }
+        }
+        database.withTransaction {
+            composersRepository.upsert(dto.composers)
+            workDao.upsert(listOf(dto.toRow()))
+            workDao.upsertWorkComposers(dto.composers.map { WorkComposerEntity(dto.id, it.id) })
         }
         dto.toDomain()
     }

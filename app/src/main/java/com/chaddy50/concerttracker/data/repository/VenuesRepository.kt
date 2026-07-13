@@ -5,6 +5,7 @@ import com.chaddy50.concerttracker.data.external.api.ConcertTrackerApiService
 import com.chaddy50.concerttracker.data.external.api.VenueRequest
 import com.chaddy50.concerttracker.data.external.api.safeApiCall
 import com.chaddy50.concerttracker.data.external.dataTransferObjects.toDomain
+import com.chaddy50.concerttracker.data.external.dataTransferObjects.toRow
 import com.chaddy50.concerttracker.data.domain.Venue
 import com.chaddy50.concerttracker.data.local.dao.VenueDao
 import com.chaddy50.concerttracker.data.local.entity.toDomain
@@ -48,6 +49,8 @@ class VenuesRepository @Inject constructor(
     }
 
     suspend fun findOrCreateVenue(request: VenueRequest): ApiResult<Venue> = safeApiCall {
-        apiService().findOrCreateVenue(request).toDomain()
+        val dto = apiService().findOrCreateVenue(request)
+        venueDao.upsert(listOf(dto.toRow()))
+        dto.toDomain()
     }
 }

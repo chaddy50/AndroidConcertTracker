@@ -82,6 +82,34 @@ class PerformersRepositoryTest {
     }
 
     @Test
+    fun `findOrCreatePerformer for a catalog performer writes it through to Room on 201`() = runTest {
+        mockWebServer.enqueue(MockResponse().setResponseCode(201).setBody(performerJson))
+
+        repository.findOrCreatePerformer(catalogRequest())
+
+        assertEquals("Test Performer", db.performerDao().getById("pe1")?.name)
+        assertEquals(listOf("pe1"), repository.searchPerformers("").first().map { it.id })
+    }
+
+    @Test
+    fun `findOrCreatePerformer for a catalog performer writes it through to Room on 409-with-body`() = runTest {
+        mockWebServer.enqueue(MockResponse().setResponseCode(409).setBody(performerJson))
+
+        repository.findOrCreatePerformer(catalogRequest())
+
+        assertEquals("Test Performer", db.performerDao().getById("pe1")?.name)
+    }
+
+    @Test
+    fun `findOrCreatePerformer for a catalog performer writes nothing to Room on error`() = runTest {
+        mockWebServer.enqueue(MockResponse().setResponseCode(400))
+
+        repository.findOrCreatePerformer(catalogRequest())
+
+        assertTrue(repository.searchPerformers("").first().isEmpty())
+    }
+
+    @Test
     fun `findOrCreatePerformer for a custom performer is local-first, enqueues one op, no network`() = runTest {
         val result = repository.findOrCreatePerformer(PerformerRequest("My Soloist", PerformerType.OTHER))
 

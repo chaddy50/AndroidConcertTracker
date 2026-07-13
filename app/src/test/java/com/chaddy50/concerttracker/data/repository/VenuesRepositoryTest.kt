@@ -64,6 +64,29 @@ class VenuesRepositoryTest {
     }
 
     @Test
+    fun `findOrCreateVenue writes the created venue through to Room`() = runTest {
+        mockWebServer.enqueue(MockResponse().setResponseCode(201).setBody(venueJson))
+
+        val result = venuesRepository.findOrCreateVenue(VenueRequest("way", "123", "Hall"))
+
+        assertTrue(result is ApiResult.Success)
+        val cached = db.venueDao().getById("v1")
+        assertEquals("Test Hall", cached?.name)
+        assertEquals("123", cached?.osmId)
+        assertEquals("way", cached?.osmType)
+        assertEquals(listOf("v1"), venuesRepository.searchVenues("").first().map { it.id })
+    }
+
+    @Test
+    fun `findOrCreateVenue writes nothing to Room on failure`() = runTest {
+        mockWebServer.enqueue(MockResponse().setResponseCode(500))
+
+        venuesRepository.findOrCreateVenue(VenueRequest("way", "123", "Hall"))
+
+        assertTrue(venuesRepository.searchVenues("").first().isEmpty())
+    }
+
+    @Test
     fun `searchVenues emits cached venues mapped to domain`() = runTest {
         db.venueDao().upsert(listOf(VenueEntity("v1", "Symphony Hall", "1", "way")))
         val venues = venuesRepository.searchVenues("").first()
