@@ -38,6 +38,8 @@ fun HomeScreen(
     if (promptViewModel.showPrompt) {
         ServerUrlPromptDialog(
             serverUrl = promptViewModel.serverUrlInput,
+            isValidating = promptViewModel.isValidating,
+            validationError = promptViewModel.validationError,
             onServerUrlChanged = promptViewModel::onServerUrlInputChanged,
             onConfirm = promptViewModel::onConfirm
         )

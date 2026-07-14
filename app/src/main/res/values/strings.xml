@@ -22,6 +22,19 @@
     <string name="server_url_prompt_message">Enter the address of your Concert Tracker server to load your performances.</string>
     <string name="server_url_prompt_confirm">Save</string>
 
+    <!-- Server URL validation -->
+    <string name="server_url_validation_checking">Checking server…</string>
+    <string name="server_url_validation_invalid_format">Enter a valid URL starting with http:// or https://</string>
+    <string name="server_url_validation_unreachable">Can\'t reach that server. Check the URL and your connection.</string>
+    <string name="server_url_validation_server_error">That address didn\'t respond like a Concert Tracker server.</string>
+    <string name="server_url_validation_unknown">Couldn\'t verify that server. Try again.</string>
+
+    <!-- Settings invalid-URL exit dialog -->
+    <string name="settings_invalid_url_dialog_title">Couldn\'t reach that server</string>
+    <string name="settings_invalid_url_dialog_message">The URL you entered didn\'t respond like a Concert Tracker server. Keep editing to fix it, or discard your change.</string>
+    <string name="settings_invalid_url_keep_editing">Keep editing</string>
+    <string name="settings_invalid_url_discard">Discard</string>
+
     <!-- Performance form field labels -->
     <string name="performance_form_date_label">Date</string>
     <string name="performance_form_time_label">Time</string>

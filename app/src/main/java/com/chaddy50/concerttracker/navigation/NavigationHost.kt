@@ -1,5 +1,6 @@
 package com.chaddy50.concerttracker.navigation
 
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -17,7 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
@@ -34,6 +34,7 @@ fun NavigationHost() {
     val currentDestination = currentBackStackEntry?.destination
     val canNavigateBack = currentBackStackEntry != null && navController.previousBackStackEntry != null
     val isOnHomeScreen = currentDestination?.hasRoute<Performances>() == true
+    val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
 
     val title = when {
         currentDestination?.hasRoute<Performances>() == true -> stringResource(R.string.performances_title)
@@ -62,7 +63,15 @@ fun NavigationHost() {
                 title = { Text(title) },
                 navigationIcon = {
                     if (canNavigateBack) {
-                        IconButton(onClick = { navController.popBackStack() }) {
+                        IconButton(onClick = {
+
+                            if (currentDestination?.hasRoute<Settings>() == true) {
+                                // On Settings, route through the back dispatcher so the screen's BackHandler can gate navigation-away (validate before leaving).
+                                backDispatcher?.onBackPressed()
+                            } else {
+                                navController.popBackStack()
+                            }
+                        }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = stringResource(R.string.navigate_back_content_description)
@@ -108,7 +117,7 @@ fun NavigationHost() {
             musicBrainzSearch(navController)
             openOpusComposerSearch(navController)
             openOpusWorkSearch(navController)
-            settings()
+            settings(navController)
         }
     }
 }

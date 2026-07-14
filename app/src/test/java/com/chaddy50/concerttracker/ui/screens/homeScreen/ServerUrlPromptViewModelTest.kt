@@ -3,6 +3,8 @@ package com.chaddy50.concerttracker.ui.screens.homeScreen
 import com.chaddy50.concerttracker.data.external.api.ApiErrorType
 import com.chaddy50.concerttracker.data.external.api.ApiResult
 import com.chaddy50.concerttracker.data.repository.PerformancesRepository
+import com.chaddy50.concerttracker.data.repository.ServerUrlValidationError
+import com.chaddy50.concerttracker.data.repository.ServerValidationRepository
 import com.chaddy50.concerttracker.data.repository.SettingsRepository
 import com.chaddy50.concerttracker.ui.screens.homeScreen.serverUrlPrompt.ServerUrlPromptViewModel
 import io.mockk.Runs
@@ -33,12 +35,14 @@ class ServerUrlPromptViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private val settingsRepository: SettingsRepository = mockk()
+    private val serverValidationRepository: ServerValidationRepository = mockk()
     private val performancesRepository: PerformancesRepository = mockk()
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         coEvery { settingsRepository.saveServerUrl(any()) } just Runs
+        coEvery { serverValidationRepository.validate(any()) } returns ApiResult.Success(Unit)
         coEvery { performancesRepository.loadPerformances() } returns ApiResult.Success(Unit)
     }
 
@@ -49,6 +53,7 @@ class ServerUrlPromptViewModelTest {
 
     private fun viewModelWithServerUrl(url: String) = ServerUrlPromptViewModel(
         settingsRepository = settingsRepository.also { every { it.serverUrl } returns flowOf(url) },
+        serverValidationRepository = serverValidationRepository,
         performancesRepository = performancesRepository
     )
 
@@ -98,7 +103,7 @@ class ServerUrlPromptViewModelTest {
     fun `only the first server url emission decides the prompt`() = runTest {
         val serverUrlFlow = MutableStateFlow("")
         every { settingsRepository.serverUrl } returns serverUrlFlow
-        val viewModel = ServerUrlPromptViewModel(settingsRepository, performancesRepository)
+        val viewModel = ServerUrlPromptViewModel(settingsRepository, serverValidationRepository, performancesRepository)
         advanceUntilIdle()
         assertTrue(viewModel.showPrompt)
 
@@ -244,6 +249,83 @@ class ServerUrlPromptViewModelTest {
         advanceUntilIdle()
 
         assertFalse(viewModel.showPrompt)
+    }
+
+    @Test
+    fun `onConfirm validates, then saves, then refreshes, in that order`() = runTest {
+        val viewModel = viewModelWithServerUrl("")
+        advanceUntilIdle()
+        viewModel.onServerUrlInputChanged("https://server.example")
+
+        viewModel.onConfirm()
+        advanceUntilIdle()
+
+        coVerifyOrder {
+            serverValidationRepository.validate("https://server.example")
+            settingsRepository.saveServerUrl("https://server.example")
+            performancesRepository.loadPerformances()
+        }
+    }
+
+    // endregion
+
+    // region onConfirm — validation gating
+
+    @Test
+    fun `onConfirm with a format-invalid url sets INVALID_FORMAT and does not validate, save, or load`() = runTest {
+        val viewModel = viewModelWithServerUrl("")
+        advanceUntilIdle()
+        viewModel.onServerUrlInputChanged("not a url")
+
+        viewModel.onConfirm()
+        advanceUntilIdle()
+
+        assertEquals(ServerUrlValidationError.INVALID_FORMAT, viewModel.validationError)
+        assertTrue(viewModel.showPrompt)
+        coVerify(exactly = 0) { serverValidationRepository.validate(any()) }
+        coVerify(exactly = 0) { settingsRepository.saveServerUrl(any()) }
+        coVerify(exactly = 0) { performancesRepository.loadPerformances() }
+    }
+
+    @Test
+    fun `onConfirm on a validation error keeps the prompt open and surfaces the mapped error`() = runTest {
+        coEvery { serverValidationRepository.validate(any()) } returns ApiResult.Error(ApiErrorType.Type.NETWORK)
+        val viewModel = viewModelWithServerUrl("")
+        advanceUntilIdle()
+        viewModel.onServerUrlInputChanged("https://server.example")
+
+        viewModel.onConfirm()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.showPrompt)
+        assertEquals(ServerUrlValidationError.UNREACHABLE, viewModel.validationError)
+        assertFalse(viewModel.isValidating)
+        coVerify(exactly = 0) { settingsRepository.saveServerUrl(any()) }
+        coVerify(exactly = 0) { performancesRepository.loadPerformances() }
+    }
+
+    @Test
+    fun `onServerUrlInputChanged clears a set validationError`() = runTest {
+        coEvery { serverValidationRepository.validate(any()) } returns ApiResult.Error(ApiErrorType.Type.SERVER)
+        val viewModel = viewModelWithServerUrl("")
+        advanceUntilIdle()
+        viewModel.onServerUrlInputChanged("https://server.example")
+        viewModel.onConfirm()
+        advanceUntilIdle()
+        assertEquals(ServerUrlValidationError.SERVER_ERROR, viewModel.validationError)
+
+        viewModel.onServerUrlInputChanged("https://other.example")
+
+        assertEquals(null, viewModel.validationError)
+    }
+
+    @Test
+    fun `isValidating and validationError start clear`() = runTest {
+        val viewModel = viewModelWithServerUrl("")
+        advanceUntilIdle()
+
+        assertFalse(viewModel.isValidating)
+        assertEquals(null, viewModel.validationError)
     }
 
     // endregion
