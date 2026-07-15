@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "1f2d5db5c21051f95f9962013952f2e2",
+    "identityHash": "6cea995d72370fcb8fa33227a0b984e8",
     "entities": [
       {
         "tableName": "performances",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `date` TEXT NOT NULL, `status` TEXT NOT NULL, `venueId` TEXT NOT NULL, `conductorId` TEXT, `syncState` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `date` TEXT NOT NULL, `status` TEXT NOT NULL, `venueId` TEXT NOT NULL, `conductorId` TEXT, `notes` TEXT NOT NULL, `syncState` TEXT NOT NULL, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -37,6 +37,12 @@
             "columnName": "conductorId",
             "affinity": "TEXT",
             "notNull": false
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT",
+            "notNull": true
           },
           {
             "fieldPath": "syncState",
@@ -251,7 +257,7 @@
       },
       {
         "tableName": "set_list_entries",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `performanceId` TEXT NOT NULL, `workId` TEXT NOT NULL, `sort_order` INTEGER NOT NULL, `conductorId` TEXT, `notes` TEXT, `syncState` TEXT NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`performanceId`) REFERENCES `performances`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `performanceId` TEXT NOT NULL, `workId` TEXT NOT NULL, `sort_order` INTEGER NOT NULL, `conductorId` TEXT, `notes` TEXT NOT NULL, `syncState` TEXT NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`performanceId`) REFERENCES `performances`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "id",
@@ -287,7 +293,7 @@
             "fieldPath": "notes",
             "columnName": "notes",
             "affinity": "TEXT",
-            "notNull": false
+            "notNull": true
           },
           {
             "fieldPath": "syncState",
@@ -564,7 +570,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '1f2d5db5c21051f95f9962013952f2e2')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '6cea995d72370fcb8fa33227a0b984e8')"
     ]
   }
 }

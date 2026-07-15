@@ -48,5 +48,6 @@ fun PerformanceWithRelations.toDomain(): Performance = Performance(
         .filter { it.entry.syncState != SyncState.PENDING_DELETE.toName() }
         .map { it.toDomain() }
         .sortedBy { it.order },
+    notes = performance.notes,
     syncState = SyncState.fromName(performance.syncState)
 )

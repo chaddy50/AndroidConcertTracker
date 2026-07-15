@@ -155,4 +155,50 @@ class PerformanceDaoTest {
     fun `getPerformanceIdFor returns null for unknown entry`() = runTest {
         assertNull(setListEntryDao.getPerformanceIdFor("nope"))
     }
+
+    @Test
+    fun `updateNotes sets notes and syncState while leaving other columns untouched`() = runTest {
+        insert("a", PerformanceStatus.ATTENDED, "2024-01-01T00:00:00Z")
+
+        performanceDao.updateNotes("a", "Great show", "PENDING")
+
+        val row = performanceDao.getById("a")!!
+        assertEquals("Great show", row.notes)
+        assertEquals("PENDING", row.syncState)
+        assertEquals("2024-01-01T00:00:00Z", row.date)
+        assertEquals(PerformanceStatus.ATTENDED.name, row.status)
+        assertEquals("v1", row.venueId)
+    }
+
+    @Test
+    fun `updateNotes clears notes with an empty string`() = runTest {
+        db.venueDao().upsert(listOf(VenueEntity("v1", "Hall", "o", "way")))
+        performanceDao.upsert(
+            PerformanceEntity(id = "a", date = now, status = "ATTENDED", venueId = "v1", notes = "old")
+        )
+
+        performanceDao.updateNotes("a", "", "PENDING")
+
+        assertEquals("", performanceDao.getById("a")?.notes)
+    }
+
+    @Test
+    fun `updateNotes is a no-op for an unknown id`() = runTest {
+        insert("a", PerformanceStatus.ATTENDED, "2024-01-01T00:00:00Z")
+
+        performanceDao.updateNotes("missing", "x", "PENDING")
+
+        assertEquals("", performanceDao.getById("a")?.notes)
+        assertEquals("SYNCED", performanceDao.getById("a")?.syncState)
+    }
+
+    @Test
+    fun `observePerformance re-emits the new notes after updateNotes`() = runTest {
+        insert("a", PerformanceStatus.ATTENDED, "2024-01-01T00:00:00Z")
+
+        performanceDao.updateNotes("a", "Encore was superb", "PENDING")
+
+        assertEquals("Encore was superb", performanceDao.observePerformance("a").first()?.performance?.notes)
+    }
+
 }

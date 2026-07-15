@@ -11,5 +11,6 @@ data class Performance(
     val conductor: Performer? = null,
     val status: PerformanceStatus,
     val setList: List<SetListEntry> = emptyList(),
+    val notes: String = "",
     val syncState: SyncState = SyncState.SYNCED
 )

@@ -106,6 +106,21 @@ class SetListEntriesRepositoryTest {
     }
 
     @Test
+    fun `updateSetListEntry clears a note by sending an explicit empty string, not an omitted key`() = runTest {
+        // Seed a parent whose entry already has a note, then clear it.
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody("[${parentJson(notes = "old")}]"))
+        performancesRepository.loadPerformances()
+
+        val result = repository.updateSetListEntry("p1_s1", "")
+
+        assertTrue(result is ApiResult.Success)
+        assertEquals("", performancesRepository.observePerformance("p1").first()?.setList?.single()?.notes)
+        val op = db.syncOperationDao().getAllOrdered().single { it.entityId == "p1_s1" }
+        // An omitted key would let the server's exclude_unset update keep "old"; the empty must be explicit.
+        assertTrue(op.payloadJson!!.contains("\"notes\":\"\""))
+    }
+
+    @Test
     fun `deleteSetListEntry of a synced entry tombstones it and enqueues a DELETE op`() = runTest {
         seedParent()
         val requestsBefore = mockWebServer.requestCount

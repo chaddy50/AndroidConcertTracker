@@ -22,5 +22,5 @@ fun SetListEntryDto.toDomain() = SetListEntry(
     featuredPerformers = featuredPerformers.map {
         FeaturedPerformer(performer = it.performer.toDomain(), role = it.role)
     },
-    notes = notes
+    notes = notes ?: ""
 )

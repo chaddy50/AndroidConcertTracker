@@ -66,7 +66,19 @@ class PerformanceDtoTest {
         assertEquals(1, first.order)
         assertEquals("Brilliant", first.notes)
         val second = graph.setListEntries.single { it.id == "p1_s2" }
-        assertNull(second.notes)
+        assertEquals("", second.notes)
+    }
+
+    @Test
+    fun `toRows maps performance-level notes onto the performance row, coercing null to empty`() {
+        assertEquals("Season opener", Fixtures.performance(notes = "Season opener").toRows().performance.notes)
+        assertEquals("", Fixtures.performance(notes = null).toRows().performance.notes)
+    }
+
+    @Test
+    fun `toDomain maps performance-level notes, coercing null to empty`() {
+        assertEquals("Season opener", Fixtures.performance(notes = "Season opener").toDomain().notes)
+        assertEquals("", Fixtures.performance(notes = null).toDomain().notes)
     }
 
     @Test

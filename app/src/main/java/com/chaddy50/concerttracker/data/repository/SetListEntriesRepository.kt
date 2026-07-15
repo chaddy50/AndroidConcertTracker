@@ -55,7 +55,7 @@ class SetListEntriesRepository @Inject constructor(
         return entryResult(request.performanceId, localId)
     }
 
-    suspend fun updateSetListEntry(id: String, notes: String?): ApiResult<SetListEntry> {
+    suspend fun updateSetListEntry(id: String, notes: String): ApiResult<SetListEntry> {
         val existing = setListEntryDao.getById(id) ?: return ApiResult.Error(ApiErrorType.Type.CLIENT)
         database.withTransaction {
             setListEntryDao.updateNotes(id, notes, SyncState.PENDING.toName())
@@ -90,7 +90,7 @@ class SetListEntriesRepository @Inject constructor(
         return entryResult(existing.performanceId, id)
     }
 
-    private suspend fun snapshotRequest(id: String, notes: String?): SetListEntryUpdateRequest {
+    private suspend fun snapshotRequest(id: String, notes: String): SetListEntryUpdateRequest {
         val entry = requireNotNull(setListEntryDao.getById(id))
         val featured = setListEntryDao.getFeaturedPerformers(id)
             .map { FeaturedPerformerRequest(it.performerId, it.role) }

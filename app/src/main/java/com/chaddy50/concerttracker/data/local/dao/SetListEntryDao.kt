@@ -22,7 +22,7 @@ interface SetListEntryDao {
     suspend fun getById(id: String): SetListEntryEntity?
 
     @Query("UPDATE set_list_entries SET notes = :notes, syncState = :syncState WHERE id = :id")
-    suspend fun updateNotes(id: String, notes: String?, syncState: String)
+    suspend fun updateNotes(id: String, notes: String, syncState: String)
 
     @Query("UPDATE set_list_entries SET syncState = :syncState WHERE id = :id")
     suspend fun markSyncState(id: String, syncState: String)

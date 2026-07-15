@@ -23,7 +23,8 @@ data class PerformanceDto(
     val performers: List<PerformerDto> = emptyList(),
     val conductor: PerformerDto? = null,
     val status: PerformanceStatus,
-    val setList: List<SetListEntryDto> = emptyList()
+    val setList: List<SetListEntryDto> = emptyList(),
+    val notes: String? = null
 )
 
 /**
@@ -78,7 +79,7 @@ fun PerformanceDto.toRows(): PerformanceRows {
                 workId = entry.work.id,
                 order = entry.order,
                 conductorId = entry.conductor?.id,
-                notes = entry.notes
+                notes = entry.notes ?: ""
             )
         )
     }
@@ -89,7 +90,8 @@ fun PerformanceDto.toRows(): PerformanceRows {
             date = date,
             status = status.name,
             venueId = venue.id,
-            conductorId = conductor?.id
+            conductorId = conductor?.id,
+            notes = notes ?: ""
         ),
         venues = listOf(venue.toRow()),
         performers = performers.distinctBy { it.id }.map { it.toRow() },
@@ -159,5 +161,6 @@ fun PerformanceDto.toDomain(): Performance = Performance(
     performers = performers.map { it.toDomain() },
     conductor = conductor?.toDomain(),
     status = status,
-    setList = setList.map { it.toDomain() }.sortedBy { it.order }
+    setList = setList.map { it.toDomain() }.sortedBy { it.order },
+    notes = notes ?: ""
 )

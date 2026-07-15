@@ -38,6 +38,9 @@ interface PerformanceDao {
     @Query("UPDATE performances SET syncState = :syncState WHERE id = :id")
     suspend fun markSyncState(id: String, syncState: String)
 
+    @Query("UPDATE performances SET notes = :notes, syncState = :syncState WHERE id = :id")
+    suspend fun updateNotes(id: String, notes: String, syncState: String)
+
     @Upsert
     suspend fun upsert(performance: PerformanceEntity)
 

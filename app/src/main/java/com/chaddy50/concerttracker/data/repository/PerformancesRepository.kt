@@ -131,7 +131,32 @@ class PerformancesRepository @Inject constructor(
             )
             performanceDao.deleteHeadlinePerformers(id)
             performanceDao.upsertHeadlinePerformers(request.performerIds.map { HeadlinePerformerEntity(id, it) })
-            syncOperationsRepository.enqueue(SyncEntityType.PERFORMANCE, SyncOperationType.UPDATE, id, json.encodeToString(request.copy(id = id)))
+            syncOperationsRepository.enqueue(SyncEntityType.PERFORMANCE, SyncOperationType.UPDATE, id, json.encodeToString(request.copy(id = id, notes = existing.notes)))
+        }
+        syncScheduler.get().requestSync()
+        return ApiResult.Success(observePerformance(id).first()!!)
+    }
+
+    suspend fun updatePerformanceNotes(id: String, notes: String): ApiResult<Performance> {
+        // Snapshot the current graph so the enqueued full-PUT payload doesn't blank out the
+        // performance's date/venue/performers/status when it replays (only notes is changing).
+        val current = getPerformance(id) ?: return ApiResult.Error(ApiErrorType.Type.CLIENT)
+        val snapshot = PerformanceRequest(
+            date = current.date,
+            venueId = current.venue.id,
+            performerIds = current.performers.map { it.id },
+            status = current.status,
+            notes = notes,
+            id = id
+        )
+        database.withTransaction {
+            performanceDao.updateNotes(id, notes, SyncState.PENDING.toName())
+            syncOperationsRepository.enqueue(
+                SyncEntityType.PERFORMANCE,
+                SyncOperationType.UPDATE,
+                id,
+                json.encodeToString(snapshot)
+            )
         }
         syncScheduler.get().requestSync()
         return ApiResult.Success(observePerformance(id).first()!!)

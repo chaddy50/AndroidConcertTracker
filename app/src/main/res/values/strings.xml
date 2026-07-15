@@ -94,6 +94,10 @@
     <string name="set_list_entry_your_notes">Notes</string>
     <string name="set_list_entry_tap_to_add_notes">Tap to add notes…</string>
 
+    <!-- Performance notes card -->
+    <string name="performance_notes_title">Performance notes</string>
+    <string name="performance_notes_tap_to_add">Tap to add notes for this performance…</string>
+
     <!-- Common actions -->
     <string name="done">Done</string>
 </resources>

@@ -57,8 +57,7 @@ private val previewEntry = SetListEntry(
     work = previewWork,
     order = 1,
     conductor = previewConductor,
-    featuredPerformers = listOf(FeaturedPerformer(performer = previewSoloist, role = "Piano")),
-    notes = null
+    featuredPerformers = listOf(FeaturedPerformer(performer = previewSoloist, role = "Piano"))
 )
 
 @Preview(showBackground = true)

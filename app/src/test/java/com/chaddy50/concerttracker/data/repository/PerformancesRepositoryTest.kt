@@ -40,8 +40,8 @@ class PerformancesRepositoryTest {
     private lateinit var db: ConcertTrackerDatabase
     private lateinit var repository: PerformancesRepository
 
-    private fun performanceJson(id: String = "p1", status: String = "UPCOMING") = """
-        {"id":"$id","date":"2099-06-01T19:00:00Z","venue":{"id":"v1","name":"Hall","osm_id":"123","osm_type":"way"},"performers":[{"id":"orchestra","name":"Orch","type":"ORCHESTRA","musicbrainz_id":"mb1"}],"conductor":{"id":"maestro","name":"Cond","type":"CONDUCTOR"},"status":"$status","set_list":[{"id":"${id}_s1","work":{"id":"w1","title":"Symphony","composers":[{"id":"c1","name":"Bach","sort_name":"Bach, JS","open_opus_id":"oo1"}]},"order":1,"featured_performers":[{"performer":{"id":"soloist","name":"Pianist","type":"SOLO"},"role":"Piano"}],"notes":"Wow"}]}
+    private fun performanceJson(id: String = "p1", status: String = "UPCOMING", notes: String? = null) = """
+        {"id":"$id","date":"2099-06-01T19:00:00Z","venue":{"id":"v1","name":"Hall","osm_id":"123","osm_type":"way"},"performers":[{"id":"orchestra","name":"Orch","type":"ORCHESTRA","musicbrainz_id":"mb1"}],"conductor":{"id":"maestro","name":"Cond","type":"CONDUCTOR"},"status":"$status","set_list":[{"id":"${id}_s1","work":{"id":"w1","title":"Symphony","composers":[{"id":"c1","name":"Bach","sort_name":"Bach, JS","open_opus_id":"oo1"}]},"order":1,"featured_performers":[{"performer":{"id":"soloist","name":"Pianist","type":"SOLO"},"role":"Piano"}],"notes":"Wow"}],"notes":${if (notes == null) "null" else "\"$notes\""}}
     """.trimIndent()
 
     @Before
@@ -174,6 +174,89 @@ class PerformancesRepositoryTest {
         assertEquals(requestsBefore, mockWebServer.requestCount)
         val ops = db.syncOperationDao().getAllOrdered().filter { it.entityId == "p1" }
         assertEquals(listOf("UPDATE"), ops.map { it.operationType })
+    }
+
+    @Test
+    fun `loadPerformances round-trips performance-level notes`() = runTest {
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody("[${performanceJson(notes = "Season opener")}]"))
+        repository.loadPerformances()
+
+        assertEquals("Season opener", repository.observePerformance("p1").first()?.notes)
+    }
+
+    @Test
+    fun `loadPerformances coerces a null server note to an empty string`() = runTest {
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody("[${performanceJson(notes = null)}]"))
+        repository.loadPerformances()
+
+        assertEquals("", repository.observePerformance("p1").first()?.notes)
+    }
+
+    @Test
+    fun `updatePerformanceNotes writes notes in place as PENDING and enqueues one snapshot UPDATE op, no network`() = runTest {
+        seedSyncedPerformance()
+        val requestsBefore = mockWebServer.requestCount
+
+        val result = repository.updatePerformanceNotes("p1", "Great")
+
+        assertTrue(result is ApiResult.Success)
+        assertEquals("Great", (result as ApiResult.Success).data.notes)
+        assertEquals("Great", repository.observePerformance("p1").first()?.notes)
+        assertEquals("PENDING", db.performanceDao().getById("p1")?.syncState)
+        assertEquals(requestsBefore, mockWebServer.requestCount)
+
+        val ops = db.syncOperationDao().getAllOrdered().filter { it.entityId == "p1" }
+        assertEquals(listOf("UPDATE"), ops.map { it.operationType })
+        assertEquals("PERFORMANCE", ops.single().entityType)
+        verify { syncScheduler.requestSync() }
+
+        // The enqueued payload snapshots the rest of the performance so replaying the PUT can't wipe it.
+        val payload = json.decodeFromString<PerformanceRequest>(ops.single().payloadJson!!)
+        assertEquals("Great", payload.notes)
+        assertEquals("v1", payload.venueId)
+        assertEquals(PerformanceStatus.UPCOMING, payload.status)
+        assertEquals("2099-06-01T19:00:00Z", payload.date)
+        assertEquals(listOf("orchestra"), payload.performerIds)
+    }
+
+    @Test
+    fun `updatePerformanceNotes clears a note by sending an explicit empty string, not an omitted key`() = runTest {
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody("[${performanceJson(notes = "old")}]"))
+        repository.loadPerformances()
+
+        val result = repository.updatePerformanceNotes("p1", "")
+
+        assertTrue(result is ApiResult.Success)
+        assertEquals("", repository.observePerformance("p1").first()?.notes)
+        val op = db.syncOperationDao().getAllOrdered().single { it.entityId == "p1" }
+        // An omitted key would let the server's exclude_unset update keep "old"; the empty must be explicit.
+        assertTrue(op.payloadJson!!.contains("\"notes\":\"\""))
+        assertEquals("", json.decodeFromString<PerformanceRequest>(op.payloadJson!!).notes)
+    }
+
+    @Test
+    fun `updatePerformanceNotes returns CLIENT error and enqueues nothing for an unknown id`() = runTest {
+        val result = repository.updatePerformanceNotes("missing", "x")
+
+        assertEquals(ApiResult.Error(ApiErrorType.Type.CLIENT), result)
+        assertTrue(db.syncOperationDao().getAllOrdered().none { it.entityId == "missing" })
+        assertNull(db.performanceDao().getById("missing"))
+    }
+
+    @Test
+    fun `updatePerformance preserves existing notes in the enqueued payload`() = runTest {
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody("[${performanceJson(notes = "Kept")}]"))
+        repository.loadPerformances()
+
+        // A full edit that changes status and carries no notes must not null them out on the server.
+        repository.updatePerformance(
+            "p1",
+            PerformanceRequest("2099-06-01T19:00:00Z", "v1", emptyList(), PerformanceStatus.ATTENDED)
+        )
+
+        assertEquals("Kept", db.performanceDao().getById("p1")?.notes)
+        val op = db.syncOperationDao().getAllOrdered().last { it.entityId == "p1" }
+        assertEquals("Kept", json.decodeFromString<PerformanceRequest>(op.payloadJson!!).notes)
     }
 
     @Test

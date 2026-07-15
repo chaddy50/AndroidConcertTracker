@@ -28,6 +28,8 @@ fun PerformanceDetailScreen(viewModel: PerformanceDetailViewModel = hiltViewMode
                 performance = state.performance,
                 draftNotes = viewModel.draftNotes,
                 onDraftNoteChange = viewModel::updateDraftNote,
+                draftPerformanceNotes = viewModel.draftPerformanceNotes,
+                onPerformanceNotesChange = viewModel::updateDraftPerformanceNotes,
                 didSavingNotesHaveError = viewModel.didSavingNotesHaveError != null
             )
         }

@@ -62,6 +62,12 @@ class PerformanceDetailViewModel @Inject constructor(
     var draftNotes: Map<String, String> by mutableStateOf(emptyMap())
         private set
 
+    var draftPerformanceNotes: String by mutableStateOf("")
+        private set
+
+    /** Seed the performance-note draft exactly once, so Room re-emits don't clobber in-progress edits. */
+    private var hasSeededPerformanceNotes = false
+
     var didSavingNotesHaveError: ApiErrorType.Type? by mutableStateOf(null)
         private set
 
@@ -69,7 +75,10 @@ class PerformanceDetailViewModel @Inject constructor(
         viewModelScope.launch {
             performancesRepository.observePerformance(performanceId).collect { performance ->
                 loadedPerformance = performance
-                if (performance != null) seedDraftNotes(performance)
+                if (performance != null) {
+                    seedDraftNotes(performance)
+                    seedPerformanceNotes(performance)
+                }
                 isLoading.value = false
             }
         }
@@ -79,10 +88,20 @@ class PerformanceDetailViewModel @Inject constructor(
                 .debounce(1000L.milliseconds)
                 .collect { autoSaveNotes(it) }
         }
+        viewModelScope.launch {
+            snapshotFlow { draftPerformanceNotes }
+                .drop(1)
+                .debounce(1000L.milliseconds)
+                .collect { autoSavePerformanceNotes(it) }
+        }
     }
 
     fun updateDraftNote(entryId: String, notes: String) {
         draftNotes = draftNotes + (entryId to notes)
+    }
+
+    fun updateDraftPerformanceNotes(notes: String) {
+        draftPerformanceNotes = notes
     }
 
     /**
@@ -94,7 +113,7 @@ class PerformanceDetailViewModel @Inject constructor(
         val validIds = performance.setList.map { it.id }.toSet()
         val seeded = draftNotes.toMutableMap()
         performance.setList.forEach { entry ->
-            if (!seeded.containsKey(entry.id)) seeded[entry.id] = entry.notes ?: ""
+            if (!seeded.containsKey(entry.id)) seeded[entry.id] = entry.notes
         }
         draftNotes = seeded.filterKeys { it in validIds }
     }
@@ -109,10 +128,7 @@ class PerformanceDetailViewModel @Inject constructor(
             if (changedNotes.isEmpty()) return@launch
             var anyFailed = false
             changedNotes.forEach { (entryId, note) ->
-                val result = setListEntriesRepository.updateSetListEntry(
-                    entryId,
-                    note.ifBlank { null }
-                )
+                val result = setListEntriesRepository.updateSetListEntry(entryId, note)
                 if (result is ApiResult.Error) {
                     anyFailed = true
                     didSavingNotesHaveError = result.errorType
@@ -121,6 +137,22 @@ class PerformanceDetailViewModel @Inject constructor(
             if (!anyFailed) {
                 didSavingNotesHaveError = null
             }
+        }
+    }
+
+    private fun seedPerformanceNotes(performance: Performance) {
+        if (!hasSeededPerformanceNotes) {
+            draftPerformanceNotes = performance.notes
+            hasSeededPerformanceNotes = true
+        }
+    }
+
+    private fun autoSavePerformanceNotes(notes: String) {
+        val performance = loadedPerformance ?: return
+        if (notes == performance.notes) return
+        viewModelScope.launch {
+            val result = performancesRepository.updatePerformanceNotes(performanceId, notes)
+            didSavingNotesHaveError = if (result is ApiResult.Error) result.errorType else null
         }
     }
 }

@@ -39,7 +39,8 @@ object Fixtures {
         venue: VenueDto = venue(),
         performers: List<PerformerDto> = listOf(performer()),
         conductor: PerformerDto? = null,
-        setList: List<SetListEntryDto> = emptyList()
+        setList: List<SetListEntryDto> = emptyList(),
+        notes: String? = null
     ) = PerformanceDto(
         id = id,
         date = date,
@@ -47,7 +48,8 @@ object Fixtures {
         performers = performers,
         conductor = conductor,
         status = status,
-        setList = setList
+        setList = setList,
+        notes = notes
     )
 
     /** A richly-populated performance exercising every nested relation, for round-trip tests. */

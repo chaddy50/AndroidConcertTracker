@@ -15,6 +15,7 @@ data class PerformanceEntity(
     val status: String,
     val venueId: String,
     val conductorId: String? = null,
+    val notes: String = "",
     /** [com.chaddy50.concerttracker.data.enum.SyncState] */
     val syncState: String = "SYNCED"
 )

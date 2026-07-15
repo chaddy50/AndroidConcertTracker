@@ -44,16 +44,17 @@ class PerformanceDetailViewModelTest {
     private val performancesRepository: PerformancesRepository = mockk()
     private val setListEntriesRepository: SetListEntriesRepository = mockk()
 
-    private fun entry(id: String, notes: String?) = SetListEntry(
+    private fun entry(id: String, notes: String = "") = SetListEntry(
         id = id, work = Work(id = "w-$id", title = "Work $id"), order = 1, notes = notes
     )
 
-    private fun performance(setList: List<SetListEntry>) = Performance(
+    private fun performance(setList: List<SetListEntry> = emptyList(), notes: String = "") = Performance(
         id = "p1",
         date = "2024-06-01T19:00:00Z",
         venue = Venue("v1", "Hall", "123", "way"),
         status = PerformanceStatus.ATTENDED,
-        setList = setList
+        setList = setList,
+        notes = notes
     )
 
     private fun viewModel() = PerformanceDetailViewModel(
@@ -93,7 +94,7 @@ class PerformanceDetailViewModelTest {
 
     @Test
     fun `uiState re-emits when a set-list entry is added to the cached performance`() = runTest {
-        val flow = MutableStateFlow(performance(listOf(entry("e1", null))))
+        val flow = MutableStateFlow(performance(listOf(entry("e1"))))
         every { performancesRepository.observePerformance("p1") } returns flow
         val viewModel = viewModel()
         backgroundScope.launch { viewModel.uiState.collect {} }
@@ -102,7 +103,7 @@ class PerformanceDetailViewModelTest {
         assertTrue(initial is PerformanceDetailUiState.Content)
         assertEquals(1, (initial as PerformanceDetailUiState.Content).performance.setList.size)
 
-        flow.value = performance(listOf(entry("e1", null), entry("e2", null)))
+        flow.value = performance(listOf(entry("e1"), entry("e2")))
         advanceUntilIdle()
 
         val updated = viewModel.uiState.value
@@ -144,5 +145,99 @@ class PerformanceDetailViewModelTest {
             setListEntriesRepository.updateSetListEntry("e1", "x")
         }
         coVerify(exactly = 0) { setListEntriesRepository.updateSetListEntry("e2", any()) }
+    }
+
+    @Test
+    fun `seeds the performance-note draft from the cached performance`() = runTest {
+        every { performancesRepository.observePerformance("p1") } returns flowOf(performance(notes = "seed"))
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        assertEquals("seed", viewModel.draftPerformanceNotes)
+    }
+
+    @Test
+    fun `seeds an empty performance-note draft when notes are empty`() = runTest {
+        every { performancesRepository.observePerformance("p1") } returns flowOf(performance(notes = ""))
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        assertEquals("", viewModel.draftPerformanceNotes)
+    }
+
+    @Test
+    fun `a debounced performance-note edit saves once, then clears`() = runTest {
+        every { performancesRepository.observePerformance("p1") } returns flowOf(performance(notes = "seed"))
+        coEvery { performancesRepository.updatePerformanceNotes(any(), any()) } returns
+            ApiResult.Success(performance(notes = "typed"))
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.updateDraftPerformanceNotes("typed")
+        Snapshot.sendApplyNotifications()
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { performancesRepository.updatePerformanceNotes("p1", "typed") }
+        assertNull(viewModel.didSavingNotesHaveError)
+
+        // Clearing saves an explicit empty string.
+        viewModel.updateDraftPerformanceNotes("")
+        Snapshot.sendApplyNotifications()
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { performancesRepository.updatePerformanceNotes("p1", "") }
+    }
+
+    @Test
+    fun `does not save the performance note when the draft equals the cached value`() = runTest {
+        every { performancesRepository.observePerformance("p1") } returns flowOf(performance(notes = "seed"))
+        coEvery { performancesRepository.updatePerformanceNotes(any(), any()) } returns
+            ApiResult.Success(performance(notes = "seed"))
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // Re-set the draft to the same value the seed already holds.
+        viewModel.updateDraftPerformanceNotes("seed")
+        Snapshot.sendApplyNotifications()
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) { performancesRepository.updatePerformanceNotes(any(), any()) }
+    }
+
+    @Test
+    fun `does not clobber an in-progress performance-note edit when Room re-emits`() = runTest {
+        val flow = MutableStateFlow(performance(notes = "server"))
+        every { performancesRepository.observePerformance("p1") } returns flow
+        coEvery { performancesRepository.updatePerformanceNotes(any(), any()) } returns
+            ApiResult.Success(performance(notes = "server"))
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.updateDraftPerformanceNotes("in progress")
+        flow.value = performance(notes = "server") // a write-through re-emission of the old value
+        advanceUntilIdle()
+
+        assertEquals("in progress", viewModel.draftPerformanceNotes)
+    }
+
+    @Test
+    fun `performance-note save failure sets and later clears didSavingNotesHaveError`() = runTest {
+        every { performancesRepository.observePerformance("p1") } returns flowOf(performance(notes = "seed"))
+        coEvery { performancesRepository.updatePerformanceNotes("p1", "boom") } returns
+            ApiResult.Error(ApiErrorType.Type.SERVER)
+        coEvery { performancesRepository.updatePerformanceNotes("p1", "ok") } returns
+            ApiResult.Success(performance(notes = "ok"))
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.updateDraftPerformanceNotes("boom")
+        Snapshot.sendApplyNotifications()
+        advanceUntilIdle()
+        assertEquals(ApiErrorType.Type.SERVER, viewModel.didSavingNotesHaveError)
+
+        viewModel.updateDraftPerformanceNotes("ok")
+        Snapshot.sendApplyNotifications()
+        advanceUntilIdle()
+        assertNull(viewModel.didSavingNotesHaveError)
     }
 }

@@ -6,5 +6,5 @@ data class SetListEntry(
     val order: Int,
     val conductor: Performer? = null,
     val featuredPerformers: List<FeaturedPerformer> = emptyList(),
-    val notes: String? = null
+    val notes: String = ""
 )

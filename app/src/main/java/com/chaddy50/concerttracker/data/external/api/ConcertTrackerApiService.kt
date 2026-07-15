@@ -97,6 +97,7 @@ data class PerformanceRequest(
     val performerIds: List<String>,
     val status: PerformanceStatus,
     val setList: List<SetListEntryInlineRequest> = emptyList(),
+    val notes: String? = null,
     val id: String? = null
 )
 

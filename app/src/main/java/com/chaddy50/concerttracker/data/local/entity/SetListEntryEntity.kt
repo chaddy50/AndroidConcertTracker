@@ -24,7 +24,7 @@ data class SetListEntryEntity(
     val workId: String,
     @ColumnInfo(name = "sort_order") val order: Int,
     val conductorId: String? = null,
-    val notes: String? = null,
+    val notes: String = "",
     /** [com.chaddy50.concerttracker.data.enum.SyncState] name; defaults to SYNCED (server-sourced rows). */
     val syncState: String = "SYNCED"
 )

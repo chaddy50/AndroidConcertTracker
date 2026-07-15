@@ -27,6 +27,7 @@ import com.chaddy50.concerttracker.data.domain.Work
 import com.chaddy50.concerttracker.data.enum.PerformanceStatus
 import com.chaddy50.concerttracker.data.enum.PerformerType
 import com.chaddy50.concerttracker.ui.composables.PerformerRow
+import com.chaddy50.concerttracker.ui.screens.performanceDetailScreen.composables.PerformanceNotesCard
 import com.chaddy50.concerttracker.ui.screens.performanceDetailScreen.composables.SetListEntryCard
 import com.chaddy50.concerttracker.ui.theme.ConcertTrackerTheme
 import com.chaddy50.concerttracker.util.formatDate
@@ -39,6 +40,8 @@ fun PerformanceDetail(
     performance: Performance,
     draftNotes: Map<String, String>,
     onDraftNoteChange: (entryId: String, notes: String) -> Unit,
+    draftPerformanceNotes: String,
+    onPerformanceNotesChange: (notes: String) -> Unit,
     didSavingNotesHaveError: Boolean = false
 ) {
     LazyColumn(modifier = Modifier.padding(16.dp)) {
@@ -97,6 +100,13 @@ fun PerformanceDetail(
             }
         }
 
+        item {
+            PerformanceNotesCard(
+                draftNotes = draftPerformanceNotes,
+                onNotesChange = onPerformanceNotesChange
+            )
+        }
+
         if (performance.setList.isNotEmpty()) {
             item {
                 HorizontalDivider(modifier = Modifier.padding(top= 8.dp, bottom=8.dp))
@@ -145,7 +155,8 @@ private val previewPerformance = Performance(
             featuredPerformers = listOf(FeaturedPerformer(performer = previewSoloist, role = "Piano")),
             notes = "Exceptional performance of the second piano concerto."
         )
-    )
+    ),
+    notes = "Went with Dad for his birthday."
 )
 
 @Preview(showBackground = true)
@@ -155,7 +166,9 @@ fun PerformanceDetailPreview() {
         PerformanceDetail(
             performance = previewPerformance,
             draftNotes = mapOf("entry-1" to "Exceptional performance of the second piano concerto."),
-            onDraftNoteChange = { _, _ -> }
+            onDraftNoteChange = { _, _ -> },
+            draftPerformanceNotes = "Went with Dad for his birthday.",
+            onPerformanceNotesChange = {}
         )
     }
 }
