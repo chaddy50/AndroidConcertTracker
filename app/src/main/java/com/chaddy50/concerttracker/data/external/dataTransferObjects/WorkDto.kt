@@ -9,14 +9,16 @@ data class WorkDto(
     val id: String,
     val title: String,
     val composers: List<ComposerDto> = emptyList(),
-    val openOpusId: String? = null
+    val openOpusId: String? = null,
+    val type: String? = null
 )
 
-internal fun WorkDto.toRow() = WorkEntity(id = id, title = title, openOpusId = openOpusId)
+internal fun WorkDto.toRow() = WorkEntity(id = id, title = title, openOpusId = openOpusId, genre = type)
 
 fun WorkDto.toDomain() = Work(
     id = id,
     title = title,
     composers = composers.map { it.toDomain() },
-    openOpusId = openOpusId
+    openOpusId = openOpusId,
+    genre = type
 )

@@ -9,11 +9,12 @@ data class ComposerDto(
     val id: String,
     val name: String,
     val sortName: String? = null,
-    val openOpusId: String? = null
+    val openOpusId: String? = null,
+    val epoch: String? = null
 )
 
 internal fun ComposerDto.toRow() =
-    ComposerEntity(id = id, name = name, sortName = sortName, openOpusId = openOpusId)
+    ComposerEntity(id = id, name = name, sortName = sortName, openOpusId = openOpusId, epoch = epoch)
 
 fun ComposerDto.toDomain() =
-    Composer(id = id, name = name, sortName = sortName, openOpusId = openOpusId)
+    Composer(id = id, name = name, sortName = sortName, openOpusId = openOpusId, epoch = epoch)

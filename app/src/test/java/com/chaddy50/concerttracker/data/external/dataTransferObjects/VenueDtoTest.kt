@@ -16,10 +16,10 @@ class VenueDtoTest {
         name = "Blue Note",
         osmId = null,
         osmType = null,
-        address = "131 W 3rd St",
+        formattedAddress = "131 W 3rd St",
         city = "New York",
         country = "USA",
-        website = "https://bluenote.com"
+        websiteUri = "https://bluenote.com"
     )
 
     private val osmDto = VenueDto(
@@ -27,10 +27,10 @@ class VenueDtoTest {
         name = "Symphony Hall",
         osmId = "123",
         osmType = "way",
-        address = "Symphony Hall, Boston",
+        formattedAddress = "Symphony Hall, Boston",
         city = "Boston",
         country = "USA",
-        website = null
+        websiteUri = null
     )
 
     @Test
@@ -70,7 +70,7 @@ class VenueDtoTest {
     @Test
     fun `deserializes snake_case json with null osm into a dto`() {
         val body =
-            """{"id":"v1","name":"Blue Note","address":"131 W 3rd St","city":"New York","country":"USA","website":"https://bluenote.com"}"""
+            """{"id":"v1","name":"Blue Note","formatted_address":"131 W 3rd St","city":"New York","country":"USA","website_uri":"https://bluenote.com"}"""
         val dto = json.decodeFromString<VenueDto>(body)
         assertNull(dto.osmId)
         assertNull(dto.osmType)
@@ -82,9 +82,9 @@ class VenueDtoTest {
         val body = """{"id":"v1","name":"Hall","osm_id":"5","osm_type":"node"}"""
         val dto = json.decodeFromString<VenueDto>(body)
         assertEquals("5", dto.osmId)
-        assertNull(dto.address)
+        assertNull(dto.formattedAddress)
         assertNull(dto.city)
         assertNull(dto.country)
-        assertNull(dto.website)
+        assertNull(dto.websiteUri)
     }
 }

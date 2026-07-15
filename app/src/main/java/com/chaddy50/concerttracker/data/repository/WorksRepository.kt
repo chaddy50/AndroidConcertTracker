@@ -73,12 +73,16 @@ class WorksRepository @Inject constructor(
         title: String,
         existingComposerId: String?,
         openOpusComposerId: String?,
-        composerName: String
+        composerName: String,
+        workGenre: String? = null,
+        composerEpoch: String? = null
     ): ApiResult<Work> {
         val isCustomWork = openOpusWorkId == null
         val composerNeedsNetwork = existingComposerId == null && openOpusComposerId != null
         if (!isCustomWork || composerNeedsNetwork) {
-            return findOrCreateWorkOnline(openOpusWorkId, title, existingComposerId, openOpusComposerId, composerName)
+            return findOrCreateWorkOnline(
+                openOpusWorkId, title, workGenre, existingComposerId, openOpusComposerId, composerName, composerEpoch
+            )
         }
 
         val workId = UUID.randomUUID().toString()
@@ -86,43 +90,52 @@ class WorksRepository @Inject constructor(
         database.withTransaction {
             if (existingComposerId == null) {
                 composersRepository.upsert(
-                    listOf(ComposerDto(id = composerId, name = composerName, openOpusId = openOpusComposerId))
+                    listOf(ComposerDto(id = composerId, name = composerName, openOpusId = openOpusComposerId, epoch = composerEpoch))
                 )
             }
-            workDao.upsert(listOf(WorkEntity(workId, title, openOpusId = null)))
+            workDao.upsert(listOf(WorkEntity(workId, title, openOpusId = null, genre = workGenre)))
             workDao.upsertWorkComposers(listOf(WorkComposerEntity(workId, composerId)))
             val payload = WorkRequest(
                 id = workId,
                 title = title,
                 openOpusId = null,
-                composers = listOf(ComposerRequest(id = composerId, name = composerName, openOpusId = openOpusComposerId))
+                type = workGenre,
+                composers = listOf(
+                    ComposerRequest(id = composerId, name = composerName, openOpusId = openOpusComposerId, epoch = composerEpoch)
+                )
             )
             syncOperationsRepository.enqueue(
                 SyncEntityType.WORK, SyncOperationType.CREATE, workId, json.encodeToString(payload)
             )
         }
         syncScheduler.get().requestSync()
-        val composer = Composer(id = composerId, name = composerName, openOpusId = openOpusComposerId)
-        return ApiResult.Success(Work(id = workId, title = title, composers = listOf(composer), openOpusId = null))
+        val composer = Composer(id = composerId, name = composerName, openOpusId = openOpusComposerId, epoch = composerEpoch)
+        return ApiResult.Success(
+            Work(id = workId, title = title, composers = listOf(composer), openOpusId = null, genre = workGenre)
+        )
     }
 
     private suspend fun findOrCreateWorkOnline(
         openOpusWorkId: String?,
         title: String,
+        workGenre: String?,
         existingComposerId: String?,
         openOpusComposerId: String?,
-        composerName: String
+        composerName: String,
+        composerEpoch: String?
     ): ApiResult<Work> = safeApiCall {
         val dto = try {
             apiService().findOrCreateWork(
                 WorkRequest(
                     title = title,
                     openOpusId = openOpusWorkId,
+                    type = workGenre,
                     composers = listOf(
                         ComposerRequest(
                             name = composerName,
                             openOpusId = openOpusComposerId,
-                            id = existingComposerId
+                            id = existingComposerId,
+                            epoch = composerEpoch
                         )
                     )
                 )

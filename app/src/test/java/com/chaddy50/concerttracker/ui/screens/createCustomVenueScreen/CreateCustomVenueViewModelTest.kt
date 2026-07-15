@@ -199,10 +199,10 @@ class CreateCustomVenueViewModelTest {
         assertNull(request.captured.osmType)
         assertNull(request.captured.osmId)
         assertEquals("Blue Note", request.captured.name)
-        assertEquals("131 W 3rd St", request.captured.address)
+        assertEquals("131 W 3rd St", request.captured.formattedAddress)
         assertEquals("New York", request.captured.city)
         assertEquals("USA", request.captured.country)
-        assertEquals("https://bluenote.com", request.captured.website)
+        assertEquals("https://bluenote.com", request.captured.websiteUri)
     }
 
     @Test
@@ -219,8 +219,8 @@ class CreateCustomVenueViewModelTest {
         advanceUntilIdle()
 
         assertEquals("Blue Note", request.captured.name)
-        assertEquals("131 W 3rd St", request.captured.address)
-        assertNull(request.captured.website)
+        assertEquals("131 W 3rd St", request.captured.formattedAddress)
+        assertNull(request.captured.websiteUri)
     }
 
     @Test

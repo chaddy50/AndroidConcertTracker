@@ -92,7 +92,7 @@ class NominatimSearchViewModel @Inject constructor(
                     osmType = result.osmType,
                     osmId = result.osmId.toString(),
                     name = result.name,
-                    address = result.displayName,
+                    formattedAddress = result.displayName,
                     city = result.address?.let { it.city ?: it.town ?: it.village },
                     country = result.address?.country
                 )

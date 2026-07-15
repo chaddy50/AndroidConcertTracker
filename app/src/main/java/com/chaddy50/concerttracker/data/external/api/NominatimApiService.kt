@@ -40,8 +40,8 @@ data class VenueRequest(
     val osmType: String? = null,
     val osmId: String? = null,
     val name: String,
-    val address: String? = null,
+    val formattedAddress: String? = null,
     val city: String? = null,
     val country: String? = null,
-    val website: String? = null
+    val websiteUri: String? = null
 )

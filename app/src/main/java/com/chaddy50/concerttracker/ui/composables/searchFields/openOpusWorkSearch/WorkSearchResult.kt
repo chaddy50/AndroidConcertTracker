@@ -10,7 +10,7 @@ sealed interface WorkSearchResult {
 
     data class Local(val work: Work) : WorkSearchResult {
         override val title: String get() = work.title
-        override val genre: String? get() = null
+        override val genre: String? get() = work.genre
     }
 
     data class FromApi(val work: OpenOpusWork) : WorkSearchResult {

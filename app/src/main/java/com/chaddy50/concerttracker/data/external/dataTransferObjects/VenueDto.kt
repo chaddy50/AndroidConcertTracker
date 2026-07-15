@@ -10,10 +10,10 @@ data class VenueDto(
     val name: String,
     val osmId: String? = null,
     val osmType: String? = null,
-    val address: String? = null,
+    val formattedAddress: String? = null,
     val city: String? = null,
     val country: String? = null,
-    val website: String? = null
+    val websiteUri: String? = null
 )
 
 internal fun VenueDto.toRow() = VenueEntity(
@@ -21,10 +21,10 @@ internal fun VenueDto.toRow() = VenueEntity(
     name = name,
     osmId = osmId,
     osmType = osmType,
-    address = address,
+    address = formattedAddress,
     city = city,
     country = country,
-    website = website
+    website = websiteUri
 )
 
 fun VenueDto.toDomain() = Venue(
@@ -32,8 +32,8 @@ fun VenueDto.toDomain() = Venue(
     name = name,
     osmId = osmId,
     osmType = osmType,
-    address = address,
+    address = formattedAddress,
     city = city,
     country = country,
-    website = website
+    website = websiteUri
 )

@@ -73,10 +73,10 @@ class CreateCustomVenueViewModel @Inject constructor(
                 osmType = null,
                 osmId = null,
                 name = name.trim(),
-                address = address.trim(),
+                formattedAddress = address.trim(),
                 city = city.trim(),
                 country = country.trim(),
-                website = website.trim().ifBlank { null }
+                websiteUri = website.trim().ifBlank { null }
             )
             when (val result = venuesRepository.findOrCreateVenue(request)) {
                 is ApiResult.Success -> onVenueCreated(result.data)

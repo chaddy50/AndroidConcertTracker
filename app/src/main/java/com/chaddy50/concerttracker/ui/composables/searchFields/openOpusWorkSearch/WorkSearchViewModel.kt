@@ -38,6 +38,7 @@ class WorkSearchViewModel @Inject constructor(
     private val route = savedStateHandle.toRoute<OpenOpusWorkSearch>()
     private val composerEntityId: String? = route.composerEntityId
     private val composerOpenOpusId: String? = route.composerOpenOpusId
+    private val composerEpoch: String? = route.composerEpoch
     val composerName: String = route.composerName
 
     var searchQuery: String by mutableStateOf("")
@@ -117,21 +118,23 @@ class WorkSearchViewModel @Inject constructor(
     fun selectWork(work: Work, onSelected: (Work) -> Unit) = onSelected(work)
 
     fun selectWorkFromApi(work: OpenOpusWork, onSelected: (Work) -> Unit) =
-        findOrCreateWork(openOpusWorkId = work.id, title = work.title, onSelected = onSelected)
+        findOrCreateWork(openOpusWorkId = work.id, title = work.title, workGenre = work.genre, onSelected = onSelected)
 
     fun createCustomWork(title: String, onSelected: (Work) -> Unit) =
-        findOrCreateWork(openOpusWorkId = null, title = title, onSelected = onSelected)
+        findOrCreateWork(openOpusWorkId = null, title = title, workGenre = null, onSelected = onSelected)
 
-    private fun findOrCreateWork(openOpusWorkId: String?, title: String, onSelected: (Work) -> Unit) {
+    private fun findOrCreateWork(openOpusWorkId: String?, title: String, workGenre: String?, onSelected: (Work) -> Unit) {
         viewModelScope.launch {
             isSaving = true
             saveError = null
             val result = worksRepository.findOrCreateWork(
                 openOpusWorkId = openOpusWorkId,
                 title = title,
+                workGenre = workGenre,
                 existingComposerId = composerEntityId,
                 openOpusComposerId = composerOpenOpusId,
-                composerName = composerName
+                composerName = composerName,
+                composerEpoch = composerEpoch
             )
             when (result) {
                 is ApiResult.Success -> onSelected(result.data)

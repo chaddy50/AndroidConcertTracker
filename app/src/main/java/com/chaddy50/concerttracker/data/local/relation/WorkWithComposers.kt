@@ -27,5 +27,6 @@ fun WorkWithComposers.toDomain() = Work(
     id = work.id,
     title = work.title,
     composers = composers.map { it.toDomain() },
-    openOpusId = work.openOpusId
+    openOpusId = work.openOpusId,
+    genre = work.genre
 )

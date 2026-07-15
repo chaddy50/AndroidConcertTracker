@@ -16,10 +16,10 @@ class NominatimApiServiceTest {
     @Test
     fun `serializes a custom VenueRequest with null osm and new fields`() {
         val body = json.encodeToString(
-            VenueRequest(name = "Blue Note", address = "131 W 3rd St", city = "New York", country = "USA")
+            VenueRequest(name = "Blue Note", formattedAddress = "131 W 3rd St", city = "New York", country = "USA")
         )
         assertTrue(body.contains("\"name\":\"Blue Note\""))
-        assertTrue(body.contains("\"address\":\"131 W 3rd St\""))
+        assertTrue(body.contains("\"formatted_address\":\"131 W 3rd St\""))
         assertTrue(body.contains("\"city\":\"New York\""))
         // Null-defaulted osm fields are omitted (encodeDefaults is off, mirroring production Json).
         assertFalse(body.contains("osm_type"))
@@ -29,7 +29,7 @@ class NominatimApiServiceTest {
     @Test
     fun `serializes an OSM VenueRequest with address details`() {
         val body = json.encodeToString(
-            VenueRequest(osmType = "way", osmId = "9", name = "Hall", address = "Hall, City", city = "City")
+            VenueRequest(osmType = "way", osmId = "9", name = "Hall", formattedAddress = "Hall, City", city = "City")
         )
         assertTrue(body.contains("\"osm_type\":\"way\""))
         assertTrue(body.contains("\"osm_id\":\"9\""))

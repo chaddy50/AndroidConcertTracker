@@ -145,7 +145,7 @@ class WorkSearchViewModelTest {
     fun `selecting a catalog work materializes it via findOrCreateWork`() = runTest {
         coEvery { openOpusRepository.getWorksByComposer("oo1") } returns ApiResult.Success(listOf(catalogWork))
         val materialized = Work(id = "w-our", title = "Symphony No. 5")
-        coEvery { worksRepository.findOrCreateWork("w1", "Symphony No. 5", null, "oo1", "Beethoven") } returns
+        coEvery { worksRepository.findOrCreateWork("w1", "Symphony No. 5", null, "oo1", "Beethoven", "Orchestral") } returns
             ApiResult.Success(materialized)
         val viewModel = viewModel()
         advanceUntilIdle()

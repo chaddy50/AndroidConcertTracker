@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "6cea995d72370fcb8fa33227a0b984e8",
+    "identityHash": "18a909a41ca9607b1ac307558918510f",
     "entities": [
       {
         "tableName": "performances",
@@ -187,7 +187,7 @@
       },
       {
         "tableName": "works",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `title` TEXT NOT NULL, `openOpusId` TEXT, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `title` TEXT NOT NULL, `openOpusId` TEXT, `genre` TEXT, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -206,6 +206,12 @@
             "columnName": "openOpusId",
             "affinity": "TEXT",
             "notNull": false
+          },
+          {
+            "fieldPath": "genre",
+            "columnName": "genre",
+            "affinity": "TEXT",
+            "notNull": false
           }
         ],
         "primaryKey": {
@@ -219,7 +225,7 @@
       },
       {
         "tableName": "composers",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `sortName` TEXT, `openOpusId` TEXT, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `sortName` TEXT, `openOpusId` TEXT, `epoch` TEXT, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -242,6 +248,12 @@
           {
             "fieldPath": "openOpusId",
             "columnName": "openOpusId",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "epoch",
+            "columnName": "epoch",
             "affinity": "TEXT",
             "notNull": false
           }
@@ -570,7 +582,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '6cea995d72370fcb8fa33227a0b984e8')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '18a909a41ca9607b1ac307558918510f')"
     ]
   }
 }

@@ -4,5 +4,6 @@ data class Composer(
     val id: String,
     val name: String,
     val sortName: String? = null,
-    val openOpusId: String? = null
+    val openOpusId: String? = null,
+    val epoch: String? = null
 )

@@ -7,5 +7,6 @@ import androidx.room.PrimaryKey
 data class WorkEntity(
     @PrimaryKey val id: String,
     val title: String,
-    val openOpusId: String? = null
+    val openOpusId: String? = null,
+    val genre: String? = null
 )

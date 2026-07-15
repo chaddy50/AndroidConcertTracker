@@ -4,5 +4,6 @@ data class Work(
     val id: String,
     val title: String,
     val composers: List<Composer> = emptyList(),
-    val openOpusId: String? = null
+    val openOpusId: String? = null,
+    val genre: String? = null
 )

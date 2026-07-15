@@ -150,7 +150,7 @@ class NominatimSearchViewModelTest {
         assertEquals("way", request.captured.osmType)
         assertEquals("42", request.captured.osmId)
         assertEquals("Hall", request.captured.name)
-        assertEquals("Hall, City", request.captured.address)
+        assertEquals("Hall, City", request.captured.formattedAddress)
         assertEquals("Boston", request.captured.city)
         assertEquals("USA", request.captured.country)
     }
@@ -178,7 +178,7 @@ class NominatimSearchViewModelTest {
         advanceUntilIdle()
 
         assertEquals("42", request.captured.osmId)
-        assertEquals("Hall, City", request.captured.address)
+        assertEquals("Hall, City", request.captured.formattedAddress)
         assertNull(request.captured.city)
         assertNull(request.captured.country)
     }

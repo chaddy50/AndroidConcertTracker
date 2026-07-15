@@ -38,9 +38,9 @@ class VenuesRepositoryTest {
 
     private val venueJson = """{"id":"v1","name":"Test Hall","osm_id":"123","osm_type":"way"}"""
     private val customVenueJson =
-        """{"id":"v2","name":"Blue Note","address":"131 W 3rd St","city":"New York","country":"USA","website":"https://bluenote.com"}"""
+        """{"id":"v2","name":"Blue Note","formatted_address":"131 W 3rd St","city":"New York","country":"USA","website_uri":"https://bluenote.com"}"""
     private val osmWithAddressJson =
-        """{"id":"v3","name":"Hall","osm_id":"9","osm_type":"way","address":"Hall, City","city":"City","country":"Country"}"""
+        """{"id":"v3","name":"Hall","osm_id":"9","osm_type":"way","formatted_address":"Hall, City","city":"City","country":"Country"}"""
 
     @Before
     fun setUp() {
@@ -123,10 +123,10 @@ class VenuesRepositoryTest {
         val result = venuesRepository.findOrCreateVenue(
             VenueRequest(
                 name = "Blue Note",
-                address = "131 W 3rd St",
+                formattedAddress = "131 W 3rd St",
                 city = "New York",
                 country = "USA",
-                website = "https://bluenote.com"
+                websiteUri = "https://bluenote.com"
             )
         )
 
@@ -158,7 +158,7 @@ class VenuesRepositoryTest {
         mockWebServer.enqueue(MockResponse().setResponseCode(201).setBody(osmWithAddressJson))
 
         venuesRepository.findOrCreateVenue(
-            VenueRequest(osmType = "way", osmId = "9", name = "Hall", address = "Hall, City", city = "City", country = "Country")
+            VenueRequest(osmType = "way", osmId = "9", name = "Hall", formattedAddress = "Hall, City", city = "City", country = "Country")
         )
 
         val cached = db.venueDao().getById("v3")!!

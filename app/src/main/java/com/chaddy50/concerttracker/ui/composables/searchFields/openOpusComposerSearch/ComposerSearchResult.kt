@@ -11,7 +11,7 @@ sealed interface ComposerSearchResult {
 
     data class Local(val composer: Composer) : ComposerSearchResult {
         override val name: String get() = composer.name
-        override val epoch: String? get() = null
+        override val epoch: String? get() = composer.epoch
         override val composerId: String get() = composer.id
         override val openOpusId: String? get() = composer.openOpusId
     }

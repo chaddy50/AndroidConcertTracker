@@ -13,7 +13,8 @@ import kotlinx.serialization.Serializable
 data class OpenOpusWorkSearch(
     val composerEntityId: String?,
     val composerOpenOpusId: String?,
-    val composerName: String
+    val composerName: String,
+    val composerEpoch: String? = null
 )
 
 data class PendingWorkResult(

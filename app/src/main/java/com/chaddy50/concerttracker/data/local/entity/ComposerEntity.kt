@@ -9,8 +9,9 @@ data class ComposerEntity(
     @PrimaryKey val id: String,
     val name: String,
     val sortName: String? = null,
-    val openOpusId: String? = null
+    val openOpusId: String? = null,
+    val epoch: String? = null
 )
 
 internal fun ComposerEntity.toDomain() =
-    Composer(id = id, name = name, sortName = sortName, openOpusId = openOpusId)
+    Composer(id = id, name = name, sortName = sortName, openOpusId = openOpusId, epoch = epoch)

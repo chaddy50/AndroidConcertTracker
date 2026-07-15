@@ -32,7 +32,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
 fun ComposerSearchScreen(
-    onComposerChosen: (composerEntityId: String?, composerOpenOpusId: String?, composerName: String) -> Unit,
+    onComposerChosen: (composerEntityId: String?, composerOpenOpusId: String?, composerName: String, composerEpoch: String?) -> Unit,
     viewModel: ComposerSearchViewModel = hiltViewModel()
 ) {
     var showCustomDialog by remember { mutableStateOf(false) }
@@ -80,7 +80,7 @@ fun ComposerSearchScreen(
                             supportingContent = row.epoch?.let { { Text(it) } },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { onComposerChosen(row.composerId, row.openOpusId, row.name) }
+                                .clickable { onComposerChosen(row.composerId, row.openOpusId, row.name, row.epoch) }
                         )
                         HorizontalDivider()
                     }
@@ -107,7 +107,7 @@ fun ComposerSearchScreen(
             onDismiss = { showCustomDialog = false },
             onConfirm = { composerName ->
                 showCustomDialog = false
-                onComposerChosen(null, null, composerName)
+                onComposerChosen(null, null, composerName, null)
             }
         )
     }

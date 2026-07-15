@@ -78,7 +78,8 @@ data class WorkRequest(
     val title: String,
     val openOpusId: String? = null,
     val composers: List<ComposerRequest>,
-    val id: String? = null
+    val id: String? = null,
+    val type: String? = null
 )
 
 @Serializable
@@ -87,7 +88,8 @@ data class ComposerRequest(
     val openOpusId: String? = null,
     // When set, attach the work to this already-materialized composer (our id) instead of
     // find-or-creating one by natural key. Used for cached composers with no Open Opus id.
-    val id: String? = null
+    val id: String? = null,
+    val epoch: String? = null
 )
 
 @Serializable

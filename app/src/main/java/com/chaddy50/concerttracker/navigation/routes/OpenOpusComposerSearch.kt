@@ -30,12 +30,13 @@ fun NavGraphBuilder.openOpusComposerSearch(navController: NavController) {
         }
 
         ComposerSearchScreen(
-            onComposerChosen = { composerEntityId, composerOpenOpusId, composerName ->
+            onComposerChosen = { composerEntityId, composerOpenOpusId, composerName, composerEpoch ->
                 navController.navigate(
                     OpenOpusWorkSearch(
                         composerEntityId = composerEntityId,
                         composerOpenOpusId = composerOpenOpusId,
-                        composerName = composerName
+                        composerName = composerName,
+                        composerEpoch = composerEpoch
                     )
                 )
             }
