@@ -8,10 +8,32 @@ import kotlinx.serialization.Serializable
 data class VenueDto(
     val id: String,
     val name: String,
-    val osmId: String,
-    val osmType: String
+    val osmId: String? = null,
+    val osmType: String? = null,
+    val address: String? = null,
+    val city: String? = null,
+    val country: String? = null,
+    val website: String? = null
 )
 
-internal fun VenueDto.toRow() = VenueEntity(id = id, name = name, osmId = osmId, osmType = osmType)
+internal fun VenueDto.toRow() = VenueEntity(
+    id = id,
+    name = name,
+    osmId = osmId,
+    osmType = osmType,
+    address = address,
+    city = city,
+    country = country,
+    website = website
+)
 
-fun VenueDto.toDomain() = Venue(id = id, name = name, osmId = osmId, osmType = osmType)
+fun VenueDto.toDomain() = Venue(
+    id = id,
+    name = name,
+    osmId = osmId,
+    osmType = osmType,
+    address = address,
+    city = city,
+    country = country,
+    website = website
+)

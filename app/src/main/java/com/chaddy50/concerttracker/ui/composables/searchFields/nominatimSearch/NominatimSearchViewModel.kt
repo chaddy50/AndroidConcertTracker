@@ -88,7 +88,14 @@ class NominatimSearchViewModel @Inject constructor(
             isSaving = true
             saveError = null
             when (val apiResult = venuesRepository.findOrCreateVenue(
-                VenueRequest(osmType = result.osmType, osmId = result.osmId.toString(), name = result.name)
+                VenueRequest(
+                    osmType = result.osmType,
+                    osmId = result.osmId.toString(),
+                    name = result.name,
+                    address = result.displayName,
+                    city = result.address?.let { it.city ?: it.town ?: it.village },
+                    country = result.address?.country
+                )
             )) {
                 is ApiResult.Success -> onSaved(apiResult.data)
                 is ApiResult.Error -> saveError = apiResult.errorType.toUserMessage()

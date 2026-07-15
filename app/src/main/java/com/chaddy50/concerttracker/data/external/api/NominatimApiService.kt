@@ -13,7 +13,8 @@ interface NominatimApiService {
     suspend fun search(
         @Query("q") query: String,
         @Query("format") format: String = "jsonv2",
-        @Query("limit") limit: Int = 10
+        @Query("limit") limit: Int = 10,
+        @Query("addressdetails") addressDetails: Int = 1
     ): List<NominatimResult>
 }
 
@@ -22,12 +23,25 @@ data class NominatimResult(
     val osmId: Long,
     val osmType: String,
     val displayName: String,
-    val name: String = ""
+    val name: String = "",
+    val address: NominatimAddress? = null
+)
+
+@Serializable
+data class NominatimAddress(
+    val city: String? = null,
+    val town: String? = null,
+    val village: String? = null,
+    val country: String? = null
 )
 
 @Serializable
 data class VenueRequest(
-    val osmType: String,
-    val osmId: String,
-    val name: String
+    val osmType: String? = null,
+    val osmId: String? = null,
+    val name: String,
+    val address: String? = null,
+    val city: String? = null,
+    val country: String? = null,
+    val website: String? = null
 )

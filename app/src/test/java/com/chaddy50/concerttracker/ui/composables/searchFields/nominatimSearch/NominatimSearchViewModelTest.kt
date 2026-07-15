@@ -2,7 +2,9 @@ package com.chaddy50.concerttracker.ui.composables.searchFields.nominatimSearch
 
 import com.chaddy50.concerttracker.data.external.api.ApiErrorType
 import com.chaddy50.concerttracker.data.external.api.ApiResult
+import com.chaddy50.concerttracker.data.external.api.NominatimAddress
 import com.chaddy50.concerttracker.data.external.api.NominatimResult
+import com.chaddy50.concerttracker.data.external.api.VenueRequest
 import com.chaddy50.concerttracker.data.domain.Venue
 import com.chaddy50.concerttracker.data.repository.NominatimRepository
 import com.chaddy50.concerttracker.data.repository.VenuesRepository
@@ -10,6 +12,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -132,5 +135,51 @@ class NominatimSearchViewModelTest {
         assertNull(saved)
         assertFalse(viewModel.isSaving)
         assertNotNull(viewModel.saveError)
+    }
+
+    @Test
+    fun `selectVenueFromApi builds a request with displayName address and city and country`() = runTest {
+        val request = slot<VenueRequest>()
+        coEvery { venuesRepository.findOrCreateVenue(capture(request)) } returns ApiResult.Success(venue)
+        val detailed = result.copy(address = NominatimAddress(city = "Boston", country = "USA"))
+        val viewModel = viewModel()
+
+        viewModel.selectVenueFromApi(detailed) {}
+        advanceUntilIdle()
+
+        assertEquals("way", request.captured.osmType)
+        assertEquals("42", request.captured.osmId)
+        assertEquals("Hall", request.captured.name)
+        assertEquals("Hall, City", request.captured.address)
+        assertEquals("Boston", request.captured.city)
+        assertEquals("USA", request.captured.country)
+    }
+
+    @Test
+    fun `selectVenueFromApi falls back city to town then village`() = runTest {
+        val request = slot<VenueRequest>()
+        coEvery { venuesRepository.findOrCreateVenue(capture(request)) } returns ApiResult.Success(venue)
+        val townOnly = result.copy(address = NominatimAddress(town = "Lenox"))
+        val viewModel = viewModel()
+
+        viewModel.selectVenueFromApi(townOnly) {}
+        advanceUntilIdle()
+
+        assertEquals("Lenox", request.captured.city)
+    }
+
+    @Test
+    fun `selectVenueFromApi sends null city and country when no address details`() = runTest {
+        val request = slot<VenueRequest>()
+        coEvery { venuesRepository.findOrCreateVenue(capture(request)) } returns ApiResult.Success(venue)
+        val viewModel = viewModel()
+
+        viewModel.selectVenueFromApi(result) {}
+        advanceUntilIdle()
+
+        assertEquals("42", request.captured.osmId)
+        assertEquals("Hall, City", request.captured.address)
+        assertNull(request.captured.city)
+        assertNull(request.captured.country)
     }
 }

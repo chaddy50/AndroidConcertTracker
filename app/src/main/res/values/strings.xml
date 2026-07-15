@@ -53,12 +53,24 @@
     <!-- Navigation -->
     <string name="navigate_back_content_description">Navigate back</string>
 
+    <!-- Shared form fields -->
+    <string name="required_field">Required</string>
+
 
     <!-- Create venue screen -->
     <string name="create_venue_title">Choose Venue</string>
     <string name="create_venue_search_label">Search</string>
     <string name="create_venue_search_button">Search</string>
     <string name="create_venue_empty_results">No venues found</string>
+    <string name="create_custom_venue_button">Create custom venue</string>
+
+    <!-- Custom venue screen -->
+    <string name="create_custom_venue_title">Custom Venue</string>
+    <string name="custom_venue_name_label">Name</string>
+    <string name="custom_venue_address_label">Address</string>
+    <string name="custom_venue_city_label">City</string>
+    <string name="custom_venue_country_label">Country</string>
+    <string name="custom_venue_website_label">Website</string>
 
     <!-- MusicBrainz search screen -->
     <string name="musicbrainz_search_title">Search</string>

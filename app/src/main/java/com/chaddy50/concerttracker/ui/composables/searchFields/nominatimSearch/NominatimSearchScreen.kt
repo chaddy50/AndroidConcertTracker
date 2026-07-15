@@ -33,6 +33,7 @@ import com.chaddy50.concerttracker.data.domain.Venue
 @Composable
 fun NominatimSearchScreen(
     onVenueCreated: (Venue) -> Unit,
+    onCreateCustomClick: () -> Unit,
     viewModel: NominatimSearchViewModel = hiltViewModel()
 ) {
 
@@ -56,45 +57,59 @@ fun NominatimSearchScreen(
                 .focusRequester(focusRequester)
         )
 
-        when (val state = viewModel.uiState) {
-            is CreateVenueUiState.Idle -> {}
-            is CreateVenueUiState.Loading -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+        val state = viewModel.uiState
+        Box(modifier = Modifier.weight(1f)) {
+            when (state) {
+                is CreateVenueUiState.Idle -> {}
+                is CreateVenueUiState.Loading -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
                 }
-            }
-            is CreateVenueUiState.Empty -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(stringResource(R.string.create_venue_empty_results))
+                is CreateVenueUiState.Empty -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(stringResource(R.string.create_venue_empty_results))
+                    }
                 }
-            }
-            is CreateVenueUiState.Error -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = state.errorType.toUserMessage(), color = MaterialTheme.colorScheme.error)
+                is CreateVenueUiState.Error -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(text = state.errorType.toUserMessage(), color = MaterialTheme.colorScheme.error)
+                    }
                 }
-            }
-            is CreateVenueUiState.Results -> {
-                LazyColumn {
-                    items(state.rows) { row ->
-                        ListItem(
-                            headlineContent = { Text(row.name) },
-                            supportingContent = row.address?.let { { Text(it) } },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable(enabled = !viewModel.isSaving) {
-                                    when (row) {
-                                        is VenueSearchResult.Local ->
-                                            viewModel.selectVenue(row.venue, onVenueCreated)
-                                        is VenueSearchResult.FromApi ->
-                                            viewModel.selectVenueFromApi(row.result, onVenueCreated)
+                is CreateVenueUiState.Results -> {
+                    LazyColumn {
+                        items(state.rows) { row ->
+                            ListItem(
+                                headlineContent = { Text(row.name) },
+                                supportingContent = row.address?.let { { Text(it) } },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable(enabled = !viewModel.isSaving) {
+                                        when (row) {
+                                            is VenueSearchResult.Local ->
+                                                viewModel.selectVenue(row.venue, onVenueCreated)
+                                            is VenueSearchResult.FromApi ->
+                                                viewModel.selectVenueFromApi(row.result, onVenueCreated)
+                                        }
                                     }
-                                }
-                        )
-                        HorizontalDivider()
+                            )
+                            HorizontalDivider()
+                        }
                     }
                 }
             }
         }
+
+        if (state !is CreateVenueUiState.Loading) {
+            HorizontalDivider()
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.create_custom_venue_button)) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(enabled = !viewModel.isSaving) { onCreateCustomClick() }
+            )
+        }
+
         if (viewModel.saveError != null) {
             Text(
                 text = viewModel.saveError!!,

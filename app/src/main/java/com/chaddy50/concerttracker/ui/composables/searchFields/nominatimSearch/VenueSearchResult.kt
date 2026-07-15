@@ -10,7 +10,7 @@ sealed interface VenueSearchResult {
 
     data class Local(val venue: Venue) : VenueSearchResult {
         override val name: String get() = venue.name
-        override val address: String? get() = null
+        override val address: String? get() = venue.address
     }
 
     data class FromApi(val result: NominatimResult) : VenueSearchResult {

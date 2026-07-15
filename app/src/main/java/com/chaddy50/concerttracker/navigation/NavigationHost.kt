@@ -46,6 +46,7 @@ fun NavigationHost() {
             else stringResource(R.string.performance_form_edit_title)
         }
         currentDestination?.hasRoute<VenueSearch>() == true -> stringResource(R.string.create_venue_title)
+        currentDestination?.hasRoute<CreateCustomVenue>() == true -> stringResource(R.string.create_custom_venue_title)
         currentDestination?.hasRoute<MusicBrainzSearch>() == true -> stringResource(R.string.musicbrainz_search_title)
         currentDestination?.hasRoute<OpenOpusComposerSearch>() == true -> stringResource(R.string.open_opus_composer_search_title)
         currentDestination?.hasRoute<OpenOpusWorkSearch>() == true -> stringResource(R.string.open_opus_work_list_title)
@@ -114,6 +115,7 @@ fun NavigationHost() {
             performanceEdit(navController)
             setListEntryEdit(navController)
             venueSearch(navController)
+            createCustomVenue(navController)
             musicBrainzSearch(navController)
             openOpusComposerSearch(navController)
             openOpusWorkSearch(navController)
