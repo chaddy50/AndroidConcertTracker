@@ -127,10 +127,6 @@ class EditPerformanceViewModel @Inject constructor(
         draftDate = millis
     }
 
-    fun updateDraftStatus(status: PerformanceStatus) {
-        draftStatus = status
-    }
-
     fun updateDraftVenue(venueId: String, venueName: String) {
         draftVenueId = venueId
         draftVenueName = venueName

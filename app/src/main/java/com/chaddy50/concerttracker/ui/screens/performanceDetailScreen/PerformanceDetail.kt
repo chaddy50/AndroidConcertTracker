@@ -1,6 +1,5 @@
 package com.chaddy50.concerttracker.ui.screens.performanceDetailScreen
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -46,21 +45,10 @@ fun PerformanceDetail(
 ) {
     LazyColumn(modifier = Modifier.padding(16.dp)) {
         item {
-            Row(modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = formatDate(performance.date, LocalContext.current),
-                    style = MaterialTheme.typography.headlineMedium
-                )
-                Text(
-                    text = performance.status.name,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.secondary,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-            }
+            Text(
+                text = formatDate(performance.date, LocalContext.current),
+                style = MaterialTheme.typography.headlineMedium
+            )
             Row(modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {

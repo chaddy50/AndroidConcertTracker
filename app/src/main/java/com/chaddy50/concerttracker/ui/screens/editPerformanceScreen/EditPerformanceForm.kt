@@ -15,11 +15,9 @@ import androidx.compose.ui.unit.dp
 import com.chaddy50.concerttracker.R
 import com.chaddy50.concerttracker.data.domain.Performer
 import com.chaddy50.concerttracker.data.domain.SetListEntry
-import com.chaddy50.concerttracker.data.enum.PerformanceStatus
 import com.chaddy50.concerttracker.data.enum.PerformerType
 import com.chaddy50.concerttracker.ui.composables.DatePickerField
 import com.chaddy50.concerttracker.ui.composables.TimePickerField
-import com.chaddy50.concerttracker.ui.screens.editPerformanceScreen.fields.StatusField
 import com.chaddy50.concerttracker.ui.screens.editPerformanceScreen.fields.performerList.PerformerEditList
 import com.chaddy50.concerttracker.ui.screens.editPerformanceScreen.fields.setList.SetListEditList
 import com.chaddy50.concerttracker.ui.screens.editPerformanceScreen.fields.VenueField
@@ -30,11 +28,9 @@ fun PerformanceEditForm(
     draftDate: Long?,
     draftVenueName: String?,
     draftPerformers: List<Performer>,
-    draftStatus: PerformanceStatus?,
     currentSetList: List<SetListEntry>,
     pendingSetListEntries: List<PendingSetListEntry>,
     onDraftDateChange: (Long) -> Unit,
-    onDraftStatusChange: (PerformanceStatus) -> Unit,
     onVenueClick: () -> Unit,
     onAddPerformerClick: () -> Unit,
     onRemovePerformer: (String) -> Unit,
@@ -76,12 +72,6 @@ fun PerformanceEditForm(
                 .padding(top = 8.dp)
         )
 
-        StatusField(
-            selectedStatus = draftStatus ?: PerformanceStatus.UPCOMING,
-            onStatusSelected = onDraftStatusChange,
-            modifier = Modifier.padding(top = 8.dp)
-        )
-
         PerformerEditList(
             performers = draftPerformers,
             onAddPerformerClick = onAddPerformerClick,
@@ -115,11 +105,9 @@ fun PerformanceEditFormPreview() {
                 Performer(id = "id2", name = "Yo-Yo Ma", type = PerformerType.SOLO, specialty = "Cellist"),
                 Performer(id = "id3", name = "Andris Nelsons", type = PerformerType.CONDUCTOR, specialty = null)
             ),
-            draftStatus = PerformanceStatus.ATTENDED,
             currentSetList = emptyList(),
             pendingSetListEntries = emptyList(),
             onDraftDateChange = {},
-            onDraftStatusChange = {},
             onVenueClick = {},
             onAddPerformerClick = {},
             onRemovePerformer = {},
@@ -140,11 +128,9 @@ fun PerformanceEditFormEmptyPreview() {
             draftDate = null,
             draftVenueName = null,
             draftPerformers = emptyList(),
-            draftStatus = PerformanceStatus.UPCOMING,
             currentSetList = emptyList(),
             pendingSetListEntries = emptyList(),
             onDraftDateChange = {},
-            onDraftStatusChange = {},
             onVenueClick = {},
             onAddPerformerClick = {},
             onRemovePerformer = {},
