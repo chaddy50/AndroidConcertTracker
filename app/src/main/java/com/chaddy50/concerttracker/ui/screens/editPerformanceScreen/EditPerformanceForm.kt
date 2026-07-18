@@ -41,6 +41,8 @@ fun PerformanceEditForm(
     onAddSetListEntryClick: () -> Unit,
     onEditSetListEntryClick: (entryId: String) -> Unit,
     onEditPendingSetListEntryClick: (localId: String) -> Unit,
+    onMoveSetListEntry: (from: Int, to: Int) -> Unit,
+    onMovePendingSetListEntry: (from: Int, to: Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -93,6 +95,8 @@ fun PerformanceEditForm(
             onAddSetListEntryClick = onAddSetListEntryClick,
             onEditSetListEntryClick = onEditSetListEntryClick,
             onEditPendingSetListEntryClick = onEditPendingSetListEntryClick,
+            onMoveSetListEntry = onMoveSetListEntry,
+            onMovePendingSetListEntry = onMovePendingSetListEntry,
             modifier = Modifier.padding(top = 16.dp)
         )
     }
@@ -121,7 +125,9 @@ fun PerformanceEditFormPreview() {
             onRemovePerformer = {},
             onAddSetListEntryClick = {},
             onEditSetListEntryClick = {},
-            onEditPendingSetListEntryClick = {}
+            onEditPendingSetListEntryClick = {},
+            onMoveSetListEntry = { _, _ -> },
+            onMovePendingSetListEntry = { _, _ -> }
         )
     }
 }
@@ -144,7 +150,9 @@ fun PerformanceEditFormEmptyPreview() {
             onRemovePerformer = {},
             onAddSetListEntryClick = {},
             onEditSetListEntryClick = {},
-            onEditPendingSetListEntryClick = {}
+            onEditPendingSetListEntryClick = {},
+            onMoveSetListEntry = { _, _ -> },
+            onMovePendingSetListEntry = { _, _ -> }
         )
     }
 }

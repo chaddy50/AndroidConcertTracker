@@ -49,9 +49,9 @@ fun NavGraphBuilder.performanceEdit(navController: NavController) {
                     PendingFeaturedPerformer(p.performerId, p.name, p.role)
                 }
                 if (result.pendingLocalId != null) {
-                    viewModel.replacePendingSetListEntry(result.pendingLocalId, result.workId, result.workTitle, result.composerName, result.order, performers)
+                    viewModel.replacePendingSetListEntry(result.pendingLocalId, result.workId, result.workTitle, result.composerName, performers)
                 } else {
-                    viewModel.addPendingSetListEntry(result.workId, result.workTitle, result.composerName, result.order, performers)
+                    viewModel.addPendingSetListEntry(result.workId, result.workTitle, result.composerName, performers)
                 }
                 handle.clearPendingSetListEntry()
             }

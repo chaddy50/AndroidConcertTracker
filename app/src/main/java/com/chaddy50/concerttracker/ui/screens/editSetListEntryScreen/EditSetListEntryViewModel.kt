@@ -52,8 +52,7 @@ class EditSetListEntryViewModel @Inject constructor(
     var draftComposerName: String by mutableStateOf("")
         private set
 
-    var draftOrder: String by mutableStateOf("1")
-        private set
+    private var entryOrder: Int = 1
 
     val draftFeaturedPerformers = mutableStateListOf<DraftFeaturedPerformer>()
 
@@ -80,7 +79,7 @@ class EditSetListEntryViewModel @Inject constructor(
                 draftWorkId = route.pendingWorkId
                 draftWorkTitle = route.pendingWorkTitle
                 draftComposerName = route.pendingComposerName ?: ""
-                draftOrder = route.pendingOrder?.toString() ?: "1"
+                entryOrder = route.pendingOrder ?: 1
                 route.pendingFeaturedPerformersJson?.let { json ->
                     val performers: List<DraftFeaturedPerformer> =
                         kotlinx.serialization.json.Json.decodeFromString(json)
@@ -95,7 +94,7 @@ class EditSetListEntryViewModel @Inject constructor(
                     return@launch
                 }
                 if (isCreateMode) {
-                    draftOrder = (performance.setList.size + 1).toString()
+                    entryOrder = performance.setList.size + 1
                 } else {
                     val entry = performance.setList.find { it.id == entryId }
                     if (entry == null) {
@@ -105,7 +104,7 @@ class EditSetListEntryViewModel @Inject constructor(
                     draftWorkId = entry.work.id
                     draftWorkTitle = entry.work.title
                     draftComposerName = entry.work.composers.joinToString(", ") { it.sortName ?: it.name }
-                    draftOrder = entry.order.toString()
+                    entryOrder = entry.order
                     draftFeaturedPerformers.clear()
                     draftFeaturedPerformers.addAll(
                         entry.featuredPerformers.map { featuredPerformer ->
@@ -152,20 +151,13 @@ class EditSetListEntryViewModel @Inject constructor(
         draftFeaturedPerformers.removeAll { it.performerId == performerId }
     }
 
-    fun updateDraftOrder(value: String) {
-        val parsed = value.toIntOrNull()
-        if (value.isEmpty() || (parsed != null && parsed > 0)) {
-            draftOrder = value
-        }
-    }
-
     fun saveSetListEntry(
         onSaved: () -> Unit,
         onSavedAsPending: ((PendingEntryResult) -> Unit)? = null
     ) {
         val workId = draftWorkId ?: return
         val workTitle = draftWorkTitle ?: return
-        val order = draftOrder.toIntOrNull()?.takeIf { it > 0 } ?: return
+        val order = entryOrder
 
         if (performanceId == null) {
             onSavedAsPending?.invoke(

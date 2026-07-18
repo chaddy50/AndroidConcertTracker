@@ -18,6 +18,7 @@ import com.chaddy50.concerttracker.data.domain.SetListEntry
 import com.chaddy50.concerttracker.data.enum.PerformanceStatus
 import com.chaddy50.concerttracker.data.enum.PerformerType
 import com.chaddy50.concerttracker.data.repository.PerformancesRepository
+import com.chaddy50.concerttracker.data.repository.SetListEntriesRepository
 import com.chaddy50.concerttracker.navigation.routes.PerformanceEdit
 import com.chaddy50.concerttracker.util.epochMillisToIso
 import com.chaddy50.concerttracker.util.isoToEpochMillis
@@ -28,7 +29,8 @@ import javax.inject.Inject
 @HiltViewModel
 class EditPerformanceViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-    private val performancesRepository: PerformancesRepository
+    private val performancesRepository: PerformancesRepository,
+    private val setListEntriesRepository: SetListEntriesRepository
 ) : ViewModel() {
 
     private val performanceId: String? = savedStateHandle.toRoute<PerformanceEdit>().id
@@ -56,9 +58,11 @@ class EditPerformanceViewModel @Inject constructor(
 
     val draftPerformers = mutableStateListOf<Performer>()
 
-    val currentSetList = mutableStateListOf<SetListEntry>()
+    var currentSetList: List<SetListEntry> by mutableStateOf(emptyList())
+        private set
 
-    val pendingSetListEntries = mutableStateListOf<PendingSetListEntry>()
+    var pendingSetListEntries: List<PendingSetListEntry> by mutableStateOf(emptyList())
+        private set
 
     var isSaving: Boolean by mutableStateOf(false)
         private set
@@ -71,6 +75,8 @@ class EditPerformanceViewModel @Inject constructor(
 
     private var loadedPerformance: Performance? = null
 
+    private var wasSetListReordered = false
+
     init {
         if (!isCreateMode) {
             loadPerformance()
@@ -79,16 +85,21 @@ class EditPerformanceViewModel @Inject constructor(
     }
 
     /**
-     * The set list isn't part of the editable draft — its entries are persisted immediately by the
-     * entry sub-screen — so it's observed straight from Room and stays in sync after any add/edit/
-     * delete write-through without a manual refresh.
+     * Set list entries are added/edited/deleted immediately by the sub-screen (write-through), so the
+     * list is observed straight from Room. Reordering, however, is a draft committed on save, so each
+     * emission is reconciled against the current draft order: entries that still exist keep their
+     * drafted position, deletions drop out, and newly added entries are appended (in server order).
      */
     private fun observeSetList() {
         val id = performanceId ?: return
         viewModelScope.launch {
             performancesRepository.observePerformance(id).collect { performance ->
-                currentSetList.clear()
-                currentSetList.addAll(performance?.setList?.sortedBy { it.order } ?: emptyList())
+                val roomEntries = performance?.setList ?: emptyList()
+                val draftOrder = currentSetList.map { it.id }
+                val byId = roomEntries.associateBy { it.id }
+                val known = draftOrder.toSet()
+                currentSetList = draftOrder.mapNotNull { byId[it] } +
+                    roomEntries.filter { it.id !in known }.sortedBy { it.order }
             }
         }
     }
@@ -136,30 +147,50 @@ class EditPerformanceViewModel @Inject constructor(
         draftPerformers.removeAll { it.id == performerId }
     }
 
+    /** A newly added pending entry goes to the end; its order is its 1-based position. */
     fun addPendingSetListEntry(
         workId: String,
         workTitle: String,
         composerName: String,
-        order: Int,
         featuredPerformers: List<PendingFeaturedPerformer>
     ) {
-        pendingSetListEntries.add(
-            PendingSetListEntry(java.util.UUID.randomUUID().toString(), workId, workTitle, composerName, order, featuredPerformers)
+        pendingSetListEntries = pendingSetListEntries + PendingSetListEntry(
+            java.util.UUID.randomUUID().toString(),
+            workId,
+            workTitle,
+            composerName,
+            pendingSetListEntries.size + 1,
+            featuredPerformers
         )
     }
 
+    /** Editing a pending entry in place keeps its existing position/order. */
     fun replacePendingSetListEntry(
         localId: String,
         workId: String,
         workTitle: String,
         composerName: String,
-        order: Int,
         featuredPerformers: List<PendingFeaturedPerformer>
     ) {
         val index = pendingSetListEntries.indexOfFirst { it.localId == localId }
         if (index != -1) {
-            pendingSetListEntries[index] = PendingSetListEntry(localId, workId, workTitle, composerName, order, featuredPerformers)
+            val existingOrder = pendingSetListEntries[index].order
+            pendingSetListEntries = pendingSetListEntries.toMutableList().apply {
+                this[index] = PendingSetListEntry(localId, workId, workTitle, composerName, existingOrder, featuredPerformers)
+            }
         }
+    }
+
+    fun moveSetListEntry(from: Int, to: Int) {
+        if (from == to || from !in currentSetList.indices || to !in currentSetList.indices) return
+        currentSetList = currentSetList.toMutableList().apply { add(to, removeAt(from)) }
+        wasSetListReordered = true
+    }
+
+    fun movePendingSetListEntry(from: Int, to: Int) {
+        if (from == to || from !in pendingSetListEntries.indices || to !in pendingSetListEntries.indices) return
+        val reordered = pendingSetListEntries.toMutableList().apply { add(to, removeAt(from)) }
+        pendingSetListEntries = reordered.mapIndexed { index, entry -> entry.copy(order = index + 1) }
     }
 
     fun savePerformance(onSaved: () -> Unit) {
@@ -195,7 +226,12 @@ class EditPerformanceViewModel @Inject constructor(
                 )
             }
             when (result) {
-                is ApiResult.Success -> onSaved()
+                is ApiResult.Success -> {
+                    if (!isCreateMode && wasSetListReordered) {
+                        setListEntriesRepository.reorderSetListEntries(currentSetList.map { it.id })
+                    }
+                    onSaved()
+                }
                 is ApiResult.Error -> saveError = result.errorType.toUserMessage()
             }
             isSaving = false

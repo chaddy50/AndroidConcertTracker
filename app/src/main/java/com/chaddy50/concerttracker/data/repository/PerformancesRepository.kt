@@ -201,9 +201,10 @@ class PerformancesRepository @Inject constructor(
         performanceDao.upsert(rows.performance)
         performanceDao.deleteHeadlinePerformers(rows.performance.id)
         performanceDao.upsertHeadlinePerformers(rows.headlinePerformers)
-        setListEntryDao.deleteForPerformance(rows.performance.id)
-        setListEntryDao.upsert(rows.setListEntries)
-        setListEntryDao.upsertFeaturedPerformers(rows.featuredPerformers)
+        val pendingEntryIds = setListEntryDao.getUnsyncedIdsForPerformance(rows.performance.id).toSet()
+        setListEntryDao.deleteSyncedForPerformance(rows.performance.id)
+        setListEntryDao.upsert(rows.setListEntries.filter { it.id !in pendingEntryIds })
+        setListEntryDao.upsertFeaturedPerformers(rows.featuredPerformers.filter { it.setListEntryId !in pendingEntryIds })
     }
 
     // endregion

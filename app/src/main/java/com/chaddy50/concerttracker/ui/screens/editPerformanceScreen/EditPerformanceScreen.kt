@@ -57,6 +57,8 @@ fun EditPerformanceScreen(
                     onAddSetListEntryClick = onNavigateToAddSetListEntry,
                     onEditSetListEntryClick = onNavigateToEditSetListEntry,
                     onEditPendingSetListEntryClick = onNavigateToEditPendingSetListEntry,
+                    onMoveSetListEntry = viewModel::moveSetListEntry,
+                    onMovePendingSetListEntry = viewModel::movePendingSetListEntry,
                     modifier = Modifier.weight(1f)
                 )
                 Row(

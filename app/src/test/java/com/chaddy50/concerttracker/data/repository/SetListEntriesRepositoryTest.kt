@@ -146,4 +146,90 @@ class SetListEntriesRepositoryTest {
         assertNull(db.setListEntryDao().getById(created.id))
         assertTrue(db.syncOperationDao().getAllOrdered().none { it.entityId == created.id })
     }
+
+    private val twoEntryParentJson = """
+        {"id":"p1","date":"2024-06-01T19:00:00Z","venue":{"id":"v1","name":"Hall","osm_id":"1","osm_type":"way"},"performers":[],"status":"UPCOMING","set_list":[{"id":"p1_s1","work":{"id":"w1","title":"First","composers":[]},"order":1,"featured_performers":[],"notes":null},{"id":"p1_s2","work":{"id":"w2","title":"Second","composers":[]},"order":2,"featured_performers":[],"notes":null}]}
+    """.trimIndent()
+
+    private suspend fun seedTwoEntryParent() {
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody("[$twoEntryParentJson]"))
+        performancesRepository.loadPerformances()
+    }
+
+    @Test
+    fun `reorderSetListEntries writes new orders, marks moved entries PENDING, re-emits sorted, no network`() = runTest {
+        seedTwoEntryParent()
+        val requestsBefore = mockWebServer.requestCount
+
+        // Move the second entry to the front: p1_s2, p1_s1.
+        val result = repository.reorderSetListEntries(listOf("p1_s2", "p1_s1"))
+
+        assertTrue(result is ApiResult.Success)
+        assertEquals(1, db.setListEntryDao().getById("p1_s2")?.order)
+        assertEquals(2, db.setListEntryDao().getById("p1_s1")?.order)
+        assertEquals("PENDING", db.setListEntryDao().getById("p1_s1")?.syncState)
+        assertEquals("PENDING", db.setListEntryDao().getById("p1_s2")?.syncState)
+        assertEquals(
+            listOf("p1_s2", "p1_s1"),
+            performancesRepository.observePerformance("p1").first()?.setList?.map { it.id }
+        )
+        assertEquals(requestsBefore, mockWebServer.requestCount)
+        // Both entries changed order, so each gets exactly one UPDATE op.
+        assertEquals(
+            listOf("UPDATE", "UPDATE"),
+            db.syncOperationDao().getAllOrdered()
+                .filter { it.entityId == "p1_s1" || it.entityId == "p1_s2" }
+                .map { it.operationType }
+        )
+        // The enqueued payload carries the new order.
+        val movedOp = db.syncOperationDao().getAllOrdered().last { it.entityId == "p1_s2" }
+        assertTrue(movedOp.payloadJson!!.contains("\"order\":1"))
+    }
+
+    @Test
+    fun `reorderSetListEntries with unchanged order is a no-op with no ops and no sync request`() = runTest {
+        seedTwoEntryParent()
+
+        val result = repository.reorderSetListEntries(listOf("p1_s1", "p1_s2"))
+
+        assertTrue(result is ApiResult.Success)
+        assertEquals("SYNCED", db.setListEntryDao().getById("p1_s1")?.syncState)
+        assertEquals("SYNCED", db.setListEntryDao().getById("p1_s2")?.syncState)
+        assertTrue(
+            db.syncOperationDao().getAllOrdered()
+                .none { it.entityId == "p1_s1" || it.entityId == "p1_s2" }
+        )
+    }
+
+    @Test
+    fun `a concurrent server pull preserves a locally reordered pending set list`() = runTest {
+        seedTwoEntryParent()
+        // Reorder locally (p1_s2 to the front); both entries become PENDING with the new order.
+        repository.reorderSetListEntries(listOf("p1_s2", "p1_s1"))
+        // A server pull lands before the reorder is pushed and returns the OLD order.
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody("[$twoEntryParentJson]"))
+        performancesRepository.loadPerformances()
+
+        // The unsynced local reorder must survive the pull rather than snap back to server order.
+        assertEquals(1, db.setListEntryDao().getById("p1_s2")?.order)
+        assertEquals(2, db.setListEntryDao().getById("p1_s1")?.order)
+        assertEquals("PENDING", db.setListEntryDao().getById("p1_s1")?.syncState)
+        assertEquals(
+            listOf("p1_s2", "p1_s1"),
+            performancesRepository.observePerformance("p1").first()?.setList?.map { it.id }
+        )
+    }
+
+    @Test
+    fun `reorderSetListEntries skips ids with no matching row and still succeeds`() = runTest {
+        seedTwoEntryParent()
+
+        val result = repository.reorderSetListEntries(listOf("missing", "p1_s1", "p1_s2"))
+
+        assertTrue(result is ApiResult.Success)
+        // "missing" is index 0, so the real entries land at orders 2 and 3.
+        assertEquals(2, db.setListEntryDao().getById("p1_s1")?.order)
+        assertEquals(3, db.setListEntryDao().getById("p1_s2")?.order)
+        assertTrue(db.syncOperationDao().getAllOrdered().none { it.entityId == "missing" })
+    }
 }

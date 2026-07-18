@@ -3,6 +3,8 @@ package com.chaddy50.concerttracker.ui.screens.editSetListEntryScreen
 import androidx.lifecycle.SavedStateHandle
 import com.chaddy50.concerttracker.data.external.api.ApiErrorType
 import com.chaddy50.concerttracker.data.external.api.ApiResult
+import com.chaddy50.concerttracker.data.external.api.SetListEntryCreateRequest
+import com.chaddy50.concerttracker.data.external.api.SetListEntryUpdateRequest
 import com.chaddy50.concerttracker.data.domain.FeaturedPerformer
 import com.chaddy50.concerttracker.data.domain.Performance
 import com.chaddy50.concerttracker.data.domain.Performer
@@ -16,6 +18,7 @@ import com.chaddy50.concerttracker.data.repository.SetListEntriesRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import io.mockk.slot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -147,6 +150,39 @@ class EditSetListEntryViewModelTest {
         assertTrue(saved)
         assertFalse(viewModel.isSaving)
         coVerify(exactly = 1) { setListEntriesRepository.createSetListEntry(any()) }
+    }
+
+    @Test
+    fun `saveSetListEntry create derives order from the end of the existing set list`() = runTest {
+        coEvery { performancesRepository.getPerformance("p1") } returns
+            performance(setList = listOf(entry("e1"), entry("e2")))
+        val requestSlot = slot<SetListEntryCreateRequest>()
+        coEvery { setListEntriesRepository.createSetListEntry(capture(requestSlot)) } returns
+            ApiResult.Success(entry("e9"))
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+        viewModel.selectWork("w99", "Title w99", "Composer")
+
+        viewModel.saveSetListEntry(onSaved = {})
+        advanceUntilIdle()
+
+        assertEquals(3, requestSlot.captured.order)
+    }
+
+    @Test
+    fun `saveSetListEntry edit preserves the existing entry order`() = runTest {
+        coEvery { performancesRepository.getPerformance("p1") } returns
+            performance(setList = listOf(entry("e1").copy(order = 5)))
+        val requestSlot = slot<SetListEntryUpdateRequest>()
+        coEvery { setListEntriesRepository.updateSetListEntryFull(any(), capture(requestSlot)) } returns
+            ApiResult.Success(entry("e1"))
+        val viewModel = editViewModel()
+        advanceUntilIdle()
+
+        viewModel.saveSetListEntry(onSaved = {})
+        advanceUntilIdle()
+
+        assertEquals(5, requestSlot.captured.order)
     }
 
     @Test

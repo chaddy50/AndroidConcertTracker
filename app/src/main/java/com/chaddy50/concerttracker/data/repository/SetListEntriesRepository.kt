@@ -117,6 +117,25 @@ class SetListEntriesRepository @Inject constructor(
         return ApiResult.Success(Unit)
     }
 
+    suspend fun reorderSetListEntries(orderedEntryIds: List<String>): ApiResult<Unit> {
+        var changed = false
+        database.withTransaction {
+            orderedEntryIds.forEachIndexed { index, id ->
+                val existing = setListEntryDao.getById(id) ?: return@forEachIndexed
+                val newOrder = index + 1
+                if (existing.order != newOrder) {
+                    changed = true
+                    setListEntryDao.upsert(
+                        listOf(existing.copy(order = newOrder, syncState = SyncState.PENDING.toName()))
+                    )
+                    enqueue(SyncOperationType.UPDATE, id, json.encodeToString(snapshotRequest(id, existing.notes)))
+                }
+            }
+        }
+        if (changed) syncScheduler.get().requestSync()
+        return ApiResult.Success(Unit)
+    }
+
     suspend fun getParentPerformanceId(entryId: String): String? = setListEntryDao.getPerformanceIdFor(entryId)
 
     suspend fun markSynced(id: String) = setListEntryDao.markSyncState(id, SyncState.SYNCED.toName())

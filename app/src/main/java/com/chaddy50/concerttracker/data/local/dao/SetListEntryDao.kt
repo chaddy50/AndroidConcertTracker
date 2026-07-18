@@ -36,6 +36,12 @@ interface SetListEntryDao {
     @Query("DELETE FROM set_list_entries WHERE performanceId = :performanceId")
     suspend fun deleteForPerformance(performanceId: String)
 
+    @Query("SELECT id FROM set_list_entries WHERE performanceId = :performanceId AND syncState != 'SYNCED'")
+    suspend fun getUnsyncedIdsForPerformance(performanceId: String): List<String>
+
+    @Query("DELETE FROM set_list_entries WHERE performanceId = :performanceId AND syncState = 'SYNCED'")
+    suspend fun deleteSyncedForPerformance(performanceId: String)
+
     @Query("DELETE FROM set_list_entries WHERE id = :id")
     suspend fun delete(id: String)
 }
