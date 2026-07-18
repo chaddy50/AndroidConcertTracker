@@ -27,11 +27,6 @@ fun CurrentTab(
                 CircularProgressIndicator()
             }
         }
-        is CurrentTabUiState.Empty -> {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("No performances")
-            }
-        }
         is CurrentTabUiState.Content -> {
             LazyColumn(
                 modifier = Modifier
@@ -39,34 +34,48 @@ fun CurrentTab(
                     .padding(16.dp)
             ) {
                 val nextUpcoming = state.nextUpcoming
-                if (nextUpcoming != null) {
-                    item {
-                        Text(
-                            text = "Next Up",
-                            style = MaterialTheme.typography.titleLarge,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
+                item {
+                    Text(
+                        text = "Next Up",
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    if (nextUpcoming != null) {
                         PerformanceCard(
                             performance = nextUpcoming,
                             onClick = { onPerformanceClick(nextUpcoming.id) }
                         )
+                    } else {
+                        Text(
+                            text = "Nothing coming up",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
 
+                item {
+                    Text(
+                        text = "Recent",
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier
+                            .padding(top = 16.dp)
+                            .padding(bottom = 8.dp)
+                    )
+                }
                 if (state.recentlyAttended.isNotEmpty()) {
-                    item {
-                        Text(
-                            text = "Recent",
-                            style = MaterialTheme.typography.titleLarge,
-                            modifier = Modifier
-                                .padding(top = if (nextUpcoming != null) 16.dp else 0.dp)
-                                .padding(bottom = 8.dp)
-                        )
-                    }
                     items(state.recentlyAttended, key = { it.id }) { performance ->
                         PerformanceCard(
                             performance = performance,
                             onClick = { onPerformanceClick(performance.id) }
+                        )
+                    }
+                } else {
+                    item {
+                        Text(
+                            text = "No recent performances",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }

@@ -25,13 +25,10 @@ class CurrentTabViewModel @Inject constructor(
         repository.observeRecentlyAttendedPerformances(),
         isLoading
     ) { nextUpcoming, recentlyAttended, loading ->
-        // Offline-first: Room is the source of truth, so the screen reflects the cache. A failed
-        // background refresh is never surfaced here — no content simply means Empty.
-        when {
-            nextUpcoming != null || recentlyAttended.isNotEmpty() ->
-                CurrentTabUiState.Content(nextUpcoming, recentlyAttended)
-            loading -> CurrentTabUiState.Loading
-            else -> CurrentTabUiState.Empty
+        if (loading && nextUpcoming == null && recentlyAttended.isEmpty()) {
+            CurrentTabUiState.Loading
+        } else {
+            CurrentTabUiState.Content(nextUpcoming, recentlyAttended)
         }
     }.stateIn(
         scope = viewModelScope,
@@ -54,7 +51,6 @@ class CurrentTabViewModel @Inject constructor(
 
 sealed interface CurrentTabUiState {
     data object Loading : CurrentTabUiState
-    data object Empty : CurrentTabUiState
     data class Content(
         val nextUpcoming: Performance?,
         val recentlyAttended: List<Performance>

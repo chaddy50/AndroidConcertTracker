@@ -77,7 +77,9 @@ class CurrentTabViewModelTest {
         val viewModel = CurrentTabViewModel(repository)
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
-        assertTrue(viewModel.uiState.value is CurrentTabUiState.Empty)
+        val initial = viewModel.uiState.value
+        assertTrue(initial is CurrentTabUiState.Content)
+        assertEquals(null, (initial as CurrentTabUiState.Content).nextUpcoming)
 
         nextFlow.value = upcoming
         advanceUntilIdle()
@@ -119,7 +121,7 @@ class CurrentTabViewModelTest {
     }
 
     @Test
-    fun `refresh failure with nothing cached shows Empty, not an error`() = runTest {
+    fun `refresh failure with nothing cached shows empty-section Content, not an error`() = runTest {
         every { repository.observeNextUpcomingPerformance() } returns flowOf(null)
         every { repository.observeRecentlyAttendedPerformances() } returns flowOf(emptyList())
         coEvery { repository.loadPerformances() } returns ApiResult.Error(ApiErrorType.Type.NETWORK)
@@ -127,6 +129,10 @@ class CurrentTabViewModelTest {
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
 
-        assertTrue(viewModel.uiState.value is CurrentTabUiState.Empty)
+        val state = viewModel.uiState.value
+        assertTrue(state is CurrentTabUiState.Content)
+        state as CurrentTabUiState.Content
+        assertEquals(null, state.nextUpcoming)
+        assertTrue(state.recentlyAttended.isEmpty())
     }
 }
