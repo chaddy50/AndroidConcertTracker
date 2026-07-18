@@ -1,22 +1,18 @@
 package com.chaddy50.concerttracker.ui.screens.editPerformanceScreen
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.chaddy50.concerttracker.ui.composables.SaveCancelButtons
 
 @Composable
 fun EditPerformanceScreen(
@@ -59,27 +55,12 @@ fun EditPerformanceScreen(
                     onMovePendingSetListEntry = viewModel::movePendingSetListEntry,
                     modifier = Modifier.weight(1f)
                 )
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = onCancel,
-                        enabled = !viewModel.isSaving,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text("Cancel")
-                    }
-                    Button(
-                        onClick = { viewModel.savePerformance(onSaved) },
-                        enabled = viewModel.canSave && !viewModel.isSaving,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text("Save")
-                    }
-                }
+                SaveCancelButtons(
+                    onCancel = onCancel,
+                    onSave = { viewModel.savePerformance(onSaved) },
+                    canSave = viewModel.canSave,
+                    isSaving = viewModel.isSaving
+                )
                 if (viewModel.saveError != null) {
                     Text(
                         text = viewModel.saveError!!,
