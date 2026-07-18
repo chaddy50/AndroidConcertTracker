@@ -3,6 +3,7 @@ package com.chaddy50.concerttracker.util
 import android.content.Context
 import android.text.format.DateFormat
 import java.time.Instant
+import java.time.ZoneId
 import java.util.Date
 
 fun formatDateTime(isoDate: String, context: Context): String {
@@ -45,3 +46,6 @@ fun isoToEpochMillis(isoDate: String): Long? = try {
 
 fun epochMillisToIso(millis: Long): String =
     Instant.ofEpochMilli(millis).toString()
+
+fun getYearFromIsoDateTime(iso: String, zone: ZoneId = ZoneId.systemDefault()): String =
+    Instant.parse(iso).atZone(zone).year.toString()

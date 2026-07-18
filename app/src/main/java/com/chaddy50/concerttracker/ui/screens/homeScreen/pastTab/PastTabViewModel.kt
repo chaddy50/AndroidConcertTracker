@@ -2,14 +2,14 @@ package com.chaddy50.concerttracker.ui.screens.homeScreen.pastTab
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.chaddy50.concerttracker.data.domain.Performance
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
+import androidx.paging.insertSeparators
+import androidx.paging.map
 import com.chaddy50.concerttracker.data.repository.PerformancesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -17,25 +17,16 @@ import javax.inject.Inject
 class PastTabViewModel @Inject constructor(
     private val repository: PerformancesRepository
 ) : ViewModel() {
-
-    private val isLoading = MutableStateFlow(false)
-
-    val uiState: StateFlow<PastTabUiState> = combine(
-        repository.observePastPerformances(),
-        isLoading
-    ) { performances, loading ->
-        // Offline-first: Room is the source of truth, so the screen reflects the cache. A failed
-        // background refresh is never surfaced here — no content simply means Empty.
-        when {
-            performances.isNotEmpty() -> PastTabUiState.Content(performances)
-            loading -> PastTabUiState.Loading
-            else -> PastTabUiState.Empty
-        }
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = PastTabUiState.Loading
-    )
+    val pagedItems: Flow<PagingData<PastListItem>> =
+        repository.observePastPerformancesPaged()
+            .map { pagingData ->
+                pagingData
+                    .map<_, PastListItem> { PastListItem.Entry(it) }
+                    .insertSeparators { before, after ->
+                        pastListSeparator(before as? PastListItem.Entry, after as? PastListItem.Entry)
+                    }
+            }
+            .cachedIn(viewModelScope)
 
     init {
         loadPerformances()
@@ -43,15 +34,7 @@ class PastTabViewModel @Inject constructor(
 
     fun loadPerformances() {
         viewModelScope.launch {
-            isLoading.value = true
             repository.loadPerformances()
-            isLoading.value = false
         }
     }
-}
-
-sealed interface PastTabUiState {
-    data object Loading : PastTabUiState
-    data object Empty : PastTabUiState
-    data class Content(val performances: List<Performance>) : PastTabUiState
 }

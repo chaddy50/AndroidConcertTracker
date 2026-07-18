@@ -1,5 +1,8 @@
 package com.chaddy50.concerttracker.data.local.dao
 
+import androidx.paging.PagingConfig
+import androidx.paging.PagingSource.LoadResult
+import androidx.paging.testing.TestPager
 import com.chaddy50.concerttracker.data.enum.PerformanceStatus
 import com.chaddy50.concerttracker.data.local.ConcertTrackerDatabase
 import com.chaddy50.concerttracker.data.local.entity.PerformanceEntity
@@ -98,16 +101,71 @@ class PerformanceDaoTest {
         assertEquals(listOf("recent", "recent2"), result.map { it.performance.id })
     }
 
+    // Load every page of pagingPast(now) and return the row ids in order.
+    private suspend fun pagingPastIds(pageSize: Int = 50): List<String> {
+        val pager = TestPager(PagingConfig(pageSize = pageSize, enablePlaceholders = false), performanceDao.pagingPast(now))
+        val ids = mutableListOf<String>()
+        var page = pager.refresh() as LoadResult.Page
+        ids += page.data.map { it.performance.id }
+        while (page.nextKey != null) {
+            page = pager.append() as LoadResult.Page
+            ids += page.data.map { it.performance.id }
+        }
+        return ids
+    }
+
     @Test
-    fun `observePast returns all rows before now, ignoring status, descending`() = runTest {
+    fun `pagingPast returns all rows before now, ignoring status, descending`() = runTest {
         // A past-dated UPCOMING row (the stale "June 15" case) now correctly lands in Past.
         insert("staleUpcoming", PerformanceStatus.UPCOMING, "2024-05-15T00:00:00Z")
         insert("attended", PerformanceStatus.ATTENDED, "2024-04-01T00:00:00Z")
         insert("future", PerformanceStatus.UPCOMING, "2024-07-01T00:00:00Z") // excluded
 
-        val result = performanceDao.observePast(now).first()
+        assertEquals(listOf("staleUpcoming", "attended"), pagingPastIds())
+    }
 
-        assertEquals(listOf("staleUpcoming", "attended"), result.map { it.performance.id })
+    @Test
+    fun `pagingPast excludes a row dated exactly now (strict less-than)`() = runTest {
+        insert("exactlyNow", PerformanceStatus.ATTENDED, now)
+        insert("past", PerformanceStatus.ATTENDED, "2024-05-01T00:00:00Z")
+
+        assertEquals(listOf("past"), pagingPastIds())
+    }
+
+    @Test
+    fun `pagingPast excludes PENDING_DELETE tombstones`() = runTest {
+        insert("visible", PerformanceStatus.ATTENDED, "2024-05-01T00:00:00Z")
+        insert("tombstone", PerformanceStatus.ATTENDED, "2024-04-01T00:00:00Z", syncState = "PENDING_DELETE")
+
+        assertEquals(listOf("visible"), pagingPastIds())
+    }
+
+    @Test
+    fun `pagingPast pages the full list in descending order without gaps or duplicates`() = runTest {
+        // 25 past rows, dated Jan..(Jan+24 days) 2024, all before `now`.
+        val expected = (24 downTo 0).map { day ->
+            val id = "p%02d".format(day)
+            insert(id, PerformanceStatus.ATTENDED, "2024-01-%02dT00:00:00Z".format(day + 1))
+            id
+        }
+
+        // First page respects the page size (initialLoadSize pinned to pageSize so refresh loads one page).
+        val firstPage = TestPager(
+            PagingConfig(pageSize = 10, initialLoadSize = 10, enablePlaceholders = false),
+            performanceDao.pagingPast(now)
+        ).run { refresh() as LoadResult.Page }
+        assertEquals(10, firstPage.data.size)
+        // Concatenated pages equal the full DESC list with no gaps or duplicates.
+        assertEquals(expected, pagingPastIds(pageSize = 10))
+    }
+
+    @Test
+    fun `pagingPast returns an empty page when nothing is past`() = runTest {
+        insert("future", PerformanceStatus.UPCOMING, "2024-07-01T00:00:00Z")
+
+        val page = TestPager(PagingConfig(pageSize = 10, enablePlaceholders = false), performanceDao.pagingPast(now))
+            .run { refresh() as LoadResult.Page }
+        assertEquals(emptyList<String>(), page.data.map { it.performance.id })
     }
 
     @Test

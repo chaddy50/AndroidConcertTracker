@@ -1,100 +1,73 @@
 package com.chaddy50.concerttracker.ui.screens.homeScreen
 
-import com.chaddy50.concerttracker.data.external.api.ApiErrorType
-import com.chaddy50.concerttracker.data.external.api.ApiResult
+import androidx.paging.PagingData
 import com.chaddy50.concerttracker.data.domain.Performance
 import com.chaddy50.concerttracker.data.domain.Venue
 import com.chaddy50.concerttracker.data.enum.PerformanceStatus
+import com.chaddy50.concerttracker.data.external.api.ApiResult
 import com.chaddy50.concerttracker.data.repository.PerformancesRepository
-import com.chaddy50.concerttracker.ui.screens.homeScreen.pastTab.PastTabUiState
 import com.chaddy50.concerttracker.ui.screens.homeScreen.pastTab.PastTabViewModel
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.CompletableDeferred
+import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
+/**
+ * The Past tab's content is a thin, cached transformation of the repository's paged flow: each
+ * `Performance` is wrapped as a [com.chaddy50.concerttracker.ui.screens.homeScreen.pastTab.PastListItem.Entry]
+ * and year headers are injected by `pastListSeparator`. The interesting behavior lives in
+ * `PastListItemTest` (grouping) and `PerformanceDaoTest` (paging/ordering); these tests only
+ * cover the ViewModel's wiring, since `cachedIn(viewModelScope)` is a hot cache a unit test can't
+ * drain through `asSnapshot` without leaking its sharing coroutine onto the test scheduler.
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
 class PastTabViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private val repository: PerformancesRepository = mockk()
-    private val performance = Performance(
-        id = "p1", date = "2024-01-01T19:00:00Z",
-        venue = Venue("v1", "Hall", "123", "way"), status = PerformanceStatus.ATTENDED
-    )
 
     @Before
-    fun setUp() = Dispatchers.setMain(testDispatcher)
+    fun setUp() {
+        Dispatchers.setMain(testDispatcher)
+        coEvery { repository.loadPerformances() } returns ApiResult.Success(Unit)
+        every { repository.observePastPerformancesPaged() } returns
+            flowOf(PagingData.from(listOf(performance("p1", "2024-11-15T12:00:00Z"))))
+    }
 
     @After
     fun tearDown() = Dispatchers.resetMain()
 
-    @Test
-    fun `uiState emits past performances from Room`() = runTest {
-        every { repository.observePastPerformances() } returns flowOf(listOf(performance))
-        coEvery { repository.loadPerformances() } returns ApiResult.Success(Unit)
-        val viewModel = PastTabViewModel(repository)
-        backgroundScope.launch { viewModel.uiState.collect {} }
-        advanceUntilIdle()
+    private fun performance(id: String, date: String) = Performance(
+        id = id, date = date,
+        venue = Venue("v1", "Hall", "o", "way"), status = PerformanceStatus.ATTENDED
+    )
 
-        val state = viewModel.uiState.value
-        assertTrue(state is PastTabUiState.Content)
-        assertEquals(listOf("p1"), (state as PastTabUiState.Content).performances.map { it.id })
+    @Test
+    fun `pagedItems is backed by the repository's paged past source`() = runTest {
+        val viewModel = PastTabViewModel(repository)
+
+        // Building the flow subscribes to the repository's paged source exactly once (cachedIn shares it).
+        viewModel.pagedItems
+        verify(exactly = 1) { repository.observePastPerformancesPaged() }
     }
 
     @Test
-    fun `uiState shows cached content immediately, even while a refresh is in flight`() = runTest {
-        every { repository.observePastPerformances() } returns flowOf(listOf(performance))
-        val loadResult = CompletableDeferred<ApiResult<Unit>>()
-        coEvery { repository.loadPerformances() } coAnswers { loadResult.await() }
-        val viewModel = PastTabViewModel(repository)
-        backgroundScope.launch { viewModel.uiState.collect {} }
+    fun `init kicks a single background sync`() = runTest {
+        PastTabViewModel(repository)
         advanceUntilIdle()
 
-        // Offline-first: cached content wins over the in-flight refresh spinner.
-        assertTrue(viewModel.uiState.value is PastTabUiState.Content)
-
-        loadResult.complete(ApiResult.Success(Unit))
-        advanceUntilIdle()
-
-        assertTrue(viewModel.uiState.value is PastTabUiState.Content)
-    }
-
-    @Test
-    fun `cached content is kept when the refresh fails offline`() = runTest {
-        every { repository.observePastPerformances() } returns flowOf(listOf(performance))
-        coEvery { repository.loadPerformances() } returns ApiResult.Error(ApiErrorType.Type.NETWORK)
-        val viewModel = PastTabViewModel(repository)
-        backgroundScope.launch { viewModel.uiState.collect {} }
-        advanceUntilIdle()
-
-        val state = viewModel.uiState.value
-        assertTrue(state is PastTabUiState.Content)
-        assertEquals(listOf("p1"), (state as PastTabUiState.Content).performances.map { it.id })
-    }
-
-    @Test
-    fun `refresh failure with nothing cached shows Empty, not an error`() = runTest {
-        every { repository.observePastPerformances() } returns flowOf(emptyList())
-        coEvery { repository.loadPerformances() } returns ApiResult.Error(ApiErrorType.Type.SERVER)
-        val viewModel = PastTabViewModel(repository)
-        backgroundScope.launch { viewModel.uiState.collect {} }
-        advanceUntilIdle()
-
-        assertTrue(viewModel.uiState.value is PastTabUiState.Empty)
+        coVerify(exactly = 1) { repository.loadPerformances() }
     }
 }

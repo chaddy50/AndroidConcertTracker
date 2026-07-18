@@ -1,5 +1,6 @@
 package com.chaddy50.concerttracker.data.local.dao
 
+import androidx.paging.PagingSource
 import androidx.room.Dao
 import androidx.room.Query
 import androidx.room.Transaction
@@ -26,7 +27,7 @@ interface PerformanceDao {
 
     @Transaction
     @Query("SELECT * FROM performances WHERE syncState != 'PENDING_DELETE' AND date < :nowIso ORDER BY date DESC")
-    fun observePast(nowIso: String): Flow<List<PerformanceWithRelations>>
+    fun pagingPast(nowIso: String): PagingSource<Int, PerformanceWithRelations>
 
     @Transaction
     @Query("SELECT * FROM performances WHERE id = :id AND syncState != 'PENDING_DELETE'")

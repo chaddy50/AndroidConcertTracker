@@ -1,5 +1,9 @@
 package com.chaddy50.concerttracker.data.repository
 
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.map
 import androidx.room.withTransaction
 import com.chaddy50.concerttracker.data.enum.SyncEntityType
 import com.chaddy50.concerttracker.data.enum.SyncOperationType
@@ -85,8 +89,12 @@ class PerformancesRepository @Inject constructor(
     fun observeUpcomingPerformances(): Flow<List<Performance>> =
         performanceDao.observeUpcoming(Instant.now().toString()).map { list -> list.map { it.toDomain() } }
 
-    fun observePastPerformances(): Flow<List<Performance>> =
-        performanceDao.observePast(Instant.now().toString()).map { list -> list.map { it.toDomain() } }
+    fun observePastPerformancesPaged(): Flow<PagingData<Performance>> =
+        Pager(
+            config = PagingConfig(pageSize = 20, enablePlaceholders = false)
+        ) {
+            performanceDao.pagingPast(Instant.now().toString())
+        }.flow.map { pagingData -> pagingData.map { it.toDomain() } }
 
     fun observePerformance(id: String): Flow<Performance?> =
         performanceDao.observePerformance(id).map { it?.toDomain() }
