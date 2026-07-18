@@ -14,7 +14,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 fun EditSetListEntryScreen(
     onSaved: () -> Unit,
     onSavedAsPending: (EditSetListEntryViewModel.PendingEntryResult) -> Unit = {},
-    onDeleted: () -> Unit,
     onCancel: () -> Unit,
     onNavigateToSearchWork: () -> Unit,
     onNavigateToSearchPerformer: () -> Unit,
@@ -33,12 +32,10 @@ fun EditSetListEntryScreen(
         }
         is SetListEntryEditUiState.Ready -> {
             EditSetListEntryForm(
-                isCreateMode = viewModel.isCreateMode,
                 draftWorkTitle = viewModel.draftWorkTitle,
                 draftFeaturedPerformers = viewModel.draftFeaturedPerformers,
                 canSave = viewModel.canSave,
                 isSaving = viewModel.isSaving,
-                isDeleting = viewModel.isDeleting,
                 saveError = viewModel.saveError,
                 onWorkClick = onNavigateToSearchWork,
                 onAddPerformerClick = onNavigateToSearchPerformer,
@@ -46,7 +43,6 @@ fun EditSetListEntryScreen(
                 onRemoveFeaturedPerformer = viewModel::removeDraftFeaturedPerformer,
                 onSave = { viewModel.saveSetListEntry(onSaved, onSavedAsPending) },
                 onCancel = onCancel,
-                onDelete = { viewModel.deleteSetListEntry(onDeleted) },
                 modifier = Modifier.fillMaxSize()
             )
         }

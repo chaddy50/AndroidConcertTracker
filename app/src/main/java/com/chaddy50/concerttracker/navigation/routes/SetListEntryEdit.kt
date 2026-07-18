@@ -100,9 +100,6 @@ fun NavGraphBuilder.setListEntryEdit(navController: NavController) {
                 )
                 navController.popBackStack()
             },
-            onDeleted = {
-                navController.popBackStack()
-            },
             onCancel = { navController.popBackStack() },
             onNavigateToSearchWork = { navController.navigate(OpenOpusComposerSearch) },
             onNavigateToSearchPerformer = { navController.navigate(MusicBrainzSearch(MusicBrainzEntityType.PERFORMER)) }
