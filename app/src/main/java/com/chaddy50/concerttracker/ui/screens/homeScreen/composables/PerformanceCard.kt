@@ -43,7 +43,7 @@ fun PerformanceCard(performance: Performance, onClick: () -> Unit) {
                 style = MaterialTheme.typography.titleMedium
             )
             Text(
-                text = performance.venue.name,
+                text = performance.venue.name + ", " + performance.venue.city,
                 style = MaterialTheme.typography.titleMedium
             )
 
@@ -57,7 +57,7 @@ fun PerformanceCard(performance: Performance, onClick: () -> Unit) {
 }
 
 // region Previews
-private val previewVenue = Venue(id = "1", name = "Overture Hall", osmId = "123456", osmType = "way")
+private val previewVenue = Venue(id = "1", name = "Overture Hall", osmId = "123456", osmType = "way", city = "Madison")
 private val previewConductor = Performer(id = "1", name = "John Demain", type = PerformerType.CONDUCTOR, specialty = "conductor")
 
 private val previewPerformer1 = Performer(id = "2", name = "Madison Symphony Orchestra", type = PerformerType.ORCHESTRA)
