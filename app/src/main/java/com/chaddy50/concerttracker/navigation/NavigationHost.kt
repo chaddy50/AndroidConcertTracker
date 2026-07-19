@@ -4,9 +4,7 @@ import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
@@ -33,7 +31,7 @@ fun NavigationHost() {
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = currentBackStackEntry?.destination
     val canNavigateBack = currentBackStackEntry != null && navController.previousBackStackEntry != null
-    val isOnHomeScreen = currentDestination?.hasRoute<Performances>() == true
+
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
 
     val title = when {
@@ -89,21 +87,6 @@ fun NavigationHost() {
                 }
             )
         },
-        bottomBar = {
-            if (isOnHomeScreen) {
-                BottomNavigationBar(tabNavController = tabNavController)
-            }
-        },
-        floatingActionButton = {
-            if (isOnHomeScreen) {
-                FloatingActionButton(onClick = { navController.navigate(PerformanceEdit(id = null)) }) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Add performance"
-                    )
-                }
-            }
-        }
     ) { innerPadding ->
         NavHost(
             navController = navController,

@@ -1,5 +1,6 @@
-package com.chaddy50.concerttracker.navigation
+package com.chaddy50.concerttracker.ui.screens.homeScreen.composables
 
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.DateRange
@@ -36,7 +37,7 @@ fun BottomNavigationBar(tabNavController: NavHostController) {
     val currentBackStackEntry by tabNavController.currentBackStackEntryAsState()
     val currentDestination = currentBackStackEntry?.destination
 
-    NavigationBar {
+    NavigationBar(windowInsets = WindowInsets(0)) {
         tabs.forEach { tab ->
             val isSelected = when (tab.route) {
                 HomeTab -> currentDestination?.hasRoute<HomeTab>() == true

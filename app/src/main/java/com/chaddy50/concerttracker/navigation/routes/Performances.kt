@@ -26,7 +26,8 @@ fun NavGraphBuilder.performances(
     composable<Performances> {
         HomeScreen(
             tabNavController = tabNavController,
-            onPerformanceClick = { id -> navController.navigate(PerformanceDetail(id)) }
+            onPerformanceClick = { id -> navController.navigate(PerformanceDetail(id)) },
+            onAddPerformanceClick = { navController.navigate(PerformanceEdit(id = null)) }
         )
     }
 }
