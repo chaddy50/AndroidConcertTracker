@@ -11,7 +11,11 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -32,6 +36,10 @@ fun ServerUrlPromptDialog(
         onDismissRequest = {},
         title = { Text(stringResource(R.string.server_url_prompt_title)) },
         text = {
+            val focusRequester = remember { FocusRequester() }
+            LaunchedEffect(Unit) {
+                focusRequester.requestFocus()
+            }
             Column {
                 Text(stringResource(R.string.server_url_prompt_message))
                 OutlinedTextField(
@@ -44,6 +52,7 @@ fun ServerUrlPromptDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 16.dp)
+                        .focusRequester(focusRequester)
                 )
                 validationError?.let {
                     Text(
