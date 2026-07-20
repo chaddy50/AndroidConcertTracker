@@ -20,5 +20,6 @@ import androidx.room.Index
 data class FeaturedPerformerEntity(
     val setListEntryId: String,
     val performerId: String,
-    val role: String? = null
+    val role: String? = null,
+    val order: Int = 0
 )

@@ -214,8 +214,8 @@ class EditPerformanceViewModel @Inject constructor(
                             SetListEntryInlineRequest(
                                 workId = entry.workId,
                                 order = entry.order,
-                                featuredPerformers = entry.featuredPerformers.map { p ->
-                                    FeaturedPerformerRequest(p.performerId, p.role.ifBlank { null })
+                                featuredPerformers = entry.featuredPerformers.mapIndexed { index, p ->
+                                    FeaturedPerformerRequest(p.performerId, p.role, order = index)
                                 }
                             )
                         }

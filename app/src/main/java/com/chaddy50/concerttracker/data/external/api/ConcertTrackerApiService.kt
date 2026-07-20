@@ -115,7 +115,8 @@ data class PerformerRequest(
 @Serializable
 data class FeaturedPerformerRequest(
     val performerId: String,
-    val role: String? = null
+    val role: String,
+    val order: Int
 )
 
 @Serializable

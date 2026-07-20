@@ -5,5 +5,6 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class FeaturedPerformerDto(
     val performer: PerformerDto,
-    val role: String? = null
+    val role: String? = null,
+    val order: Int = 0
 )

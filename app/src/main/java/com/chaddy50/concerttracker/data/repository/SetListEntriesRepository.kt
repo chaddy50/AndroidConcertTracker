@@ -47,7 +47,7 @@ class SetListEntriesRepository @Inject constructor(
                 )
             )
             setListEntryDao.upsertFeaturedPerformers(
-                request.featuredPerformers.map { FeaturedPerformerEntity(localId, it.performerId, it.role) }
+                request.featuredPerformers.mapIndexed { index, it -> FeaturedPerformerEntity(localId, it.performerId, it.role, order = index) }
             )
             enqueue(SyncOperationType.CREATE, localId, json.encodeToString(request.copy(id = localId)))
         }
@@ -80,7 +80,7 @@ class SetListEntriesRepository @Inject constructor(
             request.featuredPerformers?.let { featured ->
                 setListEntryDao.deleteFeaturedPerformers(id)
                 setListEntryDao.upsertFeaturedPerformers(
-                    featured.map { FeaturedPerformerEntity(id, it.performerId, it.role) }
+                    featured.mapIndexed { index, it -> FeaturedPerformerEntity(id, it.performerId, it.role, order = index) }
                 )
             }
             // A full edit doesn't change notes, so snapshot preserves the existing value.
@@ -93,7 +93,8 @@ class SetListEntriesRepository @Inject constructor(
     private suspend fun snapshotRequest(id: String, notes: String): SetListEntryUpdateRequest {
         val entry = requireNotNull(setListEntryDao.getById(id))
         val featured = setListEntryDao.getFeaturedPerformers(id)
-            .map { FeaturedPerformerRequest(it.performerId, it.role) }
+            .sortedBy { it.order }
+            .mapIndexed { index, it -> FeaturedPerformerRequest(it.performerId, it.role ?: "", order = index) }
         return SetListEntryUpdateRequest(
             workId = entry.workId,
             order = entry.order,

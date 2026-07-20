@@ -41,6 +41,7 @@ fun EditSetListEntryScreen(
                 onAddPerformerClick = onNavigateToSearchPerformer,
                 onUpdateFeaturedPerformerRole = viewModel::updateDraftFeaturedPerformerRole,
                 onRemoveFeaturedPerformer = viewModel::removeDraftFeaturedPerformer,
+                onMoveFeaturedPerformer = viewModel::moveDraftFeaturedPerformer,
                 onSave = { viewModel.saveSetListEntry(onSaved, onSavedAsPending) },
                 onCancel = onCancel,
                 modifier = Modifier.fillMaxSize()

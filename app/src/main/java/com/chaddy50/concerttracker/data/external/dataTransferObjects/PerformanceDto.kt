@@ -66,10 +66,10 @@ fun PerformanceDto.toRows(): PerformanceRows {
             workComposers.add(WorkComposerEntity(entry.work.id, composer.id))
         }
         entry.conductor?.let { performers.add(it) }
-        entry.featuredPerformers.forEach { featured ->
+        entry.featuredPerformers.forEachIndexed { index, featured ->
             performers.add(featured.performer)
             featuredPerformers.add(
-                FeaturedPerformerEntity(entry.id, featured.performer.id, featured.role)
+                FeaturedPerformerEntity(entry.id, featured.performer.id, featured.role, order = index)
             )
         }
         setListEntries.add(
@@ -131,8 +131,8 @@ fun PerformanceRequest.toPendingRows(): PerformanceRows {
                 syncState = SyncState.PENDING.toName()
             )
         )
-        inline.featuredPerformers.forEach { featured ->
-            featuredPerformers.add(FeaturedPerformerEntity(entryId, featured.performerId, featured.role))
+        inline.featuredPerformers.forEachIndexed { index, featured ->
+            featuredPerformers.add(FeaturedPerformerEntity(entryId, featured.performerId, featured.role, order = index))
         }
     }
     return PerformanceRows(

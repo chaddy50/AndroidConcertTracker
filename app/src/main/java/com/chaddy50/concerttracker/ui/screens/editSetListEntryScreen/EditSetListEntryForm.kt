@@ -3,13 +3,17 @@ package com.chaddy50.concerttracker.ui.screens.editSetListEntryScreen
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -23,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.chaddy50.concerttracker.ui.composables.SaveCancelButtons
+import com.chaddy50.concerttracker.ui.composables.editableItemList.EditableItemList
 
 @Composable
 fun EditSetListEntryForm(
@@ -35,6 +40,7 @@ fun EditSetListEntryForm(
     onAddPerformerClick: () -> Unit,
     onUpdateFeaturedPerformerRole: (performerId: String, role: String) -> Unit,
     onRemoveFeaturedPerformer: (performerId: String) -> Unit,
+    onMoveFeaturedPerformer: (from: Int, to: Int) -> Unit,
     onSave: () -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier
@@ -63,30 +69,47 @@ fun EditSetListEntryForm(
                 text = "Featured Performers",
                 modifier = Modifier.padding(top = 16.dp, bottom = 4.dp)
             )
-            draftFeaturedPerformers.forEach { draftPerformer ->
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
+            EditableItemList(
+                items = draftFeaturedPerformers,
+                key = { it.performerId },
+                onMove = onMoveFeaturedPerformer
+            ) { draftPerformer, dragHandleModifier ->
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 8.dp)
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = draftPerformer.name,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                    Text(
+                        text = draftPerformer.name,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        IconButton(
+                            onClick = {},
+                            modifier = dragHandleModifier
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.DragHandle,
+                                contentDescription = "Reorder performer"
+                            )
+                        }
                         OutlinedTextField(
                             value = draftPerformer.role,
                             onValueChange = { onUpdateFeaturedPerformerRole(draftPerformer.performerId, it) },
                             label = { Text("Role") },
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.weight(1f)
                         )
-                    }
-                    IconButton(onClick = { onRemoveFeaturedPerformer(draftPerformer.performerId) }) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Remove performer"
-                        )
+                        IconButton(
+                            onClick = { onRemoveFeaturedPerformer(draftPerformer.performerId) }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Remove performer"
+                            )
+                        }
                     }
                 }
             }

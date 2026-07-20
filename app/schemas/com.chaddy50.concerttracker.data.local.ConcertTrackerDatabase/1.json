@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "18a909a41ca9607b1ac307558918510f",
+    "identityHash": "97bd3d3abf077d0bcfeaa8a63fd2b8d1",
     "entities": [
       {
         "tableName": "performances",
@@ -469,7 +469,7 @@
       },
       {
         "tableName": "featured_performers",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`setListEntryId` TEXT NOT NULL, `performerId` TEXT NOT NULL, `role` TEXT, PRIMARY KEY(`setListEntryId`, `performerId`), FOREIGN KEY(`setListEntryId`) REFERENCES `set_list_entries`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`setListEntryId` TEXT NOT NULL, `performerId` TEXT NOT NULL, `role` TEXT, `order` INTEGER NOT NULL, PRIMARY KEY(`setListEntryId`, `performerId`), FOREIGN KEY(`setListEntryId`) REFERENCES `set_list_entries`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "setListEntryId",
@@ -488,6 +488,12 @@
             "columnName": "role",
             "affinity": "TEXT",
             "notNull": false
+          },
+          {
+            "fieldPath": "order",
+            "columnName": "order",
+            "affinity": "INTEGER",
+            "notNull": true
           }
         ],
         "primaryKey": {
@@ -588,7 +594,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '18a909a41ca9607b1ac307558918510f')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '97bd3d3abf077d0bcfeaa8a63fd2b8d1')"
     ]
   }
 }

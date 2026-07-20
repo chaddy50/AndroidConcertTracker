@@ -151,6 +151,12 @@ class EditSetListEntryViewModel @Inject constructor(
         draftFeaturedPerformers.removeAll { it.performerId == performerId }
     }
 
+    fun moveDraftFeaturedPerformer(from: Int, to: Int) {
+        if (from == to || from !in draftFeaturedPerformers.indices || to !in draftFeaturedPerformers.indices) return
+        val item = draftFeaturedPerformers.removeAt(from)
+        draftFeaturedPerformers.add(to, item)
+    }
+
     fun saveSetListEntry(
         onSaved: () -> Unit,
         onSavedAsPending: ((PendingEntryResult) -> Unit)? = null
@@ -173,10 +179,11 @@ class EditSetListEntryViewModel @Inject constructor(
             return
         }
 
-        val featuredPerformerRequests = draftFeaturedPerformers.map { draftPerformer ->
+        val featuredPerformerRequests = draftFeaturedPerformers.mapIndexed { index, draftPerformer ->
             FeaturedPerformerRequest(
                 performerId = draftPerformer.performerId,
-                role = draftPerformer.role.ifBlank { null }
+                role = draftPerformer.role,
+                order = index
             )
         }
 

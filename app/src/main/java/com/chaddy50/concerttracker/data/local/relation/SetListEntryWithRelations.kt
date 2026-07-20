@@ -39,7 +39,7 @@ fun SetListEntryWithRelations.toDomain() = SetListEntry(
     work = work.toDomain(),
     order = entry.order,
     conductor = conductor?.toDomain(),
-    featuredPerformers = featuredPerformers.map {
+    featuredPerformers = featuredPerformers.sortedBy { it.ref.order }.map {
         FeaturedPerformer(performer = it.performer.toDomain(), role = it.ref.role)
     },
     notes = entry.notes
