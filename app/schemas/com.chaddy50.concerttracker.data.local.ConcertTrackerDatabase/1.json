@@ -365,7 +365,7 @@
       },
       {
         "tableName": "headline_performers",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`performanceId` TEXT NOT NULL, `performerId` TEXT NOT NULL, PRIMARY KEY(`performanceId`, `performerId`), FOREIGN KEY(`performanceId`) REFERENCES `performances`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`performanceId` TEXT NOT NULL, `performerId` TEXT NOT NULL, `order` INTEGER NOT NULL, PRIMARY KEY(`performanceId`, `performerId`), FOREIGN KEY(`performanceId`) REFERENCES `performances`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "performanceId",
@@ -377,6 +377,12 @@
             "fieldPath": "performerId",
             "columnName": "performerId",
             "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "order",
+            "columnName": "order",
+            "affinity": "INTEGER",
             "notNull": true
           }
         ],

@@ -55,8 +55,8 @@ fun PerformanceDto.toRows(): PerformanceRows {
     performers.addAll(this.performers)
     conductor?.let { performers.add(it) }
 
-    this.performers.forEach { performer ->
-        headlinePerformers.add(HeadlinePerformerEntity(id, performer.id))
+    this.performers.forEachIndexed { index, performer ->
+        headlinePerformers.add(HeadlinePerformerEntity(id, performer.id, order = index))
     }
 
     setList.forEach { entry ->
@@ -117,7 +117,7 @@ fun PerformanceRequest.withClientIds(): PerformanceRequest = copy(
  */
 fun PerformanceRequest.toPendingRows(): PerformanceRows {
     val performanceId = requireNotNull(id) { "call withClientIds() before toPendingRows()" }
-    val headlinePerformers = performerIds.map { HeadlinePerformerEntity(performanceId, it) }
+    val headlinePerformers = performerIds.mapIndexed { index, id -> HeadlinePerformerEntity(performanceId, id, order = index) }
     val setListEntries = mutableListOf<SetListEntryEntity>()
     val featuredPerformers = mutableListOf<FeaturedPerformerEntity>()
     setList.forEach { inline ->

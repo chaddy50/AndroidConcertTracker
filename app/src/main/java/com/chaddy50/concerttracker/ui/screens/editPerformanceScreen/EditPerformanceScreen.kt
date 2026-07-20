@@ -48,6 +48,7 @@ fun EditPerformanceScreen(
                     onVenueClick = onNavigateToCreateVenue,
                     onAddPerformerClick = onNavigateToSearchPerformer,
                     onRemovePerformer = viewModel::removeDraftPerformer,
+                    onMovePerformer = viewModel::moveDraftPerformer,
                     onAddSetListEntryClick = onNavigateToAddSetListEntry,
                     onEditSetListEntryClick = onNavigateToEditSetListEntry,
                     onEditPendingSetListEntryClick = onNavigateToEditPendingSetListEntry,

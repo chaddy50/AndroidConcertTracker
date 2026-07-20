@@ -18,6 +18,7 @@ class PerformanceWithRelationsTest {
         ),
         venue = VenueEntity("v1", "Hall", "osm", "way"),
         performers = emptyList(),
+        headlinePerformers = emptyList(),
         conductor = null,
         setList = emptyList()
     )

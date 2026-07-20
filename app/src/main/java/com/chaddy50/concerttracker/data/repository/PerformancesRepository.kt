@@ -138,7 +138,7 @@ class PerformancesRepository @Inject constructor(
                 )
             )
             performanceDao.deleteHeadlinePerformers(id)
-            performanceDao.upsertHeadlinePerformers(request.performerIds.map { HeadlinePerformerEntity(id, it) })
+            performanceDao.upsertHeadlinePerformers(request.performerIds.mapIndexed { index, performerId -> HeadlinePerformerEntity(id, performerId, order = index) })
             syncOperationsRepository.enqueue(SyncEntityType.PERFORMANCE, SyncOperationType.UPDATE, id, json.encodeToString(request.copy(id = id, notes = existing.notes)))
         }
         syncScheduler.get().requestSync()

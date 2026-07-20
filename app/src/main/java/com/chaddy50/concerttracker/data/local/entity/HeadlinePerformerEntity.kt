@@ -19,5 +19,6 @@ import androidx.room.Index
 )
 data class HeadlinePerformerEntity(
     val performanceId: String,
-    val performerId: String
+    val performerId: String,
+    val order: Int = 0
 )

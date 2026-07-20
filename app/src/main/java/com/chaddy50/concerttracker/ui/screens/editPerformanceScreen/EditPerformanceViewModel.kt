@@ -143,6 +143,12 @@ class EditPerformanceViewModel @Inject constructor(
         draftPerformers.removeAll { it.id == performerId }
     }
 
+    fun moveDraftPerformer(from: Int, to: Int) {
+        if (from == to || from !in draftPerformers.indices || to !in draftPerformers.indices) return
+        val item = draftPerformers.removeAt(from)
+        draftPerformers.add(to, item)
+    }
+
     /** A newly added pending entry goes to the end; its order is its 1-based position. */
     fun addPendingSetListEntry(
         workId: String,

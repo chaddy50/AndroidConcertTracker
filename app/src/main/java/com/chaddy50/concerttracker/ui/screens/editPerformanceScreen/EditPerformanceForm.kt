@@ -34,6 +34,7 @@ fun PerformanceEditForm(
     onVenueClick: () -> Unit,
     onAddPerformerClick: () -> Unit,
     onRemovePerformer: (String) -> Unit,
+    onMovePerformer: (from: Int, to: Int) -> Unit,
     onAddSetListEntryClick: () -> Unit,
     onEditSetListEntryClick: (entryId: String) -> Unit,
     onEditPendingSetListEntryClick: (localId: String) -> Unit,
@@ -76,6 +77,7 @@ fun PerformanceEditForm(
             performers = draftPerformers,
             onAddPerformerClick = onAddPerformerClick,
             onRemovePerformer = onRemovePerformer,
+            onMovePerformer = onMovePerformer,
             modifier = Modifier.padding(top = 16.dp)
         )
 
@@ -111,6 +113,7 @@ fun PerformanceEditFormPreview() {
             onVenueClick = {},
             onAddPerformerClick = {},
             onRemovePerformer = {},
+            onMovePerformer = { _, _ -> },
             onAddSetListEntryClick = {},
             onEditSetListEntryClick = {},
             onEditPendingSetListEntryClick = {},
@@ -134,6 +137,7 @@ fun PerformanceEditFormEmptyPreview() {
             onVenueClick = {},
             onAddPerformerClick = {},
             onRemovePerformer = {},
+            onMovePerformer = { _, _ -> },
             onAddSetListEntryClick = {},
             onEditSetListEntryClick = {},
             onEditPendingSetListEntryClick = {},

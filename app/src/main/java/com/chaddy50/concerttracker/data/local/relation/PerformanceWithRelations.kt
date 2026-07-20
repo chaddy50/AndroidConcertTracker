@@ -27,6 +27,8 @@ data class PerformanceWithRelations(
         )
     )
     val performers: List<PerformerEntity>,
+    @Relation(parentColumn = "id", entityColumn = "performanceId")
+    val headlinePerformers: List<HeadlinePerformerEntity>,
     @Relation(parentColumn = "conductorId", entityColumn = "id")
     val conductor: PerformerEntity?,
     @Relation(
@@ -37,17 +39,20 @@ data class PerformanceWithRelations(
     val setList: List<SetListEntryWithRelations>
 )
 
-fun PerformanceWithRelations.toDomain(): Performance = Performance(
-    id = performance.id,
-    date = performance.date,
-    venue = requireNotNull(venue) { "Cached performance ${performance.id} is missing its venue" }.toDomain(),
-    performers = performers.map { it.toDomain() },
-    conductor = conductor?.toDomain(),
-    status = PerformanceStatus.valueOf(performance.status),
-    setList = setList
-        .filter { it.entry.syncState != SyncState.PENDING_DELETE.toName() }
-        .map { it.toDomain() }
-        .sortedBy { it.order },
-    notes = performance.notes,
-    syncState = SyncState.fromName(performance.syncState)
-)
+fun PerformanceWithRelations.toDomain(): Performance {
+    val performerOrder = headlinePerformers.associate { it.performerId to it.order }
+    return Performance(
+        id = performance.id,
+        date = performance.date,
+        venue = requireNotNull(venue) { "Cached performance ${performance.id} is missing its venue" }.toDomain(),
+        performers = performers.map { it.toDomain() }.sortedBy { performerOrder[it.id] ?: 0 },
+        conductor = conductor?.toDomain(),
+        status = PerformanceStatus.valueOf(performance.status),
+        setList = setList
+            .filter { it.entry.syncState != SyncState.PENDING_DELETE.toName() }
+            .map { it.toDomain() }
+            .sortedBy { it.order },
+        notes = performance.notes,
+        syncState = SyncState.fromName(performance.syncState)
+    )
+}
