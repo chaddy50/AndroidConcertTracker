@@ -100,6 +100,7 @@ fun EditSetListEntryForm(
                             value = draftPerformer.role,
                             onValueChange = { onUpdateFeaturedPerformerRole(draftPerformer.performerId, it) },
                             label = { Text("Role") },
+                            singleLine = true,
                             modifier = Modifier.weight(1f)
                         )
                         IconButton(
