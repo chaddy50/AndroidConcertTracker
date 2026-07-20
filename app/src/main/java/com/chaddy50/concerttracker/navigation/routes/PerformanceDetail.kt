@@ -6,7 +6,7 @@ import com.chaddy50.concerttracker.ui.screens.performanceDetailScreen.Performanc
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class PerformanceDetail(val id: String)
+data class PerformanceDetail(val id: String, val date: String)
 
 fun NavGraphBuilder.performanceDetail() {
     composable<PerformanceDetail> {

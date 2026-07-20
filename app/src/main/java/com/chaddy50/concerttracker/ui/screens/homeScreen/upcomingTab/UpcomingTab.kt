@@ -17,7 +17,7 @@ import com.chaddy50.concerttracker.ui.screens.homeScreen.composables.Performance
 
 @Composable
 fun UpcomingTab(
-    onPerformanceClick: (String) -> Unit,
+    onPerformanceClick: (String, String) -> Unit,
     viewModel: UpcomingTabViewModel = hiltViewModel()
 ) {
     when (val state = viewModel.uiState.collectAsStateWithLifecycle().value) {
@@ -36,7 +36,7 @@ fun UpcomingTab(
                 items(state.performances, key = { it.id }) { performance ->
                     PerformanceCard(
                         performance = performance,
-                        onClick = { onPerformanceClick(performance.id) }
+                        onClick = { onPerformanceClick(performance.id, performance.date) }
                     )
                 }
             }

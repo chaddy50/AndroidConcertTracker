@@ -26,7 +26,7 @@ import com.chaddy50.concerttracker.ui.screens.homeScreen.upcomingTab.UpcomingTab
 @Composable
 fun HomeScreen(
     tabNavController: NavHostController,
-    onPerformanceClick: (String) -> Unit,
+    onPerformanceClick: (String, String) -> Unit,
     onAddPerformanceClick: () -> Unit,
     promptViewModel: ServerUrlPromptViewModel = hiltViewModel()
 ) {

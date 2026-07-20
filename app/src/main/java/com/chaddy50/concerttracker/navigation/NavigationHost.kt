@@ -19,9 +19,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import androidx.compose.ui.platform.LocalContext
 import com.chaddy50.concerttracker.R
 import com.chaddy50.concerttracker.navigation.routes.*
 import com.chaddy50.concerttracker.navigation.topBarActions.TopBarActionsRouter
+import com.chaddy50.concerttracker.util.formatDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,13 +33,23 @@ fun NavigationHost() {
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = currentBackStackEntry?.destination
     val canNavigateBack = currentBackStackEntry != null && navController.previousBackStackEntry != null
+    val tabBackStackEntry by tabNavController.currentBackStackEntryAsState()
+    val tabDestination = tabBackStackEntry?.destination
 
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
 
     val title = when {
-        currentDestination?.hasRoute<Performances>() == true -> stringResource(R.string.performances_title)
+        currentDestination?.hasRoute<Performances>() == true -> when {
+            tabDestination?.hasRoute<HomeTab>() == true -> "Home"
+            tabDestination?.hasRoute<UpcomingTab>() == true -> "Upcoming"
+            tabDestination?.hasRoute<PastTab>() == true -> "Past"
+            else -> ""
+        }
         currentDestination?.hasRoute<Settings>() == true -> stringResource(R.string.settings_title)
-        currentDestination?.hasRoute<PerformanceDetail>() == true -> stringResource(R.string.performance_detail_title)
+        currentDestination?.hasRoute<PerformanceDetail>() == true -> {
+            val date = currentBackStackEntry?.toRoute<PerformanceDetail>()?.date ?: ""
+            if (date.isNotEmpty()) formatDate(date, LocalContext.current) else ""
+        }
         currentDestination?.hasRoute<PerformanceEdit>() == true -> {
             val isNew = currentBackStackEntry?.toRoute<PerformanceEdit>()?.id == null
             if (isNew) stringResource(R.string.performance_form_new_title)

@@ -20,7 +20,7 @@ import com.chaddy50.concerttracker.ui.screens.homeScreen.pastTab.composables.Yea
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PastTab(
-    onPerformanceClick: (String) -> Unit,
+    onPerformanceClick: (String, String) -> Unit,
     viewModel: PastTabViewModel = hiltViewModel()
 ) {
     val items = viewModel.pagedItems.collectAsLazyPagingItems()
@@ -51,7 +51,7 @@ fun PastTab(
                                 items[index]
                                 PerformanceCard(
                                     performance = item.performance,
-                                    onClick = { onPerformanceClick(item.performance.id) }
+                                    onClick = { onPerformanceClick(item.performance.id, item.performance.date) }
                                 )
                             }
                         }

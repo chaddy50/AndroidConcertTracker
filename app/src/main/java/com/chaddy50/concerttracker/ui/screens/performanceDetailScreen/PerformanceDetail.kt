@@ -29,7 +29,6 @@ import com.chaddy50.concerttracker.ui.composables.PerformerRow
 import com.chaddy50.concerttracker.ui.screens.performanceDetailScreen.composables.PerformanceNotesCard
 import com.chaddy50.concerttracker.ui.screens.performanceDetailScreen.composables.SetListEntryCard
 import com.chaddy50.concerttracker.ui.theme.ConcertTrackerTheme
-import com.chaddy50.concerttracker.util.formatDate
 import com.chaddy50.concerttracker.util.formatTime
 
 private val GROUP_TYPES = setOf(PerformerType.ORCHESTRA, PerformerType.ENSEMBLE, PerformerType.CHORUS)
@@ -45,10 +44,6 @@ fun PerformanceDetail(
 ) {
     LazyColumn(modifier = Modifier.padding(16.dp)) {
         item {
-            Text(
-                text = formatDate(performance.date, LocalContext.current),
-                style = MaterialTheme.typography.headlineMedium
-            )
             Row(modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {

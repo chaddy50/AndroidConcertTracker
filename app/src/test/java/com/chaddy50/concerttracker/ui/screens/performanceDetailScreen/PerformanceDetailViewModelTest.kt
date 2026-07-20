@@ -58,7 +58,7 @@ class PerformanceDetailViewModelTest {
     )
 
     private fun viewModel() = PerformanceDetailViewModel(
-        SavedStateHandle(mapOf("id" to "p1")),
+        SavedStateHandle(mapOf("id" to "p1", "date" to "2024-06-01T19:00:00Z")),
         performancesRepository,
         setListEntriesRepository
     )
