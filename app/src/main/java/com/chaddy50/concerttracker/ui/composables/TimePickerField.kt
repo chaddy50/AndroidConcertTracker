@@ -10,6 +10,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,7 +36,9 @@ fun TimePickerField(
     millis: Long?,
     onMillisChange: (Long) -> Unit,
     label: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isShowRequested: Boolean = false,
+    onShowRequestConsumed: () -> Unit = {}
 ) {
     val context = LocalContext.current
     var showPicker by remember { mutableStateOf(false) }
@@ -43,6 +46,13 @@ fun TimePickerField(
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     if (isPressed) showPicker = true
+
+    LaunchedEffect(isShowRequested) {
+        if (isShowRequested) {
+            showPicker = true
+            onShowRequestConsumed()
+        }
+    }
 
     OutlinedTextField(
         value = millis?.let { formatTime(epochMillisToIso(it), context) } ?: "",

@@ -8,6 +8,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -42,6 +46,8 @@ fun PerformanceEditForm(
     onMovePendingSetListEntry: (from: Int, to: Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var shouldShowTimePicker by remember { mutableStateOf(false) }
+
     Column(
         modifier = modifier
             .verticalScroll(rememberScrollState())
@@ -55,13 +61,16 @@ fun PerformanceEditForm(
                 millis = draftDate,
                 onMillisChange = onDraftDateChange,
                 label = stringResource(R.string.performance_form_date_label),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                onDateConfirmed = { shouldShowTimePicker = true }
             )
             TimePickerField(
                 millis = draftDate,
                 onMillisChange = onDraftDateChange,
                 label = stringResource(R.string.performance_form_time_label),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                isShowRequested = shouldShowTimePicker,
+                onShowRequestConsumed = { shouldShowTimePicker = false }
             )
         }
 

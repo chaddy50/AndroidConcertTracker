@@ -42,7 +42,8 @@ fun DatePickerField(
     millis: Long?,
     onMillisChange: (Long) -> Unit,
     label: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onDateConfirmed: () -> Unit = {}
 ) {
     val context = LocalContext.current
     var showPicker by remember { mutableStateOf(false) }
@@ -70,6 +71,7 @@ fun DatePickerField(
                 TextButton(onClick = {
                     pickerState.selectedDateMillis?.let {
                         onMillisChange(mergeDatepickerWithExistingTime(it, millis))
+                        onDateConfirmed()
                     }
                     showPicker = false
                 }) {
