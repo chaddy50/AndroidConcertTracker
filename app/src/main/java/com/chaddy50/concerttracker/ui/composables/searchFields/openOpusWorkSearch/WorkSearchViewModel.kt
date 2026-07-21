@@ -158,7 +158,9 @@ class WorkSearchViewModel @Inject constructor(
     private fun buildRows(): List<WorkSearchResult> {
         // Cached works are already title-filtered by the DAO; catalog works filter by genre + query here.
         val cachedOpenOpusIds = localWorks.mapNotNull { it.openOpusId }.toSet()
-        val localRows = localWorks.map { WorkSearchResult.Local(it) }
+        val localRows = localWorks
+            .filter { doesLocalGenreMatch(it) }
+            .map { WorkSearchResult.Local(it) }
         val apiRows = apiWorks
             .filter { work ->
                 work.id !in cachedOpenOpusIds &&
@@ -168,6 +170,9 @@ class WorkSearchViewModel @Inject constructor(
             .map { WorkSearchResult.FromApi(it) }
         return localRows + apiRows
     }
+
+    private fun doesLocalGenreMatch(work: Work): Boolean =
+        selectedGenre == OpenOpusGenre.ALL || work.genre?.lowercase() == selectedGenre.name.lowercase()
 
     private fun doesGenreMatch(work: OpenOpusWork): Boolean =
         selectedGenre == OpenOpusGenre.ALL || work.genre?.lowercase() == selectedGenre.name.lowercase()

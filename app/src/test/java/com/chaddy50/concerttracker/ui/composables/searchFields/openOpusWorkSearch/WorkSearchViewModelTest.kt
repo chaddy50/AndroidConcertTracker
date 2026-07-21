@@ -158,6 +158,173 @@ class WorkSearchViewModelTest {
         assertNull(viewModel.saveError)
     }
 
+    // --- Genre filtering for local works ---
+
+    @Test
+    fun `local works are filtered out when their genre does not match the selected genre`() = runTest {
+        every { worksRepository.searchWorksForComposer("c1", any()) } returns flowOf(
+            listOf(Work(id = "cached-1", title = "Piano Sonata", genre = "Keyboard"))
+        )
+        val viewModel = viewModel(composerEntityId = "c1", composerOpenOpusId = null)
+        advanceUntilIdle()
+
+        viewModel.selectGenre(OpenOpusGenre.ORCHESTRAL)
+        advanceUntilIdle()
+
+        assertEquals(WorkSearchUiState.Empty, viewModel.uiState)
+    }
+
+    @Test
+    fun `local works with matching genre are kept when a genre filter is active`() = runTest {
+        every { worksRepository.searchWorksForComposer("c1", any()) } returns flowOf(
+            listOf(
+                Work(id = "cached-1", title = "Symphony", genre = "Orchestral"),
+                Work(id = "cached-2", title = "Sonata", genre = "Keyboard")
+            )
+        )
+        val viewModel = viewModel(composerEntityId = "c1", composerOpenOpusId = null)
+        advanceUntilIdle()
+
+        viewModel.selectGenre(OpenOpusGenre.ORCHESTRAL)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState as WorkSearchUiState.Results
+        assertEquals(listOf("cached-1"), state.rows.filterIsInstance<WorkSearchResult.Local>().map { it.work.id })
+    }
+
+    @Test
+    fun `ALL genre shows all local works regardless of their genre`() = runTest {
+        every { worksRepository.searchWorksForComposer("c1", any()) } returns flowOf(
+            listOf(
+                Work(id = "cached-1", title = "Symphony", genre = "Orchestral"),
+                Work(id = "cached-2", title = "Sonata", genre = "Keyboard"),
+                Work(id = "cached-3", title = "Untitled", genre = null)
+            )
+        )
+        val viewModel = viewModel(composerEntityId = "c1", composerOpenOpusId = null)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState as WorkSearchUiState.Results
+        assertEquals(3, state.rows.size)
+    }
+
+    @Test
+    fun `local works with null genre are excluded when a specific genre filter is active`() = runTest {
+        every { worksRepository.searchWorksForComposer("c1", any()) } returns flowOf(
+            listOf(Work(id = "cached-1", title = "Untitled", genre = null))
+        )
+        val viewModel = viewModel(composerEntityId = "c1", composerOpenOpusId = null)
+        advanceUntilIdle()
+
+        viewModel.selectGenre(OpenOpusGenre.VOCAL)
+        advanceUntilIdle()
+
+        assertEquals(WorkSearchUiState.Empty, viewModel.uiState)
+    }
+
+    @Test
+    fun `genre matching for local works is case-insensitive`() = runTest {
+        every { worksRepository.searchWorksForComposer("c1", any()) } returns flowOf(
+            listOf(Work(id = "cached-1", title = "Symphony", genre = "orchestral"))
+        )
+        val viewModel = viewModel(composerEntityId = "c1", composerOpenOpusId = null)
+        advanceUntilIdle()
+
+        viewModel.selectGenre(OpenOpusGenre.ORCHESTRAL)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState as WorkSearchUiState.Results
+        assertEquals(1, state.rows.size)
+    }
+
+    @Test
+    fun `switching genre filters updates local work visibility`() = runTest {
+        every { worksRepository.searchWorksForComposer("c1", any()) } returns flowOf(
+            listOf(
+                Work(id = "cached-1", title = "Concerto", genre = "Orchestral"),
+                Work(id = "cached-2", title = "Nocturne", genre = "Keyboard")
+            )
+        )
+        val viewModel = viewModel(composerEntityId = "c1", composerOpenOpusId = null)
+        advanceUntilIdle()
+
+        viewModel.selectGenre(OpenOpusGenre.ORCHESTRAL)
+        advanceUntilIdle()
+        var state = viewModel.uiState as WorkSearchUiState.Results
+        assertEquals(listOf("cached-1"), state.rows.filterIsInstance<WorkSearchResult.Local>().map { it.work.id })
+
+        viewModel.selectGenre(OpenOpusGenre.KEYBOARD)
+        advanceUntilIdle()
+        state = viewModel.uiState as WorkSearchUiState.Results
+        assertEquals(listOf("cached-2"), state.rows.filterIsInstance<WorkSearchResult.Local>().map { it.work.id })
+
+        viewModel.selectGenre(OpenOpusGenre.ALL)
+        advanceUntilIdle()
+        state = viewModel.uiState as WorkSearchUiState.Results
+        assertEquals(2, state.rows.size)
+    }
+
+    @Test
+    fun `genre filter applies consistently to both local and API works`() = runTest {
+        every { worksRepository.searchWorksForComposer("c1", any()) } returns flowOf(
+            listOf(Work(id = "cached-1", title = "Local Orchestral", genre = "Orchestral"))
+        )
+        coEvery { openOpusRepository.getWorksByComposer("oo1") } returns ApiResult.Success(
+            listOf(
+                OpenOpusWork(id = "api-1", title = "API Keyboard", genre = "Keyboard"),
+                OpenOpusWork(id = "api-2", title = "API Orchestral", genre = "Orchestral")
+            )
+        )
+        val viewModel = viewModel(composerEntityId = "c1")
+        advanceUntilIdle()
+
+        viewModel.selectGenre(OpenOpusGenre.ORCHESTRAL)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState as WorkSearchUiState.Results
+        assertEquals(1, state.rows.filterIsInstance<WorkSearchResult.Local>().size)
+        assertEquals(1, state.rows.filterIsInstance<WorkSearchResult.FromApi>().size)
+        assertEquals(2, state.rows.size)
+    }
+
+    @Test
+    fun `de-duplication still works correctly after genre filtering of local works`() = runTest {
+        every { worksRepository.searchWorksForComposer("c1", any()) } returns flowOf(
+            listOf(Work(id = "cached-1", title = "Symphony", genre = "Orchestral", openOpusId = "w1"))
+        )
+        coEvery { openOpusRepository.getWorksByComposer("oo1") } returns ApiResult.Success(
+            listOf(OpenOpusWork(id = "w1", title = "Symphony", genre = "Orchestral"))
+        )
+        val viewModel = viewModel(composerEntityId = "c1")
+        advanceUntilIdle()
+
+        viewModel.selectGenre(OpenOpusGenre.ORCHESTRAL)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState as WorkSearchUiState.Results
+        assertEquals(1, state.rows.size)
+        assertTrue(state.rows.first() is WorkSearchResult.Local)
+    }
+
+    @Test
+    fun `local work filtered by genre does not cause its API duplicate to reappear`() = runTest {
+        every { worksRepository.searchWorksForComposer("c1", any()) } returns flowOf(
+            listOf(Work(id = "cached-1", title = "Nocturne", genre = "Keyboard", openOpusId = "w1"))
+        )
+        coEvery { openOpusRepository.getWorksByComposer("oo1") } returns ApiResult.Success(
+            listOf(OpenOpusWork(id = "w1", title = "Nocturne", genre = "Keyboard"))
+        )
+        val viewModel = viewModel(composerEntityId = "c1")
+        advanceUntilIdle()
+
+        viewModel.selectGenre(OpenOpusGenre.ORCHESTRAL)
+        advanceUntilIdle()
+
+        assertEquals(WorkSearchUiState.Empty, viewModel.uiState)
+    }
+
+    // --- End genre filtering tests ---
+
     @Test
     fun `creating a custom work resolves with a null Open Opus work id`() = runTest {
         coEvery { openOpusRepository.getWorksByComposer("oo1") } returns ApiResult.Success(emptyList())
