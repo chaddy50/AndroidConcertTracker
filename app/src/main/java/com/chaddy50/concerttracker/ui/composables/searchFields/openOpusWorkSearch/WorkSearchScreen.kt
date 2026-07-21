@@ -52,7 +52,7 @@ fun WorkSearchScreen(
         OutlinedTextField(
             value = viewModel.searchQuery,
             onValueChange = viewModel::updateSearchQuery,
-            label = { Text("Search works") },
+            label = { Text("Work") },
             singleLine = true,
             modifier = Modifier
                 .fillMaxWidth()
