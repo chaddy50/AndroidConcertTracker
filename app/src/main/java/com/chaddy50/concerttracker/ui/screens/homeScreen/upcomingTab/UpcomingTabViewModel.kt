@@ -2,7 +2,6 @@ package com.chaddy50.concerttracker.ui.screens.homeScreen.upcomingTab
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.chaddy50.concerttracker.data.domain.Performance
 import com.chaddy50.concerttracker.data.repository.PerformancesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,7 +24,7 @@ class UpcomingTabViewModel @Inject constructor(
         isLoading
     ) { performances, loading ->
         when {
-            performances.isNotEmpty() -> UpcomingTabUiState.Content(performances)
+            performances.isNotEmpty() -> UpcomingTabUiState.Content(buildUpcomingListItems(performances))
             loading -> UpcomingTabUiState.Loading
             else -> UpcomingTabUiState.Empty
         }
@@ -51,5 +50,5 @@ class UpcomingTabViewModel @Inject constructor(
 sealed interface UpcomingTabUiState {
     data object Loading : UpcomingTabUiState
     data object Empty : UpcomingTabUiState
-    data class Content(val performances: List<Performance>) : UpcomingTabUiState
+    data class Content(val items: List<UpcomingListItem>) : UpcomingTabUiState
 }

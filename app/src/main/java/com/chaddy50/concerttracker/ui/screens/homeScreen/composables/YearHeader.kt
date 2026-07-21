@@ -1,4 +1,4 @@
-package com.chaddy50.concerttracker.ui.screens.homeScreen.pastTab.composables
+package com.chaddy50.concerttracker.ui.screens.homeScreen.composables
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding

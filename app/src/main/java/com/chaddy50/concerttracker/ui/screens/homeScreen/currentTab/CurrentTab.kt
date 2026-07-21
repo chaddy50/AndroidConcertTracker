@@ -38,6 +38,7 @@ fun CurrentTab(
                     Text(
                         text = "Next Up",
                         style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                     if (nextUpcoming != null) {
@@ -58,6 +59,7 @@ fun CurrentTab(
                     Text(
                         text = "Recent",
                         style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier
                             .padding(top = 16.dp)
                             .padding(bottom = 8.dp)

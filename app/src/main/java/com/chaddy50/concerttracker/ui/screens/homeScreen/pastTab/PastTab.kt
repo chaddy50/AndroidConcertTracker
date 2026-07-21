@@ -15,7 +15,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.chaddy50.concerttracker.ui.screens.homeScreen.composables.PerformanceCard
-import com.chaddy50.concerttracker.ui.screens.homeScreen.pastTab.composables.YearHeader
+import com.chaddy50.concerttracker.ui.screens.homeScreen.composables.YearHeader
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable

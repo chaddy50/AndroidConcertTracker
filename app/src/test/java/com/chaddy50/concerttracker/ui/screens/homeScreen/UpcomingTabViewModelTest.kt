@@ -6,6 +6,7 @@ import com.chaddy50.concerttracker.data.domain.Performance
 import com.chaddy50.concerttracker.data.domain.Venue
 import com.chaddy50.concerttracker.data.enum.PerformanceStatus
 import com.chaddy50.concerttracker.data.repository.PerformancesRepository
+import com.chaddy50.concerttracker.ui.screens.homeScreen.upcomingTab.UpcomingListItem
 import com.chaddy50.concerttracker.ui.screens.homeScreen.upcomingTab.UpcomingTabUiState
 import com.chaddy50.concerttracker.ui.screens.homeScreen.upcomingTab.UpcomingTabViewModel
 import io.mockk.coEvery
@@ -54,7 +55,8 @@ class UpcomingTabViewModelTest {
 
         val state = viewModel.uiState.value
         assertTrue(state is UpcomingTabUiState.Content)
-        assertEquals(listOf("p1"), (state as UpcomingTabUiState.Content).performances.map { it.id })
+        val ids = (state as UpcomingTabUiState.Content).items.filterIsInstance<UpcomingListItem.Entry>().map { it.performance.id }
+        assertEquals(listOf("p1"), ids)
     }
 
     @Test
@@ -72,7 +74,7 @@ class UpcomingTabViewModelTest {
 
         val state = viewModel.uiState.value
         assertTrue(state is UpcomingTabUiState.Content)
-        assertEquals(1, (state as UpcomingTabUiState.Content).performances.size)
+        assertEquals(1, (state as UpcomingTabUiState.Content).items.filterIsInstance<UpcomingListItem.Entry>().size)
     }
 
     @Test
@@ -103,7 +105,8 @@ class UpcomingTabViewModelTest {
 
         val state = viewModel.uiState.value
         assertTrue(state is UpcomingTabUiState.Content)
-        assertEquals(listOf("p1"), (state as UpcomingTabUiState.Content).performances.map { it.id })
+        val ids = (state as UpcomingTabUiState.Content).items.filterIsInstance<UpcomingListItem.Entry>().map { it.performance.id }
+        assertEquals(listOf("p1"), ids)
     }
 
     @Test

@@ -1,10 +1,10 @@
 package com.chaddy50.concerttracker.ui.screens.homeScreen.upcomingTab
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -14,7 +14,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chaddy50.concerttracker.ui.screens.homeScreen.composables.PerformanceCard
+import com.chaddy50.concerttracker.ui.screens.homeScreen.composables.YearHeader
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun UpcomingTab(
     onPerformanceClick: (String, String) -> Unit,
@@ -27,17 +29,28 @@ fun UpcomingTab(
             }
         }
         is UpcomingTabUiState.Empty -> {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Box(modifier = Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.TopCenter) {
                 Text("No upcoming concerts")
             }
         }
         is UpcomingTabUiState.Content -> {
-            LazyColumn(modifier = Modifier.padding(16.dp)) {
-                items(state.performances, key = { it.id }) { performance ->
-                    PerformanceCard(
-                        performance = performance,
-                        onClick = { onPerformanceClick(performance.id, performance.date) }
-                    )
+            LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+                state.items.forEachIndexed { index, item ->
+                    when (item) {
+                        is UpcomingListItem.Header -> {
+                            stickyHeader(key = "header-${item.yearLabel}", contentType = "header") {
+                                YearHeader(item.yearLabel)
+                            }
+                        }
+                        is UpcomingListItem.Entry -> {
+                            item(key = item.performance.id, contentType = "entry") {
+                                PerformanceCard(
+                                    performance = item.performance,
+                                    onClick = { onPerformanceClick(item.performance.id, item.performance.date) }
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
