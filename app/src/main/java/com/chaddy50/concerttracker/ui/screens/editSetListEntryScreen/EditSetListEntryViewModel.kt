@@ -49,7 +49,16 @@ class EditSetListEntryViewModel @Inject constructor(
     var draftWorkTitle: String? by mutableStateOf(null)
         private set
 
+    var draftComposerEntityId: String? by mutableStateOf(null)
+        private set
+
+    var draftComposerOpenOpusId: String? by mutableStateOf(null)
+        private set
+
     var draftComposerName: String by mutableStateOf("")
+        private set
+
+    var draftComposerEpoch: String? by mutableStateOf(null)
         private set
 
     private var entryOrder: Int = 1
@@ -78,7 +87,10 @@ class EditSetListEntryViewModel @Inject constructor(
             if (pendingLocalId != null) {
                 draftWorkId = route.pendingWorkId
                 draftWorkTitle = route.pendingWorkTitle
+                draftComposerEntityId = route.pendingComposerEntityId
+                draftComposerOpenOpusId = route.pendingComposerOpenOpusId
                 draftComposerName = route.pendingComposerName ?: ""
+                draftComposerEpoch = route.pendingComposerEpoch
                 entryOrder = route.pendingOrder ?: 1
                 route.pendingFeaturedPerformersJson?.let { json ->
                     val performers: List<DraftFeaturedPerformer> =
@@ -103,7 +115,11 @@ class EditSetListEntryViewModel @Inject constructor(
                     }
                     draftWorkId = entry.work.id
                     draftWorkTitle = entry.work.title
-                    draftComposerName = entry.work.composers.joinToString(", ") { it.sortName ?: it.name }
+                    val firstComposer = entry.work.composers.firstOrNull()
+                    draftComposerEntityId = firstComposer?.id
+                    draftComposerOpenOpusId = firstComposer?.openOpusId
+                    draftComposerName = entry.work.composers.joinToString(", ") { it.name }
+                    draftComposerEpoch = firstComposer?.epoch
                     entryOrder = entry.order
                     draftFeaturedPerformers.clear()
                     draftFeaturedPerformers.addAll(
@@ -121,6 +137,15 @@ class EditSetListEntryViewModel @Inject constructor(
                 uiState = SetListEntryEditUiState.Ready
             }
         }
+    }
+
+    fun selectComposer(entityId: String?, openOpusId: String?, name: String, epoch: String?) {
+        draftComposerEntityId = entityId
+        draftComposerOpenOpusId = openOpusId
+        draftComposerName = name
+        draftComposerEpoch = epoch
+        draftWorkId = null
+        draftWorkTitle = null
     }
 
     fun selectWork(workId: String, title: String, composerName: String) {
@@ -171,7 +196,10 @@ class EditSetListEntryViewModel @Inject constructor(
                     pendingLocalId = pendingLocalId,
                     workId = workId,
                     workTitle = workTitle,
+                    composerEntityId = draftComposerEntityId,
+                    composerOpenOpusId = draftComposerOpenOpusId,
                     composerName = draftComposerName,
+                    composerEpoch = draftComposerEpoch,
                     order = order,
                     featuredPerformers = draftFeaturedPerformers.toList()
                 )
@@ -221,7 +249,10 @@ class EditSetListEntryViewModel @Inject constructor(
         val pendingLocalId: String?,
         val workId: String,
         val workTitle: String,
+        val composerEntityId: String?,
+        val composerOpenOpusId: String?,
         val composerName: String,
+        val composerEpoch: String?,
         val order: Int,
         val featuredPerformers: List<DraftFeaturedPerformer>
     )

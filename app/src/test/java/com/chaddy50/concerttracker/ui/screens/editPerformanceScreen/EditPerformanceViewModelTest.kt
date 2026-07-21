@@ -279,8 +279,8 @@ class EditPerformanceViewModelTest {
         val viewModel = createViewModel()
         advanceUntilIdle()
 
-        viewModel.addPendingSetListEntry("w1", "First", "Composer", emptyList())
-        viewModel.addPendingSetListEntry("w2", "Second", "Composer", emptyList())
+        viewModel.addPendingSetListEntry("w1", "First", null, null, "Composer", null, emptyList())
+        viewModel.addPendingSetListEntry("w2", "Second", null, null, "Composer", null, emptyList())
 
         assertEquals(listOf(1, 2), viewModel.pendingSetListEntries.map { it.order })
     }
@@ -289,8 +289,8 @@ class EditPerformanceViewModelTest {
     fun `movePendingSetListEntry reorders in memory and reassigns 1-based orders without the repository`() = runTest {
         val viewModel = createViewModel()
         advanceUntilIdle()
-        viewModel.addPendingSetListEntry("w1", "First", "Composer", emptyList())
-        viewModel.addPendingSetListEntry("w2", "Second", "Composer", emptyList())
+        viewModel.addPendingSetListEntry("w1", "First", null, null, "Composer", null, emptyList())
+        viewModel.addPendingSetListEntry("w2", "Second", null, null, "Composer", null, emptyList())
 
         viewModel.movePendingSetListEntry(from = 0, to = 1)
 
@@ -303,11 +303,11 @@ class EditPerformanceViewModelTest {
     fun `replacePendingSetListEntry preserves the existing entry order`() = runTest {
         val viewModel = createViewModel()
         advanceUntilIdle()
-        viewModel.addPendingSetListEntry("w1", "First", "Composer", emptyList())
-        viewModel.addPendingSetListEntry("w2", "Second", "Composer", emptyList())
+        viewModel.addPendingSetListEntry("w1", "First", null, null, "Composer", null, emptyList())
+        viewModel.addPendingSetListEntry("w2", "Second", null, null, "Composer", null, emptyList())
         val secondId = viewModel.pendingSetListEntries[1].localId
 
-        viewModel.replacePendingSetListEntry(secondId, "w9", "Replaced", "Composer", emptyList())
+        viewModel.replacePendingSetListEntry(secondId, "w9", "Replaced", null, null, "Composer", null, emptyList())
 
         val replaced = viewModel.pendingSetListEntries.single { it.localId == secondId }
         assertEquals("Replaced", replaced.workTitle)
@@ -323,8 +323,8 @@ class EditPerformanceViewModelTest {
         advanceUntilIdle()
         viewModel.updateDraftDate(1_700_000_000_000L)
         viewModel.updateDraftVenue("v1", "Hall")
-        viewModel.addPendingSetListEntry("w1", "First", "Composer", emptyList())
-        viewModel.addPendingSetListEntry("w2", "Second", "Composer", emptyList())
+        viewModel.addPendingSetListEntry("w1", "First", null, null, "Composer", null, emptyList())
+        viewModel.addPendingSetListEntry("w2", "Second", null, null, "Composer", null, emptyList())
         viewModel.movePendingSetListEntry(from = 0, to = 1)
 
         viewModel.savePerformance {}

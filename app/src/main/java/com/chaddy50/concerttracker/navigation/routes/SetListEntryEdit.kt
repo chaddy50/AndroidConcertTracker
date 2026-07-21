@@ -23,7 +23,10 @@ data class SetListEntryEdit(
     val pendingLocalId: String? = null,
     val pendingWorkId: String? = null,
     val pendingWorkTitle: String? = null,
+    val pendingComposerEntityId: String? = null,
+    val pendingComposerOpenOpusId: String? = null,
     val pendingComposerName: String? = null,
+    val pendingComposerEpoch: String? = null,
     val pendingOrder: Int? = null,
     val pendingFeaturedPerformersJson: String? = null
 )
@@ -33,7 +36,10 @@ data class PendingSetListEntryResult(
     val pendingLocalId: String?,
     val workId: String,
     val workTitle: String,
+    val composerEntityId: String? = null,
+    val composerOpenOpusId: String? = null,
     val composerName: String,
+    val composerEpoch: String? = null,
     val order: Int,
     val featuredPerformers: List<PendingFeaturedPerformerResult>
 )
@@ -60,8 +66,24 @@ fun NavGraphBuilder.setListEntryEdit(navController: NavController) {
         val viewModel: EditSetListEntryViewModel = hiltViewModel()
         val handle = backStackEntry.savedStateHandle
 
+        val pendingComposer by handle.pendingComposerFlow().collectAsStateWithLifecycle(null)
         val pendingWork by handle.pendingWorkFlow().collectAsStateWithLifecycle(null)
         val pendingPerformer by handle.pendingPerformerFlow().collectAsStateWithLifecycle(null)
+
+        LaunchedEffect(pendingComposer) {
+            pendingComposer?.let {
+                viewModel.selectComposer(it.entityId, it.openOpusId, it.name, it.epoch)
+                handle.clearPendingComposer()
+                navController.navigate(
+                    OpenOpusWorkSearch(
+                        composerEntityId = it.entityId,
+                        composerOpenOpusId = it.openOpusId,
+                        composerName = it.name,
+                        composerEpoch = it.epoch
+                    )
+                )
+            }
+        }
 
         LaunchedEffect(pendingWork) {
             pendingWork?.let {
@@ -88,7 +110,10 @@ fun NavGraphBuilder.setListEntryEdit(navController: NavController) {
                     pendingLocalId = pendingEntryData.pendingLocalId,
                     workId = pendingEntryData.workId,
                     workTitle = pendingEntryData.workTitle,
+                    composerEntityId = pendingEntryData.composerEntityId,
+                    composerOpenOpusId = pendingEntryData.composerOpenOpusId,
                     composerName = pendingEntryData.composerName,
+                    composerEpoch = pendingEntryData.composerEpoch,
                     order = pendingEntryData.order,
                     featuredPerformers = pendingEntryData.featuredPerformers.map { p ->
                         PendingFeaturedPerformerResult(p.performerId, p.name, p.role)
@@ -101,7 +126,17 @@ fun NavGraphBuilder.setListEntryEdit(navController: NavController) {
                 navController.popBackStack()
             },
             onCancel = { navController.popBackStack() },
-            onNavigateToSearchWork = { navController.navigate(OpenOpusComposerSearch) },
+            onNavigateToSearchComposer = { navController.navigate(OpenOpusComposerSearch) },
+            onNavigateToSearchWork = {
+                navController.navigate(
+                    OpenOpusWorkSearch(
+                        composerEntityId = viewModel.draftComposerEntityId,
+                        composerOpenOpusId = viewModel.draftComposerOpenOpusId,
+                        composerName = viewModel.draftComposerName,
+                        composerEpoch = viewModel.draftComposerEpoch
+                    )
+                )
+            },
             onNavigateToSearchPerformer = { navController.navigate(MusicBrainzSearch(MusicBrainzEntityType.PERFORMER)) }
         )
     }

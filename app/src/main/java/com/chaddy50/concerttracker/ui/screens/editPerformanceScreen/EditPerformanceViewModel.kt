@@ -153,16 +153,22 @@ class EditPerformanceViewModel @Inject constructor(
     fun addPendingSetListEntry(
         workId: String,
         workTitle: String,
+        composerEntityId: String?,
+        composerOpenOpusId: String?,
         composerName: String,
+        composerEpoch: String?,
         featuredPerformers: List<PendingFeaturedPerformer>
     ) {
         pendingSetListEntries = pendingSetListEntries + PendingSetListEntry(
-            java.util.UUID.randomUUID().toString(),
-            workId,
-            workTitle,
-            composerName,
-            pendingSetListEntries.size + 1,
-            featuredPerformers
+            localId = java.util.UUID.randomUUID().toString(),
+            workId = workId,
+            workTitle = workTitle,
+            composerEntityId = composerEntityId,
+            composerOpenOpusId = composerOpenOpusId,
+            composerName = composerName,
+            composerEpoch = composerEpoch,
+            order = pendingSetListEntries.size + 1,
+            featuredPerformers = featuredPerformers
         )
     }
 
@@ -171,14 +177,27 @@ class EditPerformanceViewModel @Inject constructor(
         localId: String,
         workId: String,
         workTitle: String,
+        composerEntityId: String?,
+        composerOpenOpusId: String?,
         composerName: String,
+        composerEpoch: String?,
         featuredPerformers: List<PendingFeaturedPerformer>
     ) {
         val index = pendingSetListEntries.indexOfFirst { it.localId == localId }
         if (index != -1) {
             val existingOrder = pendingSetListEntries[index].order
             pendingSetListEntries = pendingSetListEntries.toMutableList().apply {
-                this[index] = PendingSetListEntry(localId, workId, workTitle, composerName, existingOrder, featuredPerformers)
+                this[index] = PendingSetListEntry(
+                    localId = localId,
+                    workId = workId,
+                    workTitle = workTitle,
+                    composerEntityId = composerEntityId,
+                    composerOpenOpusId = composerOpenOpusId,
+                    composerName = composerName,
+                    composerEpoch = composerEpoch,
+                    order = existingOrder,
+                    featuredPerformers = featuredPerformers
+                )
             }
         }
     }
@@ -255,7 +274,10 @@ data class PendingSetListEntry(
     val localId: String,
     val workId: String,
     val workTitle: String,
+    val composerEntityId: String? = null,
+    val composerOpenOpusId: String? = null,
     val composerName: String,
+    val composerEpoch: String? = null,
     val order: Int,
     val featuredPerformers: List<PendingFeaturedPerformer>
 )

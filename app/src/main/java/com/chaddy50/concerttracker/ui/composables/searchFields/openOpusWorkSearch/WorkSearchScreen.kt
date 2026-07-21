@@ -44,6 +44,11 @@ fun WorkSearchScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
+        Text(
+            text = viewModel.composerName,
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        )
         OutlinedTextField(
             value = viewModel.searchQuery,
             onValueChange = viewModel::updateSearchQuery,

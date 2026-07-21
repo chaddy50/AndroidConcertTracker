@@ -31,11 +31,13 @@ import com.chaddy50.concerttracker.ui.composables.editableItemList.EditableItemL
 
 @Composable
 fun EditSetListEntryForm(
+    draftComposerName: String?,
     draftWorkTitle: String?,
     draftFeaturedPerformers: List<DraftFeaturedPerformer>,
     canSave: Boolean,
     isSaving: Boolean,
     saveError: String?,
+    onComposerClick: () -> Unit,
     onWorkClick: () -> Unit,
     onAddPerformerClick: () -> Unit,
     onUpdateFeaturedPerformerRole: (performerId: String, role: String) -> Unit,
@@ -52,14 +54,29 @@ fun EditSetListEntryForm(
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
+            val composerInteractionSource = remember { MutableInteractionSource() }
+            val isComposerPressed by composerInteractionSource.collectIsPressedAsState()
+            if (isComposerPressed) onComposerClick()
+
+            OutlinedTextField(
+                value = draftComposerName ?: "",
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Composer") },
+                interactionSource = composerInteractionSource,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            val isWorkEnabled = draftComposerName?.isNotBlank() == true
             val workInteractionSource = remember { MutableInteractionSource() }
             val isWorkPressed by workInteractionSource.collectIsPressedAsState()
-            if (isWorkPressed) onWorkClick()
+            if (isWorkPressed && isWorkEnabled) onWorkClick()
 
             OutlinedTextField(
                 value = draftWorkTitle ?: "",
                 onValueChange = {},
                 readOnly = true,
+                enabled = isWorkEnabled,
                 label = { Text("Work") },
                 interactionSource = workInteractionSource,
                 modifier = Modifier.fillMaxWidth()

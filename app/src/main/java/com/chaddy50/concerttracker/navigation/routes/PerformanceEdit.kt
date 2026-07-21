@@ -49,9 +49,9 @@ fun NavGraphBuilder.performanceEdit(navController: NavController) {
                     PendingFeaturedPerformer(p.performerId, p.name, p.role)
                 }
                 if (result.pendingLocalId != null) {
-                    viewModel.replacePendingSetListEntry(result.pendingLocalId, result.workId, result.workTitle, result.composerName, performers)
+                    viewModel.replacePendingSetListEntry(result.pendingLocalId, result.workId, result.workTitle, result.composerEntityId, result.composerOpenOpusId, result.composerName, result.composerEpoch, performers)
                 } else {
-                    viewModel.addPendingSetListEntry(result.workId, result.workTitle, result.composerName, performers)
+                    viewModel.addPendingSetListEntry(result.workId, result.workTitle, result.composerEntityId, result.composerOpenOpusId, result.composerName, result.composerEpoch, performers)
                 }
                 handle.clearPendingSetListEntry()
             }
@@ -77,7 +77,10 @@ fun NavGraphBuilder.performanceEdit(navController: NavController) {
                         pendingLocalId = entry.localId,
                         pendingWorkId = entry.workId,
                         pendingWorkTitle = entry.workTitle,
+                        pendingComposerEntityId = entry.composerEntityId,
+                        pendingComposerOpenOpusId = entry.composerOpenOpusId,
                         pendingComposerName = entry.composerName,
+                        pendingComposerEpoch = entry.composerEpoch,
                         pendingOrder = entry.order,
                         pendingFeaturedPerformersJson = Json.encodeToString(
                             entry.featuredPerformers.map { DraftFeaturedPerformer(it.performerId, it.name, it.role) }

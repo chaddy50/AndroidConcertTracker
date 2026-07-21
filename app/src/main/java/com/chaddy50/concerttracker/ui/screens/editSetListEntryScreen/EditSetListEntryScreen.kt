@@ -15,6 +15,7 @@ fun EditSetListEntryScreen(
     onSaved: () -> Unit,
     onSavedAsPending: (EditSetListEntryViewModel.PendingEntryResult) -> Unit = {},
     onCancel: () -> Unit,
+    onNavigateToSearchComposer: () -> Unit,
     onNavigateToSearchWork: () -> Unit,
     onNavigateToSearchPerformer: () -> Unit,
     viewModel: EditSetListEntryViewModel = hiltViewModel()
@@ -32,11 +33,13 @@ fun EditSetListEntryScreen(
         }
         is SetListEntryEditUiState.Ready -> {
             EditSetListEntryForm(
+                draftComposerName = viewModel.draftComposerName,
                 draftWorkTitle = viewModel.draftWorkTitle,
                 draftFeaturedPerformers = viewModel.draftFeaturedPerformers,
                 canSave = viewModel.canSave,
                 isSaving = viewModel.isSaving,
                 saveError = viewModel.saveError,
+                onComposerClick = onNavigateToSearchComposer,
                 onWorkClick = onNavigateToSearchWork,
                 onAddPerformerClick = onNavigateToSearchPerformer,
                 onUpdateFeaturedPerformerRole = viewModel::updateDraftFeaturedPerformerRole,
