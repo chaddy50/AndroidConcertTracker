@@ -32,7 +32,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.chaddy50.concerttracker.R
 import com.chaddy50.concerttracker.data.domain.Performer
-import com.chaddy50.concerttracker.data.enum.MusicBrainzEntityType
 import com.chaddy50.concerttracker.data.enum.PerformerType
 
 @Composable
@@ -113,14 +112,9 @@ fun MusicBrainzSearchScreen(
             }
 
             if (state !is MusicBrainzSearchUiState.Loading) {
-                val label = when (viewModel.entityType) {
-                    MusicBrainzEntityType.PERFORMER -> "Create custom performer"
-                    MusicBrainzEntityType.CONDUCTOR -> "Create custom conductor"
-                    MusicBrainzEntityType.COMPOSER -> "Create custom composer"
-                }
                 item {
                     ListItem(
-                        headlineContent = { Text(label) },
+                        headlineContent = { Text("Create custom performer") },
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { showCustomDialog = true }
@@ -140,7 +134,6 @@ fun MusicBrainzSearchScreen(
 
     if (showCustomDialog) {
         CustomMusicBrainzEntityCreationDialog(
-            entityType = viewModel.entityType,
             initialName = viewModel.searchQuery,
             onDismiss = { showCustomDialog = false },
             onConfirm = { result ->

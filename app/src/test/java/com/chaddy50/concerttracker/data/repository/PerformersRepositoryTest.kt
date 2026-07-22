@@ -125,6 +125,17 @@ class PerformersRepositoryTest {
     }
 
     @Test
+    fun `findOrCreatePerformer for a custom conductor persists and is findable with type preserved`() = runTest {
+        val result = repository.findOrCreatePerformer(PerformerRequest("My Conductor", PerformerType.CONDUCTOR))
+
+        assertTrue(result is ApiResult.Success)
+        val created = (result as ApiResult.Success).data
+        val found = repository.searchPerformers("").first().single()
+        assertEquals(created.id, found.id)
+        assertEquals(PerformerType.CONDUCTOR, found.type)
+    }
+
+    @Test
     fun `searchPerformers emits cached performers mapped to domain`() = runTest {
         db.performerDao().upsert(listOf(PerformerEntity("pe1", "Berlin Philharmonic", "ORCHESTRA")))
         val performers = repository.searchPerformers("").first()

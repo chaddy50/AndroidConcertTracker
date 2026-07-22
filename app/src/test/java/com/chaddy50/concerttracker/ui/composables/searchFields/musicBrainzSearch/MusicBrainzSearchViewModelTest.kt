@@ -1,11 +1,9 @@
 package com.chaddy50.concerttracker.ui.composables.searchFields.musicBrainzSearch
 
-import androidx.lifecycle.SavedStateHandle
 import com.chaddy50.concerttracker.data.external.api.ApiErrorType
 import com.chaddy50.concerttracker.data.external.api.ApiResult
 import com.chaddy50.concerttracker.data.external.api.MusicBrainzResult
 import com.chaddy50.concerttracker.data.domain.Performer
-import com.chaddy50.concerttracker.data.enum.MusicBrainzEntityType
 import com.chaddy50.concerttracker.data.enum.PerformerType
 import com.chaddy50.concerttracker.data.repository.MusicBrainzRepository
 import com.chaddy50.concerttracker.data.repository.PerformersRepository
@@ -49,7 +47,6 @@ class MusicBrainzSearchViewModelTest {
     private val catalogResult = MusicBrainzResult(id = "mb-api", name = "Api Performer", performerType = PerformerType.SOLO)
 
     private fun viewModel() = MusicBrainzSearchViewModel(
-        SavedStateHandle(mapOf("entityType" to MusicBrainzEntityType.PERFORMER)),
         musicBrainzRepository,
         performersRepository
     )
@@ -67,7 +64,7 @@ class MusicBrainzSearchViewModelTest {
 
     @Test
     fun `search surfaces online results as catalog rows`() = runTest {
-        coEvery { musicBrainzRepository.search(any(), any()) } returns ApiResult.Success(listOf(catalogResult))
+        coEvery { musicBrainzRepository.search(any()) } returns ApiResult.Success(listOf(catalogResult))
         val viewModel = viewModel()
 
         viewModel.search()
@@ -80,7 +77,7 @@ class MusicBrainzSearchViewModelTest {
     @Test
     fun `cached performers merge with online results and de-duplicate by MusicBrainz id`() = runTest {
         every { performersRepository.searchPerformers(any()) } returns flowOf(listOf(cachedPerformer))
-        coEvery { musicBrainzRepository.search(any(), any()) } returns
+        coEvery { musicBrainzRepository.search(any()) } returns
             ApiResult.Success(listOf(catalogResult, MusicBrainzResult(id = "mb-local", name = "dupe")))
         val viewModel = viewModel()
 
@@ -93,7 +90,7 @@ class MusicBrainzSearchViewModelTest {
     }
 
     @Test
-    fun `cached performers are filtered to the entity type`() = runTest {
+    fun `cached conductors are included in the performer list`() = runTest {
         every { performersRepository.searchPerformers(any()) } returns flowOf(
             listOf(cachedPerformer, cachedPerformer.copy(id = "p2", type = PerformerType.CONDUCTOR))
         )
@@ -101,12 +98,31 @@ class MusicBrainzSearchViewModelTest {
         advanceUntilIdle()
 
         val state = viewModel.uiState as MusicBrainzSearchUiState.Results
-        assertEquals(listOf("p1"), state.rows.filterIsInstance<PerformerSearchResult.Local>().map { it.performer.id })
+        assertEquals(
+            listOf("p1", "p2"),
+            state.rows.filterIsInstance<PerformerSearchResult.Local>().map { it.performer.id }
+        )
+    }
+
+    @Test
+    fun `cached performers of every type appear as local rows`() = runTest {
+        val performers = PerformerType.entries.mapIndexed { index, type ->
+            cachedPerformer.copy(id = "p$index", type = type, musicbrainzId = null)
+        }
+        every { performersRepository.searchPerformers(any()) } returns flowOf(performers)
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState as MusicBrainzSearchUiState.Results
+        assertEquals(
+            performers.map { it.id },
+            state.rows.filterIsInstance<PerformerSearchResult.Local>().map { it.performer.id }
+        )
     }
 
     @Test
     fun `search transitions to Empty when no results and nothing cached`() = runTest {
-        coEvery { musicBrainzRepository.search(any(), any()) } returns ApiResult.Success(emptyList())
+        coEvery { musicBrainzRepository.search(any()) } returns ApiResult.Success(emptyList())
         val viewModel = viewModel()
 
         viewModel.search()
@@ -117,7 +133,7 @@ class MusicBrainzSearchViewModelTest {
 
     @Test
     fun `search transitions to Error when it fails and nothing cached`() = runTest {
-        coEvery { musicBrainzRepository.search(any(), any()) } returns ApiResult.Error(ApiErrorType.Type.TIMEOUT)
+        coEvery { musicBrainzRepository.search(any()) } returns ApiResult.Error(ApiErrorType.Type.TIMEOUT)
         val viewModel = viewModel()
 
         viewModel.search()
@@ -129,7 +145,7 @@ class MusicBrainzSearchViewModelTest {
     @Test
     fun `cached performers stay in the list when the online search errors offline`() = runTest {
         every { performersRepository.searchPerformers(any()) } returns flowOf(listOf(cachedPerformer))
-        coEvery { musicBrainzRepository.search(any(), any()) } returns ApiResult.Error(ApiErrorType.Type.NETWORK)
+        coEvery { musicBrainzRepository.search(any()) } returns ApiResult.Error(ApiErrorType.Type.NETWORK)
         val viewModel = viewModel()
 
         viewModel.search()

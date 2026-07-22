@@ -8,7 +8,6 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
-import com.chaddy50.concerttracker.data.enum.MusicBrainzEntityType
 import com.chaddy50.concerttracker.ui.screens.editPerformanceScreen.EditPerformanceScreen
 import com.chaddy50.concerttracker.ui.screens.editPerformanceScreen.EditPerformanceViewModel
 import com.chaddy50.concerttracker.ui.screens.editPerformanceScreen.PendingFeaturedPerformer
@@ -61,7 +60,7 @@ fun NavGraphBuilder.performanceEdit(navController: NavController) {
             onSaved = { navController.popBackStack() },
             onCancel = { navController.popBackStack() },
             onNavigateToCreateVenue = { navController.navigate(VenueSearch) },
-            onNavigateToSearchPerformer = { navController.navigate(MusicBrainzSearch(MusicBrainzEntityType.PERFORMER)) },
+            onNavigateToSearchPerformer = { navController.navigate(MusicBrainzSearch) },
             onNavigateToAddSetListEntry = {
                 navController.navigate(SetListEntryEdit(performanceId = performanceId, entryId = null))
             },

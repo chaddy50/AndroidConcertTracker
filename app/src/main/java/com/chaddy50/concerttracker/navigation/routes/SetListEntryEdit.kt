@@ -8,7 +8,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
-import com.chaddy50.concerttracker.data.enum.MusicBrainzEntityType
 import com.chaddy50.concerttracker.ui.screens.editSetListEntryScreen.EditSetListEntryScreen
 import com.chaddy50.concerttracker.ui.screens.editSetListEntryScreen.EditSetListEntryViewModel
 import kotlinx.coroutines.flow.Flow
@@ -137,7 +136,7 @@ fun NavGraphBuilder.setListEntryEdit(navController: NavController) {
                     )
                 )
             },
-            onNavigateToSearchPerformer = { navController.navigate(MusicBrainzSearch(MusicBrainzEntityType.PERFORMER)) }
+            onNavigateToSearchPerformer = { navController.navigate(MusicBrainzSearch) }
         )
     }
 }

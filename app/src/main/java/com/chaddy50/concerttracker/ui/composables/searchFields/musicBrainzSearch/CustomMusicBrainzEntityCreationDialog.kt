@@ -20,14 +20,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.chaddy50.concerttracker.data.external.api.MusicBrainzResult
-import com.chaddy50.concerttracker.data.enum.MusicBrainzEntityType
 import com.chaddy50.concerttracker.data.enum.PerformerType
 import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CustomMusicBrainzEntityCreationDialog(
-    entityType: MusicBrainzEntityType,
     initialName: String = "",
     onDismiss: () -> Unit,
     onConfirm: (MusicBrainzResult) -> Unit
@@ -39,14 +37,7 @@ fun CustomMusicBrainzEntityCreationDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = {
-            val title = when (entityType) {
-                MusicBrainzEntityType.PERFORMER -> "Create custom performer"
-                MusicBrainzEntityType.CONDUCTOR -> "Create custom conductor"
-                MusicBrainzEntityType.COMPOSER -> "Create custom composer"
-            }
-            Text(title)
-        },
+        title = { Text("Create custom performer") },
         text = {
             Column {
                 OutlinedTextField(
@@ -56,57 +47,55 @@ fun CustomMusicBrainzEntityCreationDialog(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
-                if (entityType == MusicBrainzEntityType.PERFORMER) {
-                    ExposedDropdownMenuBox(
-                        expanded = typeDropdownExpanded,
-                        onExpandedChange = { typeDropdownExpanded = it },
+                ExposedDropdownMenuBox(
+                    expanded = typeDropdownExpanded,
+                    onExpandedChange = { typeDropdownExpanded = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = selectedPerformerType.name
+                            .lowercase()
+                            .replaceFirstChar { it.uppercase() },
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Type") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = typeDropdownExpanded) },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 8.dp)
+                            .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                    )
+                    ExposedDropdownMenu(
+                        expanded = typeDropdownExpanded,
+                        onDismissRequest = { typeDropdownExpanded = false }
                     ) {
-                        OutlinedTextField(
-                            value = selectedPerformerType.name
-                                .lowercase()
-                                .replaceFirstChar { it.uppercase() },
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text("Type") },
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = typeDropdownExpanded) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                        )
-                        ExposedDropdownMenu(
-                            expanded = typeDropdownExpanded,
-                            onDismissRequest = { typeDropdownExpanded = false }
-                        ) {
-                            PerformerType.entries.forEach { type ->
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(
-                                            type.name
-                                                .lowercase()
-                                                .replaceFirstChar { it.uppercase() }
-                                        )
-                                    },
-                                    onClick = {
-                                        selectedPerformerType = type
-                                        typeDropdownExpanded = false
-                                    }
-                                )
-                            }
+                        PerformerType.entries.forEach { type ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        type.name
+                                            .lowercase()
+                                            .replaceFirstChar { it.uppercase() }
+                                    )
+                                },
+                                onClick = {
+                                    selectedPerformerType = type
+                                    typeDropdownExpanded = false
+                                }
+                            )
                         }
                     }
-                    OutlinedTextField(
-                        value = specialty,
-                        onValueChange = { specialty = it },
-                        label = { Text("Specialty (optional)") },
-                        singleLine = true,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp)
-                    )
                 }
+                OutlinedTextField(
+                    value = specialty,
+                    onValueChange = { specialty = it },
+                    label = { Text("Specialty (optional)") },
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
+                )
             }
         },
         confirmButton = {
@@ -117,11 +106,7 @@ fun CustomMusicBrainzEntityCreationDialog(
                             id = "CUSTOM-${UUID.randomUUID()}",
                             name = name.trim(),
                             description = specialty.trim().ifBlank { null },
-                            performerType = if (entityType == MusicBrainzEntityType.PERFORMER) {
-                                selectedPerformerType
-                            } else {
-                                null
-                            }
+                            performerType = selectedPerformerType
                         )
                     )
                 },

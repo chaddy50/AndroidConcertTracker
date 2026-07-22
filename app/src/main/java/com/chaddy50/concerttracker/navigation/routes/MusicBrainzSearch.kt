@@ -4,15 +4,13 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
-import androidx.navigation.toRoute
-import com.chaddy50.concerttracker.data.enum.MusicBrainzEntityType
 import com.chaddy50.concerttracker.ui.composables.searchFields.musicBrainzSearch.MusicBrainzSearchScreen
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class MusicBrainzSearch(val entityType: MusicBrainzEntityType)
+data object MusicBrainzSearch
 
 data class PendingPerformerResult(
     val id: String,
@@ -38,22 +36,14 @@ fun SavedStateHandle.clearPendingPerformer() {
 }
 
 fun NavGraphBuilder.musicBrainzSearch(navController: NavController) {
-    composable<MusicBrainzSearch> { backStackEntry ->
-        val entityType = backStackEntry.toRoute<MusicBrainzSearch>().entityType
+    composable<MusicBrainzSearch> {
         MusicBrainzSearchScreen(
             onPerformerSelected = { performer ->
-                val (idKey, nameKey) = when (entityType) {
-                    MusicBrainzEntityType.PERFORMER -> "selectedPerformerId" to "selectedPerformerName"
-                    MusicBrainzEntityType.CONDUCTOR -> "selectedConductorId" to "selectedConductorName"
-                    MusicBrainzEntityType.COMPOSER -> "selectedComposerId" to "selectedComposerName"
-                }
                 navController.previousBackStackEntry?.savedStateHandle?.apply {
-                    set(idKey, performer.id)
-                    set(nameKey, performer.name)
-                    if (entityType == MusicBrainzEntityType.PERFORMER) {
-                        set("selectedPerformerType", performer.type.name)
-                        set("selectedPerformerSpecialty", performer.specialty)
-                    }
+                    set("selectedPerformerId", performer.id)
+                    set("selectedPerformerName", performer.name)
+                    set("selectedPerformerType", performer.type.name)
+                    set("selectedPerformerSpecialty", performer.specialty)
                 }
                 navController.popBackStack()
             }

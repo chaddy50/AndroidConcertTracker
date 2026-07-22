@@ -3,7 +3,6 @@ package com.chaddy50.concerttracker.data.repository
 import com.chaddy50.concerttracker.data.external.api.ApiErrorType
 import com.chaddy50.concerttracker.data.external.api.ApiResult
 import com.chaddy50.concerttracker.data.external.api.MusicBrainzApiService
-import com.chaddy50.concerttracker.data.enum.MusicBrainzEntityType
 import com.chaddy50.concerttracker.data.enum.PerformerType
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.coroutines.test.runTest
@@ -43,7 +42,7 @@ class MusicBrainzRepositoryTest {
     }
 
     @Test
-    fun `search maps artist types to performer types for PERFORMER`() = runTest {
+    fun `search maps artist types to performer types`() = runTest {
         val body = """{"artists":[""" +
             """{"id":"a1","name":"Berlin Phil","type":"Orchestra"},""" +
             """{"id":"a2","name":"Vienna Choir","type":"Choir"},""" +
@@ -53,7 +52,7 @@ class MusicBrainzRepositoryTest {
             """{"id":"a6","name":"No Type"}]}"""
         mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(body))
 
-        val result = repository.search(MusicBrainzEntityType.PERFORMER, "x")
+        val result = repository.search("x")
 
         assertTrue(result is ApiResult.Success)
         val results = (result as ApiResult.Success).data
@@ -72,25 +71,11 @@ class MusicBrainzRepositoryTest {
     }
 
     @Test
-    fun `search forces CONDUCTOR type regardless of artist type`() = runTest {
-        val body = """{"artists":[{"id":"a1","name":"Karajan","type":"Person"}]}"""
-        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(body))
-
-        val result = repository.search(MusicBrainzEntityType.CONDUCTOR, "karajan")
-
-        assertTrue(result is ApiResult.Success)
-        assertEquals(
-            listOf(PerformerType.CONDUCTOR),
-            (result as ApiResult.Success).data.map { it.performerType }
-        )
-    }
-
-    @Test
     fun `search returns Error SERVER on 500`() = runTest {
         mockWebServer.enqueue(MockResponse().setResponseCode(500))
         assertEquals(
             ApiResult.Error(ApiErrorType.Type.SERVER),
-            repository.search(MusicBrainzEntityType.PERFORMER, "x")
+            repository.search("x")
         )
     }
 }

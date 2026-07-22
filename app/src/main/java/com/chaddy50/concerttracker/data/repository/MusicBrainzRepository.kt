@@ -4,7 +4,6 @@ import com.chaddy50.concerttracker.data.external.api.ApiResult
 import com.chaddy50.concerttracker.data.external.api.MusicBrainzApiService
 import com.chaddy50.concerttracker.data.external.api.MusicBrainzResult
 import com.chaddy50.concerttracker.data.external.api.safeApiCall
-import com.chaddy50.concerttracker.data.enum.MusicBrainzEntityType
 import com.chaddy50.concerttracker.data.enum.PerformerType
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -13,24 +12,13 @@ import javax.inject.Singleton
 class MusicBrainzRepository @Inject constructor(
     private val musicBrainzApiService: MusicBrainzApiService
 ) {
-    suspend fun search(
-        type: MusicBrainzEntityType,
-        query: String
-    ): ApiResult<List<MusicBrainzResult>> = safeApiCall {
-        when (type) {
-            MusicBrainzEntityType.PERFORMER -> searchArtists(query, forcedType = null)
-            MusicBrainzEntityType.CONDUCTOR -> searchArtists(query, forcedType = PerformerType.CONDUCTOR)
-            MusicBrainzEntityType.COMPOSER -> searchArtists(query, forcedType = null)
-        }
-    }
-
-    private suspend fun searchArtists(query: String, forcedType: PerformerType?): List<MusicBrainzResult> {
-        return musicBrainzApiService.searchArtists(query).artists.map { artist ->
+    suspend fun search(query: String): ApiResult<List<MusicBrainzResult>> = safeApiCall {
+        musicBrainzApiService.searchArtists(query).artists.map { artist ->
             MusicBrainzResult(
                 id = artist.id,
                 name = artist.name,
                 description = artist.disambiguation,
-                performerType = forcedType ?: mapArtistType(artist.type)
+                performerType = mapArtistType(artist.type)
             )
         }
     }
