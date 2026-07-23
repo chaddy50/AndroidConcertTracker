@@ -1,26 +1,32 @@
-package com.chaddy50.concerttracker.navigation.topBarActions.syncStatusIndicator
+package com.chaddy50.concerttracker.ui.screens.settingsScreen.sync
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.chaddy50.concerttracker.R
 import com.chaddy50.concerttracker.data.domain.SyncJob
 import com.chaddy50.concerttracker.data.enum.SyncEntityType
 import com.chaddy50.concerttracker.data.enum.SyncOperationType
 import com.chaddy50.concerttracker.util.formatDate
 
-/** One row in the sync-status popup: the op's action + entity, with the target's identifying context
- *  beneath it and a "Failed" tag when the op was permanently rejected. */
+/** One row in the sync section: the op's action + entity, with the target's identifying context
+ *  beneath it. A failed op also shows a "Failed" tag and a discard control. */
 @Composable
-fun SyncJobRow(job: SyncJob) {
+fun SyncJobRow(job: SyncJob, onDiscard: (Long) -> Unit) {
     val context = LocalContext.current
     val detail = listOfNotNull(
         job.description,
@@ -46,10 +52,17 @@ fun SyncJobRow(job: SyncJob) {
         }
         if (job.failed) {
             Text(
-                text = "Failed",
+                text = stringResource(R.string.sync_failed_tag),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.error
             )
+            IconButton(onClick = { onDiscard(job.id) }) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = stringResource(R.string.sync_discard_content_description),
+                    tint = MaterialTheme.colorScheme.error
+                )
+            }
         }
     }
 }

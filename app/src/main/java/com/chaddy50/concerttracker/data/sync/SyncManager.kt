@@ -106,6 +106,39 @@ class SyncManager @Inject constructor(
         SyncResult(processed, didFinish = true)
     }
 
+    /** Remove a single (typically failed) op from the outbox, first reverting its local entity
+     *  row so no orphan is left behind. No network — local reconciliation only. */
+    suspend fun discard(opId: Long) = mutex.withLock {
+        val op = syncOperationsRepository.get(opId) ?: return@withLock
+        reconcileDiscard(op)
+        syncOperationsRepository.remove(op.id)
+    }
+
+    private suspend fun reconcileDiscard(op: SyncOperationEntity) {
+        val entityType = SyncEntityType.valueOf(op.entityType)
+        when (SyncOperationType.valueOf(op.operationType)) {
+            // A never-synced create: hard-delete the local row (the change is abandoned).
+            // Custom performer/work rows have no syncState — leave them, just drop the op.
+            SyncOperationType.CREATE -> when (entityType) {
+                SyncEntityType.PERFORMANCE -> performancesRepository.applyServerDeletion(op.entityId)
+                SyncEntityType.SET_LIST_ENTRY -> setListEntriesRepository.applyServerDeletion(op.entityId)
+                SyncEntityType.PERFORMER, SyncEntityType.WORK -> {}
+            }
+            // Keep the local edit but stop trying to push it: mark the row SYNCED.
+            SyncOperationType.UPDATE -> when (entityType) {
+                SyncEntityType.PERFORMANCE -> performancesRepository.markSynced(op.entityId)
+                SyncEntityType.SET_LIST_ENTRY -> setListEntriesRepository.markSynced(op.entityId)
+                else -> {}
+            }
+            // Restore the tombstoned row (PENDING_DELETE -> SYNCED).
+            SyncOperationType.DELETE -> when (entityType) {
+                SyncEntityType.PERFORMANCE -> performancesRepository.markSynced(op.entityId)
+                SyncEntityType.SET_LIST_ENTRY -> setListEntriesRepository.markSynced(op.entityId)
+                else -> {}
+            }
+        }
+    }
+
     private suspend fun performCall(api: ConcertTrackerApiService, op: SyncOperationEntity) {
         val entityType = SyncEntityType.valueOf(op.entityType)
         when (SyncOperationType.valueOf(op.operationType)) {

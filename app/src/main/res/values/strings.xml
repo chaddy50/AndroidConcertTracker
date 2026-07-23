@@ -35,6 +35,17 @@
     <string name="settings_invalid_url_keep_editing">Keep editing</string>
     <string name="settings_invalid_url_discard">Discard</string>
 
+    <!-- Settings sync (pending changes) section -->
+    <string name="sync_section_title">Pending changes</string>
+    <string name="sync_all_synced">All changes synced</string>
+    <string name="sync_failed_tag">Failed</string>
+    <string name="sync_retry">Retry</string>
+    <string name="sync_discard_content_description">Discard this change</string>
+    <string name="sync_discard_dialog_title">Discard this change?</string>
+    <string name="sync_discard_dialog_message">This change couldn\'t be synced and will be permanently discarded. This can\'t be undone.</string>
+    <string name="sync_discard_confirm">Discard</string>
+    <string name="sync_discard_cancel">Cancel</string>
+
     <!-- Performance form field labels -->
     <string name="performance_form_date_label">Date</string>
     <string name="performance_form_time_label">Time</string>

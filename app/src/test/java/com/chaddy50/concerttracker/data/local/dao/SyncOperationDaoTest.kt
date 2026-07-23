@@ -99,6 +99,37 @@ class SyncOperationDaoTest {
     }
 
     @Test
+    fun `getById returns the matching row and null for an unknown id`() = runTest {
+        val id = dao.enqueue(op(entityLocalId = "target"))
+        dao.incrementAttempt(id)
+        dao.markFailed(id, "boom")
+
+        val found = dao.getById(id)
+        assertEquals("target", found?.entityId)
+        assertEquals(1, found?.attemptCount)
+        assertEquals("boom", found?.lastError)
+        assertNull(dao.getById(id + 999))
+    }
+
+    @Test
+    fun `resetFailures zeroes attemptCount and clears lastError only on failed rows`() = runTest {
+        val failed = dao.enqueue(op(entityLocalId = "failed"))
+        dao.incrementAttempt(failed)
+        dao.incrementAttempt(failed)
+        dao.markFailed(failed, "boom")
+        val clean = dao.enqueue(op(entityLocalId = "clean"))
+
+        dao.resetFailures()
+
+        val rows = dao.getAllOrdered().associateBy { it.id }
+        assertEquals(0, rows.getValue(failed).attemptCount)
+        assertNull(rows.getValue(failed).lastError)
+        assertEquals(0, rows.getValue(clean).attemptCount)
+        assertNull(rows.getValue(clean).lastError)
+        assertEquals(2, dao.getAllOrdered().size) // resetFailures never deletes
+    }
+
+    @Test
     fun `deleteForEntity removes all ops for a local id`() = runTest {
         dao.enqueue(op(entityLocalId = "x"))
         dao.enqueue(op(entityLocalId = "x", syncOperationType = SyncOperationType.UPDATE))

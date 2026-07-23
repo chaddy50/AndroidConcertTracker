@@ -9,6 +9,7 @@ import com.chaddy50.concerttracker.data.external.api.WorkRequest
 import com.chaddy50.concerttracker.data.enum.PerformanceStatus
 import com.chaddy50.concerttracker.data.enum.PerformerType
 import com.chaddy50.concerttracker.data.local.ConcertTrackerDatabase
+import com.chaddy50.concerttracker.data.local.entity.SetListEntryEntity
 import com.chaddy50.concerttracker.data.local.entity.SyncOperationEntity
 import com.chaddy50.concerttracker.data.local.entity.PerformanceEntity
 import com.chaddy50.concerttracker.data.local.entity.VenueEntity
@@ -289,6 +290,139 @@ class SyncManagerTest {
         val ops = db.syncOperationDao().getAllOrdered()
         assertEquals(listOf("perf-1"), ops.map { it.entityId }) // perf-1 stays, now flagged failed
         assertEquals("SERVER", ops.single().lastError)
+    }
+
+    @Test
+    fun `discarding a failed CREATE performance removes the op and hard-deletes the local row`() = runTest {
+        db.venueDao().upsert(listOf(VenueEntity("v1", "Hall", "1", "way")))
+        db.performanceDao().upsert(
+            PerformanceEntity("p-1", "2026-01-01T00:00:00Z", "UPCOMING", "v1", syncState = "FAILED")
+        )
+        val opId = enqueueOp(
+            SyncEntityType.PERFORMANCE, SyncOperationType.CREATE, "p-1",
+            json.encodeToString(PerformanceRequest("2026-01-01T00:00:00Z", "v1", emptyList(), PerformanceStatus.UPCOMING, id = "p-1"))
+        )
+
+        syncManager.discard(opId)
+
+        assertNull(db.performanceDao().getById("p-1"))
+        assertTrue(db.syncOperationDao().getAllOrdered().isEmpty())
+    }
+
+    @Test
+    fun `discarding a failed CREATE set-list entry removes the op and hard-deletes the row`() = runTest {
+        db.venueDao().upsert(listOf(VenueEntity("v1", "Hall", "1", "way")))
+        db.performanceDao().upsert(
+            PerformanceEntity("p-1", "2026-01-01T00:00:00Z", "UPCOMING", "v1", syncState = "SYNCED")
+        )
+        db.setListEntryDao().upsert(listOf(SetListEntryEntity("e-1", "p-1", "w1", 0, syncState = "FAILED")))
+        val opId = enqueueOp(
+            SyncEntityType.SET_LIST_ENTRY, SyncOperationType.CREATE, "e-1",
+            json.encodeToString(SetListEntryUpdateRequest(workId = "w1", order = 0, featuredPerformers = emptyList(), notes = ""))
+        )
+
+        syncManager.discard(opId)
+
+        assertNull(db.setListEntryDao().getById("e-1"))
+        assertTrue(db.syncOperationDao().getAllOrdered().isEmpty())
+    }
+
+    @Test
+    fun `discarding a failed CREATE performer leaves the custom row and removes the op`() = runTest {
+        val opId = enqueueOp(
+            SyncEntityType.PERFORMER, SyncOperationType.CREATE, "perf-1",
+            json.encodeToString(PerformerRequest("Solo", PerformerType.OTHER, id = "perf-1"))
+        )
+
+        syncManager.discard(opId) // custom rows have no syncState — reconcile is a no-op, must not throw
+
+        assertTrue(db.syncOperationDao().getAllOrdered().isEmpty())
+    }
+
+    @Test
+    fun `discarding a failed UPDATE performance removes the op and marks the row SYNCED`() = runTest {
+        db.venueDao().upsert(listOf(VenueEntity("v1", "Hall", "1", "way")))
+        db.performanceDao().upsert(
+            PerformanceEntity("p-1", "2026-01-01T00:00:00Z", "UPCOMING", "v1", syncState = "FAILED")
+        )
+        val opId = enqueueOp(
+            SyncEntityType.PERFORMANCE, SyncOperationType.UPDATE, "p-1",
+            json.encodeToString(PerformanceRequest("2026-01-01T00:00:00Z", "v1", emptyList(), PerformanceStatus.UPCOMING, id = "p-1"))
+        )
+
+        syncManager.discard(opId)
+
+        assertEquals("SYNCED", db.performanceDao().getById("p-1")?.syncState)
+        assertTrue(db.syncOperationDao().getAllOrdered().isEmpty())
+    }
+
+    @Test
+    fun `discarding a failed UPDATE set-list entry marks the row SYNCED and removes the op`() = runTest {
+        db.venueDao().upsert(listOf(VenueEntity("v1", "Hall", "1", "way")))
+        db.performanceDao().upsert(
+            PerformanceEntity("p-1", "2026-01-01T00:00:00Z", "UPCOMING", "v1", syncState = "SYNCED")
+        )
+        db.setListEntryDao().upsert(listOf(SetListEntryEntity("e-1", "p-1", "w1", 0, syncState = "FAILED")))
+        val opId = enqueueOp(
+            SyncEntityType.SET_LIST_ENTRY, SyncOperationType.UPDATE, "e-1",
+            json.encodeToString(SetListEntryUpdateRequest(workId = "w1", order = 0, featuredPerformers = emptyList(), notes = "x"))
+        )
+
+        syncManager.discard(opId)
+
+        assertEquals("SYNCED", db.setListEntryDao().getById("e-1")?.syncState)
+        assertTrue(db.syncOperationDao().getAllOrdered().isEmpty())
+    }
+
+    @Test
+    fun `discarding a failed DELETE performance restores the row via markSynced and removes the op`() = runTest {
+        db.venueDao().upsert(listOf(VenueEntity("v1", "Hall", "1", "way")))
+        db.performanceDao().upsert(
+            PerformanceEntity("p-1", "2026-01-01T00:00:00Z", "UPCOMING", "v1", syncState = "PENDING_DELETE")
+        )
+        val opId = enqueueOp(SyncEntityType.PERFORMANCE, SyncOperationType.DELETE, "p-1", null)
+
+        syncManager.discard(opId)
+
+        assertEquals("SYNCED", db.performanceDao().getById("p-1")?.syncState)
+        assertTrue(db.syncOperationDao().getAllOrdered().isEmpty())
+    }
+
+    @Test
+    fun `discard is a no-op when the op id no longer exists`() = runTest {
+        db.venueDao().upsert(listOf(VenueEntity("v1", "Hall", "1", "way")))
+        db.performanceDao().upsert(
+            PerformanceEntity("p-1", "2026-01-01T00:00:00Z", "UPCOMING", "v1", syncState = "SYNCED")
+        )
+
+        syncManager.discard(999L) // unknown id: must not throw, remove nothing, touch no row
+
+        assertEquals("SYNCED", db.performanceDao().getById("p-1")?.syncState)
+        assertTrue(db.syncOperationDao().getAllOrdered().isEmpty())
+    }
+
+    @Test
+    fun `a previously-failed transient op drains successfully once retried after connectivity returns`() = runTest {
+        db.syncOperationDao().enqueue(
+            SyncOperationEntity(
+                entityType = SyncEntityType.PERFORMER.name,
+                operationType = SyncOperationType.CREATE.name,
+                entityId = "perf-1",
+                payloadJson = json.encodeToString(PerformerRequest("A", PerformerType.OTHER, id = "perf-1")),
+                createdAt = "2026-01-01T00:00:00Z",
+                attemptCount = SyncManager.MAX_ATTEMPTS,
+                lastError = "SERVER"
+            )
+        )
+        db.syncOperationsRepository().resetFailures() // what Retry does before requesting a sync
+        mockWebServer.enqueue(MockResponse().setResponseCode(201).setBody("""{"id":"perf-1","name":"A","type":"OTHER"}"""))
+        mockWebServer.enqueue(reconcileResponse())
+
+        val result = syncManager.sync()
+
+        assertTrue(result.didFinish)
+        assertEquals(1, result.numberOfOperationsProcessed)
+        assertTrue(db.syncOperationDao().getAllOrdered().isEmpty())
     }
 
     @Test

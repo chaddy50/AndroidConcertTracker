@@ -15,6 +15,9 @@ interface SyncOperationDao {
     @Query("SELECT * FROM sync_operations ORDER BY id ASC")
     suspend fun getAllOrdered(): List<SyncOperationEntity>
 
+    @Query("SELECT * FROM sync_operations WHERE id = :id")
+    suspend fun getById(id: Long): SyncOperationEntity?
+
     @Query("SELECT * FROM sync_operations ORDER BY id ASC")
     fun observeAll(): Flow<List<SyncOperationEntity>>
 
@@ -35,4 +38,7 @@ interface SyncOperationDao {
 
     @Query("UPDATE sync_operations SET lastError = :error WHERE id = :id")
     suspend fun markFailed(id: Long, error: String)
+
+    @Query("UPDATE sync_operations SET attemptCount = 0, lastError = NULL WHERE lastError IS NOT NULL")
+    suspend fun resetFailures()
 }

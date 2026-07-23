@@ -1,9 +1,10 @@
-package com.chaddy50.concerttracker.navigation.topBarActions.syncStatusIndicator
+package com.chaddy50.concerttracker.ui.screens.settingsScreen.sync
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.chaddy50.concerttracker.data.domain.SyncJob
 import com.chaddy50.concerttracker.data.repository.SyncOperationsRepository
+import com.chaddy50.concerttracker.data.sync.SyncManager
 import com.chaddy50.concerttracker.data.sync.SyncScheduler
 import com.chaddy50.concerttracker.util.SyncJobDescriber
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -11,6 +12,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class SyncStatus(val jobs: List<SyncJob>) {
@@ -20,15 +22,25 @@ data class SyncStatus(val jobs: List<SyncJob>) {
 }
 
 @HiltViewModel
-class SyncStatusIndicatorViewModel @Inject constructor(
+class SyncSectionViewModel @Inject constructor(
     private val syncOperationsRepository: SyncOperationsRepository,
     private val syncJobDescriber: SyncJobDescriber,
-    private val syncScheduler: SyncScheduler
+    private val syncScheduler: SyncScheduler,
+    private val syncManager: SyncManager
 ) : ViewModel() {
 
     val uiState: StateFlow<SyncStatus> = syncOperationsRepository.observeJobs()
         .map { jobs -> SyncStatus(jobs.map { syncJobDescriber.describe(it) }) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SyncStatus(emptyList()))
 
-    fun retry() = syncScheduler.requestImmediateSync()
+    fun retry() {
+        viewModelScope.launch {
+            syncOperationsRepository.resetFailures()
+            syncScheduler.requestImmediateSync()
+        }
+    }
+
+    fun discard(jobId: Long) {
+        viewModelScope.launch { syncManager.discard(jobId) }
+    }
 }

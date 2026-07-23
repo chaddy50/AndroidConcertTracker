@@ -1,15 +1,17 @@
-package com.chaddy50.concerttracker.navigation.topBarActions.syncStatusIndicator
+package com.chaddy50.concerttracker.ui.screens.settingsScreen.sync
 
 import com.chaddy50.concerttracker.data.domain.SyncJob
 import com.chaddy50.concerttracker.data.enum.SyncEntityType
 import com.chaddy50.concerttracker.data.enum.SyncOperationType
 import com.chaddy50.concerttracker.data.repository.SyncOperationsRepository
+import com.chaddy50.concerttracker.data.sync.SyncManager
 import com.chaddy50.concerttracker.data.sync.SyncScheduler
 import com.chaddy50.concerttracker.util.SyncJobDescriber
 import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,11 +30,12 @@ import org.junit.Before
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class SyncStatusIndicatorViewModelTest {
+class SyncSectionViewModelTest {
 
     private val repository: SyncOperationsRepository = mockk()
     private val syncJobDescriber: SyncJobDescriber = mockk()
     private val syncScheduler: SyncScheduler = mockk(relaxed = true)
+    private val syncManager: SyncManager = mockk(relaxed = true)
 
     private fun job(id: Long, failed: Boolean = false) = SyncJob(
         id = id,
@@ -47,6 +50,7 @@ class SyncStatusIndicatorViewModelTest {
         Dispatchers.setMain(StandardTestDispatcher())
         // The describer is exercised in its own test; here it passes jobs through untouched.
         coEvery { syncJobDescriber.describe(any()) } answers { firstArg() }
+        coEvery { repository.resetFailures() } returns Unit
     }
 
     @After
@@ -56,7 +60,7 @@ class SyncStatusIndicatorViewModelTest {
     fun `uiState reflects the queued jobs and updates reactively`() = runTest {
         val jobs = MutableStateFlow(emptyList<SyncJob>())
         every { repository.observeJobs() } returns jobs
-        val viewModel = SyncStatusIndicatorViewModel(repository, syncJobDescriber, syncScheduler)
+        val viewModel = SyncSectionViewModel(repository, syncJobDescriber, syncScheduler, syncManager)
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
 
@@ -71,7 +75,7 @@ class SyncStatusIndicatorViewModelTest {
     @Test
     fun `a failed job sets the failure flag`() = runTest {
         every { repository.observeJobs() } returns flowOf(listOf(job(1), job(2, failed = true)))
-        val viewModel = SyncStatusIndicatorViewModel(repository, syncJobDescriber, syncScheduler)
+        val viewModel = SyncSectionViewModel(repository, syncJobDescriber, syncScheduler, syncManager)
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
 
@@ -79,12 +83,37 @@ class SyncStatusIndicatorViewModelTest {
     }
 
     @Test
-    fun `retry re-triggers a sync`() = runTest {
+    fun `describe passes jobs through the describer`() = runTest {
+        every { repository.observeJobs() } returns flowOf(listOf(job(7)))
+        val viewModel = SyncSectionViewModel(repository, syncJobDescriber, syncScheduler, syncManager)
+        backgroundScope.launch { viewModel.uiState.collect {} }
+        advanceUntilIdle()
+
+        assertEquals(listOf(job(7)), viewModel.uiState.value.jobs)
+    }
+
+    @Test
+    fun `retry resets failures then requests an immediate sync`() = runTest {
         every { repository.observeJobs() } returns flowOf(emptyList())
-        val viewModel = SyncStatusIndicatorViewModel(repository, syncJobDescriber, syncScheduler)
+        val viewModel = SyncSectionViewModel(repository, syncJobDescriber, syncScheduler, syncManager)
 
         viewModel.retry()
+        advanceUntilIdle()
 
-        verify { syncScheduler.requestImmediateSync() }
+        coVerifyOrder {
+            repository.resetFailures()
+            syncScheduler.requestImmediateSync()
+        }
+    }
+
+    @Test
+    fun `discard delegates to SyncManager with the job id`() = runTest {
+        every { repository.observeJobs() } returns flowOf(emptyList())
+        val viewModel = SyncSectionViewModel(repository, syncJobDescriber, syncScheduler, syncManager)
+
+        viewModel.discard(42L)
+        advanceUntilIdle()
+
+        coVerify { syncManager.discard(42L) }
     }
 }

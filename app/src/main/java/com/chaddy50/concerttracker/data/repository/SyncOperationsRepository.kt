@@ -46,6 +46,8 @@ class SyncOperationsRepository @Inject constructor(
     /** Outbox contents in FIFO order, for the drain. */
     suspend fun pending(): List<SyncOperationEntity> = syncOperationDao.getAllOrdered()
 
+    suspend fun get(id: Long): SyncOperationEntity? = syncOperationDao.getById(id)
+
     /** Remove a resolved op from the outbox. */
     suspend fun remove(id: Long) = syncOperationDao.delete(id)
 
@@ -58,6 +60,8 @@ class SyncOperationsRepository @Inject constructor(
         syncOperationDao.incrementAttempt(id)
         syncOperationDao.markFailed(id, error)
     }
+
+    suspend fun resetFailures() = syncOperationDao.resetFailures()
 
     /** The outbox as a live list of jobs (FIFO), for the sync-status popup. Identifying context is
      *  resolved separately (see SyncJobDescriber) so this repository stays free of read dependencies. */
