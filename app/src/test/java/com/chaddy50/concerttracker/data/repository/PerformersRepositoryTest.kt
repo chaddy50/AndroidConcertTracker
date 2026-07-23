@@ -19,6 +19,8 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -158,5 +160,106 @@ class PerformersRepositoryTest {
     fun `searchPerformers includes performers with null musicbrainzId`() = runTest {
         db.performerDao().upsert(listOf(PerformerEntity("pe1", "Custom", "OTHER", musicbrainzId = null)))
         assertEquals(listOf("pe1"), repository.searchPerformers("").first().map { it.id })
+    }
+
+    @Test
+    fun `updatePerformer returns Success with the updated performer`() = runTest {
+        db.performerDao().upsert(listOf(PerformerEntity("pe1", "Old Name", "SOLO", "Pianist")))
+
+        val result = repository.updatePerformer("pe1", "Old Name", PerformerType.CONDUCTOR, "Conductor", null)
+
+        assertTrue(result is ApiResult.Success)
+        val performer = (result as ApiResult.Success).data
+        assertEquals("pe1", performer.id)
+        assertEquals(PerformerType.CONDUCTOR, performer.type)
+        assertEquals("Conductor", performer.specialty)
+    }
+
+    @Test
+    fun `updatePerformer writes the correction through to Room`() = runTest {
+        db.performerDao().upsert(listOf(PerformerEntity("pe1", "Yo-Yo Ma", "SOLO", "Pianist")))
+
+        repository.updatePerformer("pe1", "Yo-Yo Ma", PerformerType.SOLO, "Cellist", null)
+
+        val row = db.performerDao().getById("pe1")
+        assertEquals("SOLO", row?.type)
+        assertEquals("Cellist", row?.specialty)
+    }
+
+    @Test
+    fun `updatePerformer upserts in place rather than inserting a duplicate`() = runTest {
+        db.performerDao().upsert(listOf(PerformerEntity("pe1", "Name", "SOLO", "Pianist")))
+
+        repository.updatePerformer("pe1", "Name", PerformerType.CONDUCTOR, "Conductor", null)
+
+        val all = repository.searchPerformers("").first()
+        assertEquals(1, all.size)
+        assertEquals(PerformerType.CONDUCTOR, all.single().type)
+        assertEquals("Conductor", all.single().specialty)
+    }
+
+    @Test
+    fun `updatePerformer correction is visible through searchPerformers everywhere`() = runTest {
+        db.performerDao().upsert(listOf(PerformerEntity("pe1", "Andris Nelsons", "SOLO", null)))
+
+        repository.updatePerformer("pe1", "Andris Nelsons", PerformerType.CONDUCTOR, "Conductor", null)
+
+        val found = repository.searchPerformers("").first().single()
+        assertEquals(PerformerType.CONDUCTOR, found.type)
+        assertEquals("Conductor", found.specialty)
+    }
+
+    @Test
+    fun `updatePerformer enqueues one PERFORMER UPDATE op with the id`() = runTest {
+        repository.updatePerformer("pe1", "Name", PerformerType.SOLO, "Cellist", null)
+
+        val op = db.syncOperationDao().getAllOrdered().single()
+        assertEquals("PERFORMER", op.entityType)
+        assertEquals("UPDATE", op.operationType)
+        assertEquals("pe1", op.entityId)
+        val request = json.decodeFromString<PerformerRequest>(op.payloadJson!!)
+        assertEquals("pe1", request.id)
+        assertEquals("Name", request.name)
+        assertEquals(PerformerType.SOLO, request.type)
+        assertEquals("Cellist", request.specialty)
+    }
+
+    @Test
+    fun `updatePerformer makes no direct network request`() = runTest {
+        repository.updatePerformer("pe1", "Name", PerformerType.SOLO, "Cellist", null)
+        assertEquals(0, mockWebServer.requestCount)
+    }
+
+    @Test
+    fun `updatePerformer requests a sync`() = runTest {
+        repository.updatePerformer("pe1", "Name", PerformerType.SOLO, "Cellist", null)
+        io.mockk.coVerify(exactly = 1) { syncScheduler.requestSync() }
+    }
+
+    @Test
+    fun `updatePerformer with null specialty stores null locally but encodes an empty string to clear it`() = runTest {
+        repository.updatePerformer("pe1", "Name", PerformerType.CONDUCTOR, null, null)
+
+        // Room keeps the clean null; the wire carries "" so the clear isn't dropped as an omitted field.
+        assertNull(db.performerDao().getById("pe1")?.specialty)
+        val op = db.syncOperationDao().getAllOrdered().single()
+        assertEquals("", json.decodeFromString<PerformerRequest>(op.payloadJson!!).specialty)
+    }
+
+    @Test
+    fun `updatePerformer preserves musicbrainzId in the row and payload`() = runTest {
+        repository.updatePerformer("pe1", "Name", PerformerType.SOLO, "Cellist", "mb1")
+
+        assertEquals("mb1", db.performerDao().getById("pe1")?.musicbrainzId)
+        val op = db.syncOperationDao().getAllOrdered().single()
+        assertEquals("mb1", json.decodeFromString<PerformerRequest>(op.payloadJson!!).musicbrainzId)
+    }
+
+    @Test
+    fun `updatePerformer commits the row upsert and the op enqueue together`() = runTest {
+        repository.updatePerformer("pe1", "Name", PerformerType.SOLO, "Cellist", null)
+
+        assertNotNull(db.performerDao().getById("pe1"))
+        assertEquals(1, db.syncOperationDao().getAllOrdered().size)
     }
 }

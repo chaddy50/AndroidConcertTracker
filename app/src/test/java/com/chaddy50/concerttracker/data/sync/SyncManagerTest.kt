@@ -155,6 +155,66 @@ class SyncManagerTest {
     }
 
     @Test
+    fun `drains a performer UPDATE via PUT carrying the corrected fields`() = runTest {
+        enqueueOp(
+            SyncEntityType.PERFORMER, SyncOperationType.UPDATE, "pe-1",
+            json.encodeToString(PerformerRequest("Andris Nelsons", PerformerType.CONDUCTOR, "Conductor", id = "pe-1"))
+        )
+        mockWebServer.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """{"id":"pe-1","name":"Andris Nelsons","type":"CONDUCTOR","specialty":"Conductor"}"""
+            )
+        )
+        mockWebServer.enqueue(reconcileResponse())
+
+        val result = syncManager.sync()
+
+        assertTrue(result.didFinish)
+        assertEquals(1, result.numberOfOperationsProcessed)
+        assertTrue(db.syncOperationDao().getAllOrdered().isEmpty())
+        val put = mockWebServer.takeRequest()
+        assertEquals("PUT", put.method)
+        assertEquals("/v1/performers/pe-1", put.path)
+        val body = put.body.readUtf8()
+        assertTrue(body.contains("CONDUCTOR"))
+        assertTrue(body.contains("Conductor"))
+        assertEquals("GET", mockWebServer.takeRequest().method) // pull reconcile
+    }
+
+    @Test
+    fun `treats a performer UPDATE 409 as success (last-write-wins)`() = runTest {
+        enqueueOp(
+            SyncEntityType.PERFORMER, SyncOperationType.UPDATE, "pe-1",
+            json.encodeToString(PerformerRequest("Name", PerformerType.SOLO, "Cellist", id = "pe-1"))
+        )
+        mockWebServer.enqueue(MockResponse().setResponseCode(409))
+        mockWebServer.enqueue(reconcileResponse())
+
+        val result = syncManager.sync()
+
+        assertTrue(result.didFinish)
+        assertEquals(1, result.numberOfOperationsProcessed)
+        assertTrue(db.syncOperationDao().getAllOrdered().isEmpty())
+    }
+
+    @Test
+    fun `a transient failure on a performer UPDATE leaves it pending and records an attempt`() = runTest {
+        enqueueOp(
+            SyncEntityType.PERFORMER, SyncOperationType.UPDATE, "pe-1",
+            json.encodeToString(PerformerRequest("Name", PerformerType.SOLO, "Cellist", id = "pe-1"))
+        )
+        mockWebServer.enqueue(MockResponse().setResponseCode(500))
+
+        val result = syncManager.sync()
+
+        assertFalse(result.didFinish)
+        val op = db.syncOperationDao().getAllOrdered().single()
+        assertEquals("pe-1", op.entityId)
+        assertEquals(1, op.attemptCount)
+        assertNull(op.lastError)
+    }
+
+    @Test
     fun `drains FIFO so a custom work is sent before the performance that depends on it`() = runTest {
         enqueueOp(
             SyncEntityType.WORK, SyncOperationType.CREATE, "w-1",

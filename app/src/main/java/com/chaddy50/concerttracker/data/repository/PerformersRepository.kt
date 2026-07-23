@@ -1,6 +1,7 @@
 package com.chaddy50.concerttracker.data.repository
 
 import androidx.room.withTransaction
+import com.chaddy50.concerttracker.data.enum.PerformerType
 import com.chaddy50.concerttracker.data.enum.SyncEntityType
 import com.chaddy50.concerttracker.data.enum.SyncOperationType
 import com.chaddy50.concerttracker.data.external.api.ApiResult
@@ -77,6 +78,26 @@ class PerformersRepository @Inject constructor(
         }
         syncScheduler.get().requestSync()
         return ApiResult.Success(Performer(id, request.name, request.type, request.specialty, null))
+    }
+
+    suspend fun updatePerformer(
+        id: String,
+        name: String,
+        type: PerformerType,
+        specialty: String?,
+        musicbrainzId: String?
+    ): ApiResult<Performer> {
+        val request = PerformerRequest(
+            name = name, type = type, specialty = specialty ?: "", musicbrainzId = musicbrainzId, id = id
+        )
+        database.withTransaction {
+            performerDao.upsert(listOf(PerformerEntity(id, name, type.name, specialty, musicbrainzId)))
+            syncOperationsRepository.enqueue(
+                SyncEntityType.PERFORMER, SyncOperationType.UPDATE, id, json.encodeToString(request)
+            )
+        }
+        syncScheduler.get().requestSync()
+        return ApiResult.Success(Performer(id, name, type, specialty, musicbrainzId))
     }
 
     private suspend fun findOrCreatePerformerOnline(request: PerformerRequest): ApiResult<Performer> = safeApiCall {

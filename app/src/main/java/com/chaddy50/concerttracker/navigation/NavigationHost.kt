@@ -76,6 +76,7 @@ fun NavigationHost() {
             if (isNew) stringResource(R.string.set_list_entry_form_add_title)
             else stringResource(R.string.set_list_entry_form_edit_title)
         }
+        currentDestination?.hasRoute<PerformerEdit>() == true -> stringResource(R.string.performer_form_edit_title)
         else -> ""
     }
 
@@ -138,6 +139,7 @@ fun NavigationHost() {
                 performanceDetail()
                 performanceEdit(navController)
                 setListEntryEdit(navController)
+                performerEdit(navController)
                 venueSearch(navController)
                 createCustomVenue(navController)
                 musicBrainzSearch(navController)

@@ -139,6 +139,13 @@ class EditPerformanceViewModel @Inject constructor(
         draftPerformers.add(Performer(id = performerId, name = performerName, type = type, specialty = specialty))
     }
 
+    fun updateDraftPerformer(id: String, name: String, type: PerformerType, specialty: String?) {
+        val index = draftPerformers.indexOfFirst { it.id == id }
+        if (index != -1) {
+            draftPerformers[index] = draftPerformers[index].copy(name = name, type = type, specialty = specialty)
+        }
+    }
+
     fun removeDraftPerformer(performerId: String) {
         draftPerformers.removeAll { it.id == performerId }
     }

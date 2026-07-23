@@ -8,6 +8,7 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
+import com.chaddy50.concerttracker.data.enum.PerformerType
 import com.chaddy50.concerttracker.ui.screens.editPerformanceScreen.EditPerformanceScreen
 import com.chaddy50.concerttracker.ui.screens.editPerformanceScreen.EditPerformanceViewModel
 import com.chaddy50.concerttracker.ui.screens.editPerformanceScreen.PendingFeaturedPerformer
@@ -27,6 +28,7 @@ fun NavGraphBuilder.performanceEdit(navController: NavController) {
         val pendingVenue by handle.pendingVenueFlow().collectAsStateWithLifecycle(null)
         val pendingPerformer by handle.pendingPerformerFlow().collectAsStateWithLifecycle(null)
         val pendingSetListEntry by handle.pendingSetListEntryFlow().collectAsStateWithLifecycle(null)
+        val performerUpdated by handle.performerUpdatedFlow().collectAsStateWithLifecycle(null)
 
         LaunchedEffect(pendingVenue) {
             pendingVenue?.let {
@@ -39,6 +41,15 @@ fun NavGraphBuilder.performanceEdit(navController: NavController) {
             pendingPerformer?.let {
                 viewModel.addDraftPerformer(it.id, it.name, it.type, it.specialty)
                 handle.clearPendingPerformer()
+            }
+        }
+
+        LaunchedEffect(performerUpdated) {
+            performerUpdated?.let {
+                viewModel.updateDraftPerformer(
+                    it.id, it.name, PerformerType.valueOf(it.type), it.specialty
+                )
+                handle.clearPerformerUpdated()
             }
         }
 
@@ -61,6 +72,7 @@ fun NavGraphBuilder.performanceEdit(navController: NavController) {
             onCancel = { navController.popBackStack() },
             onNavigateToCreateVenue = { navController.navigate(VenueSearch) },
             onNavigateToSearchPerformer = { navController.navigate(MusicBrainzSearch) },
+            onNavigateToEditPerformer = { performerId -> navController.navigate(PerformerEdit(performerId)) },
             onNavigateToAddSetListEntry = {
                 navController.navigate(SetListEntryEdit(performanceId = performanceId, entryId = null))
             },

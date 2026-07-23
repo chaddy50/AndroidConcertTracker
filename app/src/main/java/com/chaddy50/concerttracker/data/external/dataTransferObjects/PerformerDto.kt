@@ -15,7 +15,7 @@ data class PerformerDto(
 )
 
 internal fun PerformerDto.toRow() =
-    PerformerEntity(id = id, name = name, type = type.name, specialty = specialty, musicbrainzId = musicbrainzId)
+    PerformerEntity(id = id, name = name, type = type.name, specialty = specialty?.ifBlank { null }, musicbrainzId = musicbrainzId)
 
 fun PerformerDto.toDomain() =
-    Performer(id = id, name = name, type = type, specialty = specialty, musicbrainzId = musicbrainzId)
+    Performer(id = id, name = name, type = type, specialty = specialty?.ifBlank { null }, musicbrainzId = musicbrainzId)

@@ -60,6 +60,9 @@ interface ConcertTrackerApiService {
     @GET("performers/{id}")
     suspend fun getPerformer(@Path("id") id: String): PerformerDto
 
+    @PUT("performers/{id}")
+    suspend fun updatePerformer(@Path("id") id: String, @Body request: PerformerRequest): PerformerDto
+
     @POST("composers/")
     suspend fun findOrCreateComposer(@Body request: ComposerRequest): ComposerDto
 

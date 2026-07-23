@@ -118,6 +118,70 @@ class EditPerformanceViewModelTest {
     }
 
     @Test
+    fun `updateDraftPerformer corrects type and specialty in place preserving id and position`() = runTest {
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+        viewModel.addDraftPerformer("perf1", "Andris Nelsons", "SOLO", null)
+
+        viewModel.updateDraftPerformer("perf1", "Andris Nelsons", PerformerType.CONDUCTOR, "Conductor")
+
+        val updated = viewModel.draftPerformers.single()
+        assertEquals("perf1", updated.id)
+        assertEquals(PerformerType.CONDUCTOR, updated.type)
+        assertEquals("Conductor", updated.specialty)
+    }
+
+    @Test
+    fun `updateDraftPerformer leaves other performers untouched`() = runTest {
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+        viewModel.addDraftPerformer("perf1", "First", "SOLO", "Pianist")
+        viewModel.addDraftPerformer("perf2", "Second", "SOLO", "Cellist")
+        viewModel.addDraftPerformer("perf3", "Third", "ORCHESTRA", null)
+
+        viewModel.updateDraftPerformer("perf2", "Second", PerformerType.CONDUCTOR, "Conductor")
+
+        assertEquals(listOf("perf1", "perf2", "perf3"), viewModel.draftPerformers.map { it.id })
+        assertEquals(PerformerType.SOLO, viewModel.draftPerformers[0].type)
+        assertEquals(PerformerType.CONDUCTOR, viewModel.draftPerformers[1].type)
+        assertEquals(PerformerType.ORCHESTRA, viewModel.draftPerformers[2].type)
+    }
+
+    @Test
+    fun `updateDraftPerformer is a no-op when the id is absent`() = runTest {
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+        viewModel.addDraftPerformer("perf1", "First", "SOLO", "Pianist")
+
+        viewModel.updateDraftPerformer("missing", "X", PerformerType.CONDUCTOR, "Conductor")
+
+        assertEquals(1, viewModel.draftPerformers.size)
+        assertEquals(PerformerType.SOLO, viewModel.draftPerformers.single().type)
+    }
+
+    @Test
+    fun `updateDraftPerformer can clear the specialty`() = runTest {
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+        viewModel.addDraftPerformer("perf1", "First", "SOLO", "Pianist")
+
+        viewModel.updateDraftPerformer("perf1", "First", PerformerType.SOLO, null)
+
+        assertNull(viewModel.draftPerformers.single().specialty)
+    }
+
+    @Test
+    fun `updateDraftPerformer does not touch the repository`() = runTest {
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+        viewModel.addDraftPerformer("perf1", "First", "SOLO", "Pianist")
+
+        viewModel.updateDraftPerformer("perf1", "First", PerformerType.CONDUCTOR, "Conductor")
+
+        coVerify(exactly = 0) { performancesRepository.updatePerformance(any(), any()) }
+    }
+
+    @Test
     fun `addDraftPerformer performs no network create`() = runTest {
         val viewModel = createViewModel()
         advanceUntilIdle()

@@ -118,6 +118,7 @@ class SyncManager @Inject constructor(
             SyncOperationType.UPDATE -> when (entityType) {
                 SyncEntityType.PERFORMANCE -> api.updatePerformance(op.entityId, decode<PerformanceRequest>(op))
                 SyncEntityType.SET_LIST_ENTRY -> api.updateSetListEntry(op.entityId, decode<SetListEntryUpdateRequest>(op))
+                SyncEntityType.PERFORMER -> api.updatePerformer(op.entityId, decode<PerformerRequest>(op))
                 else -> error("no UPDATE op for $entityType")
             }
             SyncOperationType.DELETE -> when (entityType) {

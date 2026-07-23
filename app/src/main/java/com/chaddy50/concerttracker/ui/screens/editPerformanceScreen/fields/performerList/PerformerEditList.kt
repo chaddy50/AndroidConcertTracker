@@ -16,6 +16,7 @@ import com.chaddy50.concerttracker.ui.composables.LabeledOutlineCard
 fun PerformerEditList(
     performers: List<Performer>,
     onAddPerformerClick: () -> Unit,
+    onEditPerformerClick: (String) -> Unit,
     onRemovePerformer: (String) -> Unit,
     onMovePerformer: (from: Int, to: Int) -> Unit,
     modifier: Modifier = Modifier
@@ -32,6 +33,7 @@ fun PerformerEditList(
             EditableItemRow(
                 title = performer.name,
                 subtitle = performer.specialty,
+                onEditClick = { onEditPerformerClick(performer.id) },
                 onRemoveClick = { onRemovePerformer(performer.id) },
                 modifier = dragHandleModifier
             )
