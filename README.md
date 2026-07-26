@@ -5,7 +5,8 @@ It lets you record all of the details that matter for a classical performance - 
 During the performance, you can take listening notes on each piece and refer back to your notes later.
 <br>
 <br>
-The app is offline-first, which means that you can take notes on your performances even if internet isn't available at your concert venue. Those notes will then be synced back to the server when you regain connection.
+This app is the main front end for [this API](https://github.com/chaddy50/FastAPIConcertTrackerAPI) that stores your library.
+Howover, the app is offline-first, which means that you can take notes on your performances even if internet isn't available at your concert venue. Those notes will then be synced back to the server when you regain connection.
 
 # Features
 ## Performances at a glance
@@ -47,7 +48,6 @@ Venues are searched against **OpenStreetMap** via Nominatim, so a concert hall o
 
 # Technical Details
 This app was built using [Kotlin](https://kotlinlang.org/) and [Jetpack Compose](https://developer.android.com/compose).
-It is the Android client for a [self-hosted backend API (FastAPI + PostgreSQL)](https://github.com/chaddy50/FastAPIConcertTrackerAPI) that stores your library.
 
 ## Libraries Used
 [Retrofit 2](https://github.com/square/retrofit) for making type-safe HTTP API calls.
