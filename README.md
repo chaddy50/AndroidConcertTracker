@@ -6,7 +6,8 @@ During the performance, you can take listening notes on each piece and refer bac
 <br>
 <br>
 This app is the main front end for [this API](https://github.com/chaddy50/FastAPIConcertTrackerAPI) that stores your library.
-Howover, the app is offline-first, which means that you can take notes on your performances even if internet isn't available at your concert venue. Those notes will then be synced back to the server when you regain connection.
+
+However, the app is offline-first, which means that you can take notes on your performances even if internet isn't available at your concert venue. Those notes will then be synced back to the server when you regain connection.
 
 # Features
 ## Performances at a glance
