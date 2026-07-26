@@ -3,6 +3,9 @@ This is an Android app for keeping track of classical music concerts you've atte
 It lets you record all of the details that matter for a classical performance - the pieces on the program, who composed them, the performers and conductor, and the venue.
 <br>
 During the performance, you can take listening notes on each piece and refer back to your notes later.
+<br>
+<br>
+The app is offline-first, which means that you can take notes on your performances even if internet isn't available at your concert venue. Those notes will then be synced back to the server when you regain connection.
 
 # Features
 ## Performances at a glance
